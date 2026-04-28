@@ -14,11 +14,14 @@ import {
   translate,
   type Locale,
 } from "./messages";
+import { tp, tpList } from "./pages";
 
 interface Ctx {
   locale: Locale;
   setLocale: (l: Locale) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
+  tp: (key: string, params?: Record<string, string | number>) => string;
+  tpList: (key: string) => string[];
   dir: "ltr" | "rtl";
 }
 
@@ -61,6 +64,8 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       locale,
       setLocale,
       t: (key, params) => translate(locale, key, params),
+      tp: (key, params) => tp(locale, key, params),
+      tpList: (key) => tpList(locale, key),
       dir: RTL_LOCALES.has(locale) ? "rtl" : "ltr",
     }),
     [locale, setLocale],
