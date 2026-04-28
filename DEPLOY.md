@@ -187,6 +187,91 @@ fly deploy
 The included `Dockerfile` is multi-stage (deps → build → runner) and runs as
 non-root user.
 
+### Self-host on Hetzner CX22 (€4.50/month) — best price/perf
+
+Best ratio for a multi-project host. CX22 = 2 vCPU / 4GB RAM / 40GB SSD,
+enough for 3-5 small Node apps comfortably.
+
+**1. Provision the VPS**
+
+- https://console.hetzner.cloud → Project → Add Server
+- Image: **Ubuntu 24.04**
+- Type: **CX22** (or CX32 for more headroom)
+- SSH key: paste your public key
+- Region: Falkenstein (Germany) for European AIS sources, Ashburn for US
+
+**2. One-time bootstrap (run as root on the fresh server)**
+
+```bash
+ssh root@your.ip
+bash <(curl -fsSL https://raw.githubusercontent.com/enz0g-ui/PortFlow/main/scripts/server-bootstrap.sh)
+```
+
+What it installs:
+- Node.js 24 + npm + PM2 (global)
+- Nginx + Certbot (Let's Encrypt)
+- UFW firewall (only 22/80/443 open)
+- Fail2ban (SSH brute-force protection)
+- Unattended-upgrades (security patches auto-applied)
+- A non-root `deploy` user with sudo + your SSH keys copied over
+- `/opt/projects/` directory ready for multiple apps
+
+**3. Deploy Port Flow as the `deploy` user**
+
+```bash
+ssh deploy@your.ip
+cd /opt/projects
+git clone https://github.com/enz0g-ui/PortFlow.git portflow
+cd portflow
+npm ci
+npm run setup           # interactive wizard for .env.local
+npm run build
+pm2 start ecosystem.config.js
+pm2 save
+```
+
+**4. Hook up a domain + HTTPS**
+
+Point your DNS A record (e.g. `portflow.yourdomain.com`) to the server IP,
+wait a couple of minutes for propagation, then:
+
+```bash
+sudo cp /opt/projects/portflow/nginx/portflow.conf /etc/nginx/sites-available/
+sudo sed -i 's/portflow.example.com/portflow.yourdomain.com/g' \
+  /etc/nginx/sites-available/portflow.conf
+sudo ln -s /etc/nginx/sites-available/portflow.conf \
+  /etc/nginx/sites-enabled/portflow.conf
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d portflow.yourdomain.com
+```
+
+Certbot auto-writes the SSL block + 80→443 redirect into your vhost and
+schedules monthly renewal.
+
+**5. Subsequent deployments**
+
+```bash
+ssh deploy@your.ip
+cd /opt/projects/portflow
+./scripts/deploy.sh
+```
+
+`deploy.sh` is idempotent: pulls, installs deps from lockfile, builds, runs
+`pm2 reload --update-env` for zero-downtime restart.
+
+**6. Multi-project on the same VPS**
+
+Each project lives under `/opt/projects/<name>/` with its own `.env.local`,
+its own PM2 ecosystem config (different ports), and its own Nginx vhost.
+Suggested port allocation:
+- Port Flow → 3000
+- Project 2 → 3001
+- Project 3 → 3002
+
+PM2 manages all of them. Nginx routes by hostname (one vhost per
+subdomain). Resource budget on a CX22: ~600MB RAM per Node app idle, plan
+for 4-5 apps max.
+
 ### Vercel (works for the dashboard, NOT the AIS worker)
 
 `vercel.json` is included with sane defaults (CORS for /api/v1,
