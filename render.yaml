@@ -1,0 +1,55 @@
+services:
+  - type: web
+    name: port-flow
+    runtime: node
+    plan: starter
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/status
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOG_FORMAT
+        value: json
+      - key: AISSTREAM_API_KEY
+        sync: false
+      - key: PORT_API_TOKENS
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_STARTER
+        sync: false
+      - key: STRIPE_PRICE_PRO
+        sync: false
+      - key: STRIPE_PRICE_ENTERPRISE
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: NEXT_PUBLIC_SENTRY_DSN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: COPERNICUS_CLIENT_ID
+        sync: false
+      - key: COPERNICUS_CLIENT_SECRET
+        sync: false
+      - key: SPIRE_API_TOKEN
+        sync: false
+      - key: MARINETRAFFIC_API_KEY
+        sync: false
+      - key: ORBCOMM_API_TOKEN
+        sync: false
+      - key: SAR_DEMO
+        value: "0"
+    disk:
+      name: port-flow-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
