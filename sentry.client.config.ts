@@ -8,5 +8,12 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 0.5,
     sendDefaultPii: false,
+    ignoreErrors: [
+      "ResizeObserver loop limit exceeded",
+      "ResizeObserver loop completed with undelivered notifications",
+      /Failed to find Server Action/i,
+      /NetworkError when attempting to fetch/i,
+      /Map container is being reused/i,
+    ],
   });
 }
