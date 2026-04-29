@@ -57,6 +57,12 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       tier,
     },
+    subscription_data: {
+      metadata: {
+        userId: user.id,
+        tier,
+      },
+    },
   });
 
   return Response.json({ id: session.id, url: session.url });

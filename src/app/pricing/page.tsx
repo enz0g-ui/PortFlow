@@ -21,8 +21,8 @@ const TIER_HREF: Partial<Record<TierId, string>> = {
 const HIGHLIGHT: Record<TierId, boolean> = {
   free: false,
   starter: false,
-  professional: true,
-  pro: false,
+  professional: false,
+  pro: true,
   enterprise: false,
 };
 
