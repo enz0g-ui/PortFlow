@@ -123,6 +123,35 @@ export function VesselDetailPanel({
   const name =
     v?.name ?? s?.name ?? (data ? `MMSI ${mmsi}` : t("vessel.detail"));
 
+  const [sanctions, setSanctions] = useState<{
+    flagged: boolean;
+    matches: Array<{
+      source: string;
+      list: string;
+      name: string;
+      reason?: string;
+    }>;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/sanctions?mmsi=${mmsi}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (cancelled || !json) return;
+        if (typeof json.flagged === "boolean") {
+          setSanctions({
+            flagged: json.flagged,
+            matches: json.matches ?? [],
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [mmsi]);
+
   return (
     <>
       <aside
@@ -188,6 +217,30 @@ export function VesselDetailPanel({
             </button>
           </div>
         </header>
+
+        {sanctions?.flagged ? (
+          <div className="rounded border border-rose-700 bg-rose-950/40 p-3 text-xs text-rose-200">
+            <div className="mb-1 flex items-center gap-2">
+              <span className="text-base">⚠</span>
+              <strong>Sanctions hit ({sanctions.matches.length})</strong>
+            </div>
+            <ul className="space-y-1 pl-5 text-[11px]">
+              {sanctions.matches.slice(0, 4).map((m, i) => (
+                <li key={i} className="list-disc">
+                  <span className="font-mono uppercase text-rose-400">
+                    {m.source}
+                  </span>{" "}
+                  · {m.list} — {m.name}
+                  {m.reason ? (
+                    <span className="block text-[10px] text-rose-300/70">
+                      {m.reason}
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         {error ? (
           <div className="rounded border border-rose-700 bg-rose-950/40 p-3 text-xs text-rose-300">

@@ -170,7 +170,18 @@ export default function FleetPage() {
         >
           {tp("nav.back")}
         </Link>
-        <span className="text-xs text-slate-500">{tp("fleet.refresh")}</span>
+        <div className="flex items-center gap-3">
+          {data && data.vessels.length > 0 ? (
+            <a
+              href="/api/user/fleet?format=csv"
+              download
+              className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:border-sky-500 hover:text-sky-300"
+            >
+              ⬇ Export CSV
+            </a>
+          ) : null}
+          <span className="text-xs text-slate-500">{tp("fleet.refresh")}</span>
+        </div>
       </header>
 
       <section className="space-y-2">

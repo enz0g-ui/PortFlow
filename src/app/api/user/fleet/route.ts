@@ -3,6 +3,8 @@ import { db, type VoyageRow } from "@/lib/db";
 import { findPortByPosition, getPort } from "@/lib/ports";
 import { vesselWatchlistMmsis } from "@/lib/watchlist";
 import { computeDemurrageScore } from "@/lib/demurrage";
+import { TIER_LIMITS } from "@/lib/auth/tier";
+import type { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
 
@@ -68,10 +70,17 @@ interface PositionRow {
   state: string | null;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user) {
     return Response.json({ error: "unauthenticated" }, { status: 401 });
+  }
+  const wantsCsv = request.nextUrl.searchParams.get("format") === "csv";
+  if (wantsCsv && !TIER_LIMITS[user.tier].csvExport) {
+    return Response.json(
+      { error: "CSV export requires Starter+ plan", tier: user.tier },
+      { status: 403 },
+    );
   }
   const mmsis = vesselWatchlistMmsis(user.id);
   if (mmsis.length === 0) {
@@ -180,6 +189,63 @@ export async function GET() {
     }
     return row;
   });
+
+  if (wantsCsv) {
+    const headers = [
+      "mmsi",
+      "name",
+      "cargo_class",
+      "current_port",
+      "current_country",
+      "voyage_port",
+      "predicted_eta",
+      "broadcast_eta",
+      "last_arrival_port",
+      "last_arrival_ts",
+      "demurrage_score",
+      "voyage_age_h",
+    ];
+    const escape = (v: unknown): string => {
+      if (v === null || v === undefined) return "";
+      const s = String(v);
+      if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+    const lines = [headers.join(",")];
+    for (const v of fleet) {
+      lines.push(
+        [
+          v.mmsi,
+          escape(v.name),
+          escape(v.cargoClass ?? ""),
+          escape(v.currentPort?.name ?? ""),
+          escape(v.currentPort?.country ?? ""),
+          escape(v.openVoyage?.portName ?? ""),
+          v.openVoyage?.predictedEta
+            ? new Date(v.openVoyage.predictedEta).toISOString()
+            : "",
+          v.openVoyage?.broadcastEta
+            ? new Date(v.openVoyage.broadcastEta).toISOString()
+            : "",
+          escape(v.lastClosedVoyage?.portName ?? ""),
+          v.lastClosedVoyage?.arrivedTs
+            ? new Date(v.lastClosedVoyage.arrivedTs).toISOString()
+            : "",
+          v.demurrageRisk?.score?.toFixed(3) ?? "",
+          v.demurrageRisk?.voyageAgeHours?.toFixed(1) ?? "",
+        ].join(","),
+      );
+    }
+    const csv = lines.join("\n");
+    const stamp = new Date().toISOString().slice(0, 10);
+    return new Response(csv, {
+      status: 200,
+      headers: {
+        "content-type": "text/csv; charset=utf-8",
+        "content-disposition": `attachment; filename="port-flow-fleet-${stamp}.csv"`,
+      },
+    });
+  }
 
   return Response.json({
     count: fleet.length,
