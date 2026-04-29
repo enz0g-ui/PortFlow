@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { recentClosedVoyages } from "@/lib/db";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 export const alt = "Port Flow — ETA precision benchmark";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
