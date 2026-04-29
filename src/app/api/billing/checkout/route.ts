@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
     line_items: [{ price: priceId, quantity: 1 }],
     customer_email: user.email,
     client_reference_id: user.id,
-    success_url: `${origin}/billing?status=success&tier=${tier}`,
-    cancel_url: `${origin}/billing?status=cancelled`,
+    success_url: `${origin}/account?status=success&tier=${tier}`,
+    cancel_url: `${origin}/pricing?status=cancelled`,
     metadata: {
       userId: user.id,
       tier,
