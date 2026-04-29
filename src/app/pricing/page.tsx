@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n/context";
 
-const TIER_IDS = ["free", "starter", "pro", "enterprise"] as const;
+const TIER_IDS = [
+  "free",
+  "starter",
+  "professional",
+  "pro",
+  "enterprise",
+] as const;
 type TierId = (typeof TIER_IDS)[number];
 
 const TIER_HREF: Partial<Record<TierId, string>> = {
@@ -15,7 +21,8 @@ const TIER_HREF: Partial<Record<TierId, string>> = {
 const HIGHLIGHT: Record<TierId, boolean> = {
   free: false,
   starter: false,
-  pro: true,
+  professional: true,
+  pro: false,
   enterprise: false,
 };
 
@@ -56,7 +63,7 @@ export default function PricingPage() {
         <p className="text-sm text-slate-400">{tp("pricing.subtitle")}</p>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
         {TIER_IDS.map((id) => {
           const features = tpList(`pricing.tier.${id}.features`);
           const href = TIER_HREF[id];

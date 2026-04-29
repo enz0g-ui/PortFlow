@@ -1,4 +1,10 @@
-export const TIERS = ["free", "starter", "pro", "enterprise"] as const;
+export const TIERS = [
+  "free",
+  "starter",
+  "professional",
+  "pro",
+  "enterprise",
+] as const;
 export type Tier = (typeof TIERS)[number];
 
 export interface TierLimits {
@@ -35,6 +41,17 @@ export const TIER_LIMITS: Record<Tier, TierLimits> = {
     csvExport: true,
     sarFusion: false,
     sanctionsScreening: false,
+  },
+  professional: {
+    ports: 30,
+    rateLimitPerMinute: 300,
+    historyDays: 60,
+    webhooks: true,
+    apiAccess: true,
+    watchlistMax: 100,
+    csvExport: true,
+    sarFusion: false,
+    sanctionsScreening: true,
   },
   pro: {
     ports: "all",

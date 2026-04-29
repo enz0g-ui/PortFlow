@@ -20,6 +20,7 @@ export const STRIPE_PRICE_BY_TIER: Record<
   string | undefined
 > = {
   starter: process.env.STRIPE_PRICE_STARTER,
+  professional: process.env.STRIPE_PRICE_PROFESSIONAL,
   pro: process.env.STRIPE_PRICE_PRO,
   enterprise: process.env.STRIPE_PRICE_ENTERPRISE,
 };
