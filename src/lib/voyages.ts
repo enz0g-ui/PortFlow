@@ -11,6 +11,7 @@ import { getPort } from "./ports";
 import { correctEta } from "./seasonal";
 import { getStatic, inStartupGrace } from "./store";
 import type { CargoClass, Vessel } from "./types";
+import { fireVesselEvent } from "./alerts";
 
 const NM_PER_DEG_LAT = 60;
 const PREDICTION_INTERVAL_MS = 5 * 60_000;
@@ -126,6 +127,17 @@ export function observeVoyage(opts: ObserveOpts) {
 
   if (open.arrived_ts == null && vessel.state === "moored" && vessel.zone) {
     markVoyageArrived(open.voyage_id, ts, vessel.zone, vessel.draught);
+    const portInfo = getPort(portId);
+    void fireVesselEvent("vessel.arrived", {
+      mmsi: open.mmsi,
+      vesselName: getStatic(open.mmsi)?.name ?? `MMSI ${open.mmsi}`,
+      port: portId,
+      portName: portInfo?.name ?? portId,
+      cargoClass: open.cargo_class ?? null,
+      ts,
+      predictedEta: open.predicted_eta ?? null,
+      broadcastEta: open.broadcast_eta ?? null,
+    });
     return;
   }
 
@@ -136,6 +148,15 @@ export function observeVoyage(opts: ObserveOpts) {
     (distanceToPortNm(portId, vessel.latitude, vessel.longitude) ?? 0) > 8
   ) {
     markVoyageDeparted(open.voyage_id, ts);
+    const portInfo = getPort(portId);
+    void fireVesselEvent("vessel.departed", {
+      mmsi: open.mmsi,
+      vesselName: getStatic(open.mmsi)?.name ?? `MMSI ${open.mmsi}`,
+      port: portId,
+      portName: portInfo?.name ?? portId,
+      cargoClass: open.cargo_class ?? null,
+      ts,
+    });
     return;
   }
 

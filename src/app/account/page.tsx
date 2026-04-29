@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCurrentUser, isClerkEnabled } from "@/lib/auth/session";
 import { TIER_LIMITS } from "@/lib/auth/tier";
+import { AlertsSection } from "./AlertsSection";
 
 export default async function AccountPage() {
   const user = await getCurrentUser();
@@ -88,6 +89,8 @@ export default async function AccountPage() {
           <dd className="text-slate-200">{limits.sanctionsScreening ? "oui" : "—"}</dd>
         </dl>
       </section>
+
+      <AlertsSection />
     </main>
   );
 }
