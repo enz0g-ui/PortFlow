@@ -39,6 +39,9 @@ interface Props {
   loading?: boolean;
   selectedMmsi?: number | null;
   onSelect?: (mmsi: number) => void;
+  bookmarkedMmsis?: ReadonlySet<number>;
+  onToggleBookmark?: (mmsi: number) => void;
+  bookmarksEnabled?: boolean;
 }
 
 export function VoyagesTable({
@@ -46,8 +49,12 @@ export function VoyagesTable({
   loading,
   selectedMmsi,
   onSelect,
+  bookmarkedMmsis,
+  onToggleBookmark,
+  bookmarksEnabled = false,
 }: Props) {
   const { t, locale } = useI18n();
+  const isBookmarked = (mmsi: number) => bookmarkedMmsis?.has(mmsi) ?? false;
   return (
     <div className="flex h-full min-h-[440px] flex-col rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <div className="mb-2 flex items-baseline justify-between text-xs">
@@ -62,6 +69,9 @@ export function VoyagesTable({
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-slate-900 text-slate-500">
             <tr className="text-left">
+              {bookmarksEnabled ? (
+                <th className="py-1 pr-1 font-normal w-6"></th>
+              ) : null}
               <th className="py-1 pr-2 font-normal">{t("table.vessel")}</th>
               <th className="py-1 pr-2 font-normal">{t("table.cargo")}</th>
               <th className="py-1 pr-2 font-normal text-right">
@@ -82,6 +92,9 @@ export function VoyagesTable({
             {loading && voyages.length === 0
               ? Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i} className="border-t border-slate-800">
+                    {bookmarksEnabled ? (
+                      <td className="py-2 pr-1 text-slate-700">—</td>
+                    ) : null}
                     <td className="py-2 pr-2 text-slate-700">—</td>
                     <td className="py-2 pr-2 text-slate-700">—</td>
                     <td className="py-2 pr-2 text-right text-slate-700">—</td>
@@ -101,6 +114,19 @@ export function VoyagesTable({
                 }`}
                 onClick={() => onSelect?.(v.mmsi)}
               >
+                {bookmarksEnabled ? (
+                  <td
+                    className="py-2 pr-1 align-top"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <BookmarkButton
+                      active={isBookmarked(v.mmsi)}
+                      onClick={() => onToggleBookmark?.(v.mmsi)}
+                      addLabel={t("vessel.bookmark.add")}
+                      removeLabel={t("vessel.bookmark.remove")}
+                    />
+                  </td>
+                ) : null}
                 <td className="py-2 pr-2">
                   <div className="font-medium text-slate-200">{v.name}</div>
                   <div className="text-[10px] text-slate-500">
@@ -129,7 +155,7 @@ export function VoyagesTable({
             {!loading && voyages.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={bookmarksEnabled ? 7 : 6}
                   className="py-6 text-center text-xs text-slate-500"
                 >
                   {t("table.empty")}
@@ -140,5 +166,41 @@ export function VoyagesTable({
         </table>
       </div>
     </div>
+  );
+}
+
+function BookmarkButton({
+  active,
+  onClick,
+  addLabel,
+  removeLabel,
+}: {
+  active: boolean;
+  onClick: () => void;
+  addLabel: string;
+  removeLabel: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={active ? removeLabel : addLabel}
+      aria-label={active ? removeLabel : addLabel}
+      className={`flex h-6 w-6 items-center justify-center rounded transition-colors ${
+        active
+          ? "text-sky-400 hover:bg-sky-500/20"
+          : "text-slate-600 hover:text-sky-400 hover:bg-slate-700"
+      }`}
+    >
+      <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="currentColor">
+        {active ? (
+          <path d="M3 2v12.5l5-3 5 3V2H3z" />
+        ) : (
+          <path
+            d="M3.5 2v11.5l4.5-2.7 4.5 2.7V2h-9zm1 1h7v9.2L8 10.5l-3.5 1.7V3z"
+            fillRule="evenodd"
+          />
+        )}
+      </svg>
+    </button>
   );
 }

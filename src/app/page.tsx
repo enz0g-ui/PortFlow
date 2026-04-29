@@ -206,6 +206,11 @@ export default function Page() {
   >(null);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [bookmarksEnabled, setBookmarksEnabled] = useState(false);
+  const [bookmarkedMmsis, setBookmarkedMmsis] = useState<Set<number>>(
+    new Set(),
+  );
+  const [vesselBookmarksEnabled, setVesselBookmarksEnabled] = useState(false);
+  const [fleetOnly, setFleetOnly] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -220,10 +225,60 @@ export default function Page() {
         setBookmarksEnabled(true);
       })
       .catch(() => {});
+    fetch("/api/user/watchlist/vessels", { cache: "no-store" })
+      .then(async (r) => {
+        if (!r.ok) return null;
+        return (await r.json()) as { mmsis: number[] };
+      })
+      .then((data) => {
+        if (cancelled || !data) return;
+        setBookmarkedMmsis(new Set(data.mmsis));
+        setVesselBookmarksEnabled(true);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const toggleVesselBookmark = async (mmsi: number) => {
+    const wasBookmarked = bookmarkedMmsis.has(mmsi);
+    setBookmarkedMmsis((prev) => {
+      const next = new Set(prev);
+      if (wasBookmarked) next.delete(mmsi);
+      else next.add(mmsi);
+      return next;
+    });
+    try {
+      const r = wasBookmarked
+        ? await fetch(`/api/user/watchlist/vessels?mmsi=${mmsi}`, {
+            method: "DELETE",
+          })
+        : await fetch("/api/user/watchlist/vessels", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ mmsi }),
+          });
+      if (!r.ok) {
+        setBookmarkedMmsis((prev) => {
+          const next = new Set(prev);
+          if (wasBookmarked) next.add(mmsi);
+          else next.delete(mmsi);
+          return next;
+        });
+        return;
+      }
+      const data = (await r.json()) as { mmsis: number[] };
+      setBookmarkedMmsis(new Set(data.mmsis));
+    } catch {
+      setBookmarkedMmsis((prev) => {
+        const next = new Set(prev);
+        if (wasBookmarked) next.add(mmsi);
+        else next.delete(mmsi);
+        return next;
+      });
+    }
+  };
 
   const toggleBookmark = async (id: string) => {
     const wasBookmarked = bookmarkedIds.has(id);
@@ -360,15 +415,15 @@ export default function Page() {
     setStateFilter((cur) => (cur === s ? null : s));
 
   const allVessels = vesselsResp?.vessels ?? [];
-  const vessels = useMemo(
-    () =>
-      tankersOnly
-        ? allVessels.filter(
-            (v) => v.cargoClass && TANKER_CARGO.has(v.cargoClass),
-          )
-        : allVessels,
-    [allVessels, tankersOnly],
-  );
+  const vessels = useMemo(() => {
+    let list = allVessels;
+    if (fleetOnly) list = list.filter((v) => bookmarkedMmsis.has(v.mmsi));
+    if (tankersOnly)
+      list = list.filter(
+        (v) => v.cargoClass && TANKER_CARGO.has(v.cargoClass),
+      );
+    return list;
+  }, [allVessels, tankersOnly, fleetOnly, bookmarkedMmsis]);
 
   const filteredVessels = useMemo(
     () => (stateFilter ? vessels.filter((v) => v.state === stateFilter) : []),
@@ -501,9 +556,12 @@ export default function Page() {
       <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setTankersOnly(false)}
+            onClick={() => {
+              setTankersOnly(false);
+              setFleetOnly(false);
+            }}
             className={`rounded px-3 py-1 ${
-              !tankersOnly
+              !tankersOnly && !fleetOnly
                 ? "bg-sky-500/15 text-sky-300"
                 : "text-slate-400 hover:text-slate-200"
             }`}
@@ -511,15 +569,33 @@ export default function Page() {
             {t("filter.all")} ({allVessels.length})
           </button>
           <button
-            onClick={() => setTankersOnly(true)}
+            onClick={() => {
+              setTankersOnly(true);
+              setFleetOnly(false);
+            }}
             className={`rounded px-3 py-1 ${
-              tankersOnly
+              tankersOnly && !fleetOnly
                 ? "bg-sky-500/15 text-sky-300"
                 : "text-slate-400 hover:text-slate-200"
             }`}
           >
             {t("filter.tankers")} ({tankerCount})
           </button>
+          {vesselBookmarksEnabled ? (
+            <button
+              onClick={() => {
+                setFleetOnly(true);
+                setTankersOnly(false);
+              }}
+              className={`rounded px-3 py-1 ${
+                fleetOnly
+                  ? "bg-sky-500/15 text-sky-300"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              ● {t("filter.fleet")} ({bookmarkedMmsis.size})
+            </button>
+          ) : null}
         </div>
         <span className="text-slate-500">{t("filter.subclasses")}</span>
       </div>
@@ -642,6 +718,9 @@ export default function Page() {
             loading={!voyagesResp}
             selectedMmsi={selectedMmsi}
             onSelect={setSelectedMmsi}
+            bookmarkedMmsis={bookmarkedMmsis}
+            onToggleBookmark={toggleVesselBookmark}
+            bookmarksEnabled={vesselBookmarksEnabled}
           />
         </div>
       </section>
