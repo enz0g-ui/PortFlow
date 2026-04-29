@@ -83,6 +83,32 @@ const fr: PageMessages = {
     "Ouvrez un compte Free, ajoutez vos navires en watchlist et suivez leur précision ETA dans tous nos ports.",
   "precision.cta.button": "Voir les tarifs",
   "precision.cta.dashboard": "Ouvrir le dashboard",
+
+  // /fleet
+  "fleet.title": "Ma flotte",
+  "fleet.subtitle":
+    "Vue cross-port de tes navires suivis. Position live, voyage en cours, dernière activité.",
+  "fleet.empty.title": "Aucun navire suivi",
+  "fleet.empty.lead":
+    "Active le bookmark sur un navire dans le dashboard pour le suivre ici.",
+  "fleet.empty.cta": "Ouvrir le dashboard",
+  "fleet.col.vessel": "Navire",
+  "fleet.col.cargo": "Cargo",
+  "fleet.col.currentPort": "Port actuel",
+  "fleet.col.voyage": "Voyage en cours",
+  "fleet.col.eta": "ETA prédite",
+  "fleet.col.last": "Dernière activité",
+  "fleet.col.actions": "",
+  "fleet.state.open": "approche {port}",
+  "fleet.state.atPort": "à {port}",
+  "fleet.state.atSea": "en mer",
+  "fleet.state.unknown": "—",
+  "fleet.last.arrival": "{port} il y a {h}h",
+  "fleet.last.none": "—",
+  "fleet.action.remove": "Retirer",
+  "fleet.action.dashboard": "Voir",
+  "fleet.refresh": "Actualisé toutes les 60 s",
+  "fleet.signIn": "Connecte-toi pour voir ta flotte",
 };
 
 const en: PageMessages = {
@@ -159,6 +185,32 @@ const en: PageMessages = {
     "Open a Free account, add your vessels to a watchlist and monitor ETA precision across every port we cover.",
   "precision.cta.button": "See pricing",
   "precision.cta.dashboard": "Open dashboard",
+
+  // /fleet
+  "fleet.title": "My fleet",
+  "fleet.subtitle":
+    "Cross-port view of your tracked vessels. Live position, active voyage, last activity.",
+  "fleet.empty.title": "No tracked vessels",
+  "fleet.empty.lead":
+    "Bookmark a vessel from the dashboard to follow it here.",
+  "fleet.empty.cta": "Open dashboard",
+  "fleet.col.vessel": "Vessel",
+  "fleet.col.cargo": "Cargo",
+  "fleet.col.currentPort": "Current port",
+  "fleet.col.voyage": "Active voyage",
+  "fleet.col.eta": "Predicted ETA",
+  "fleet.col.last": "Last activity",
+  "fleet.col.actions": "",
+  "fleet.state.open": "approaching {port}",
+  "fleet.state.atPort": "at {port}",
+  "fleet.state.atSea": "at sea",
+  "fleet.state.unknown": "—",
+  "fleet.last.arrival": "{port} {h}h ago",
+  "fleet.last.none": "—",
+  "fleet.action.remove": "Remove",
+  "fleet.action.dashboard": "View",
+  "fleet.refresh": "Refreshed every 60s",
+  "fleet.signIn": "Sign in to see your fleet",
 };
 
 const nl: PageMessages = {
@@ -235,6 +287,32 @@ const nl: PageMessages = {
     "Open een Free-account, voeg je schepen toe aan een watchlist en monitor ETA-precisie in al onze havens.",
   "precision.cta.button": "Bekijk tarieven",
   "precision.cta.dashboard": "Open dashboard",
+
+  // /fleet
+  "fleet.title": "Mijn vloot",
+  "fleet.subtitle":
+    "Multi-haven overzicht van je gevolgde schepen. Live positie, lopende reis, laatste activiteit.",
+  "fleet.empty.title": "Geen gevolgde schepen",
+  "fleet.empty.lead":
+    "Bewaar een schip vanuit het dashboard om het hier te volgen.",
+  "fleet.empty.cta": "Open dashboard",
+  "fleet.col.vessel": "Schip",
+  "fleet.col.cargo": "Lading",
+  "fleet.col.currentPort": "Huidige haven",
+  "fleet.col.voyage": "Actieve reis",
+  "fleet.col.eta": "Voorspelde ETA",
+  "fleet.col.last": "Laatste activiteit",
+  "fleet.col.actions": "",
+  "fleet.state.open": "nadering {port}",
+  "fleet.state.atPort": "in {port}",
+  "fleet.state.atSea": "op zee",
+  "fleet.state.unknown": "—",
+  "fleet.last.arrival": "{port} {h}u geleden",
+  "fleet.last.none": "—",
+  "fleet.action.remove": "Verwijderen",
+  "fleet.action.dashboard": "Bekijk",
+  "fleet.refresh": "Elke 60s vernieuwd",
+  "fleet.signIn": "Log in om je vloot te zien",
 };
 
 const de: PageMessages = {
@@ -311,6 +389,32 @@ const de: PageMessages = {
     "Eröffnen Sie ein Free-Konto, fügen Sie Ihre Schiffe zur Watchlist hinzu und überwachen Sie die ETA-Genauigkeit in allen Häfen.",
   "precision.cta.button": "Preise ansehen",
   "precision.cta.dashboard": "Dashboard öffnen",
+
+  // /fleet
+  "fleet.title": "Meine Flotte",
+  "fleet.subtitle":
+    "Hafenübergreifende Sicht auf Ihre verfolgten Schiffe. Live-Position, aktuelle Reise, letzte Aktivität.",
+  "fleet.empty.title": "Keine verfolgten Schiffe",
+  "fleet.empty.lead":
+    "Markieren Sie ein Schiff im Dashboard, um es hier zu verfolgen.",
+  "fleet.empty.cta": "Dashboard öffnen",
+  "fleet.col.vessel": "Schiff",
+  "fleet.col.cargo": "Ladung",
+  "fleet.col.currentPort": "Aktueller Hafen",
+  "fleet.col.voyage": "Aktive Reise",
+  "fleet.col.eta": "Vorhergesagte ETA",
+  "fleet.col.last": "Letzte Aktivität",
+  "fleet.col.actions": "",
+  "fleet.state.open": "Anlauf {port}",
+  "fleet.state.atPort": "in {port}",
+  "fleet.state.atSea": "auf See",
+  "fleet.state.unknown": "—",
+  "fleet.last.arrival": "{port} vor {h}h",
+  "fleet.last.none": "—",
+  "fleet.action.remove": "Entfernen",
+  "fleet.action.dashboard": "Anzeigen",
+  "fleet.refresh": "Alle 60s aktualisiert",
+  "fleet.signIn": "Anmelden, um Ihre Flotte zu sehen",
 };
 
 const es: PageMessages = {
@@ -387,6 +491,32 @@ const es: PageMessages = {
     "Abre una cuenta Free, añade tus buques a una watchlist y monitoriza la precisión ETA en todos nuestros puertos.",
   "precision.cta.button": "Ver tarifas",
   "precision.cta.dashboard": "Abrir el panel",
+
+  // /fleet
+  "fleet.title": "Mi flota",
+  "fleet.subtitle":
+    "Vista multi-puerto de tus buques seguidos. Posición en vivo, travesía activa, última actividad.",
+  "fleet.empty.title": "Sin buques seguidos",
+  "fleet.empty.lead":
+    "Marca un buque en el panel para seguirlo aquí.",
+  "fleet.empty.cta": "Abrir panel",
+  "fleet.col.vessel": "Buque",
+  "fleet.col.cargo": "Carga",
+  "fleet.col.currentPort": "Puerto actual",
+  "fleet.col.voyage": "Travesía activa",
+  "fleet.col.eta": "ETA predicha",
+  "fleet.col.last": "Última actividad",
+  "fleet.col.actions": "",
+  "fleet.state.open": "aproximación {port}",
+  "fleet.state.atPort": "en {port}",
+  "fleet.state.atSea": "en mar",
+  "fleet.state.unknown": "—",
+  "fleet.last.arrival": "{port} hace {h}h",
+  "fleet.last.none": "—",
+  "fleet.action.remove": "Quitar",
+  "fleet.action.dashboard": "Ver",
+  "fleet.refresh": "Actualizado cada 60s",
+  "fleet.signIn": "Inicia sesión para ver tu flota",
 };
 
 const ar: PageMessages = {
@@ -463,6 +593,32 @@ const ar: PageMessages = {
     "افتح حساباً مجانياً، أضف سفنك إلى قائمة مراقبة وتابع دقة ETA في جميع موانئنا.",
   "precision.cta.button": "عرض الأسعار",
   "precision.cta.dashboard": "فتح اللوحة",
+
+  // /fleet
+  "fleet.title": "أسطولي",
+  "fleet.subtitle":
+    "عرض متعدد الموانئ لسفنك المتابَعة. الموقع المباشر، الرحلة النشطة، آخر نشاط.",
+  "fleet.empty.title": "لا توجد سفن متابَعة",
+  "fleet.empty.lead":
+    "أضف سفينة إلى المفضلة من اللوحة لمتابعتها هنا.",
+  "fleet.empty.cta": "فتح اللوحة",
+  "fleet.col.vessel": "السفينة",
+  "fleet.col.cargo": "الحمولة",
+  "fleet.col.currentPort": "الميناء الحالي",
+  "fleet.col.voyage": "رحلة نشطة",
+  "fleet.col.eta": "ETA المتوقع",
+  "fleet.col.last": "آخر نشاط",
+  "fleet.col.actions": "",
+  "fleet.state.open": "اقتراب من {port}",
+  "fleet.state.atPort": "في {port}",
+  "fleet.state.atSea": "في البحر",
+  "fleet.state.unknown": "—",
+  "fleet.last.arrival": "{port} قبل {h} ساعة",
+  "fleet.last.none": "—",
+  "fleet.action.remove": "إزالة",
+  "fleet.action.dashboard": "عرض",
+  "fleet.refresh": "يُحدَّث كل 60 ث",
+  "fleet.signIn": "سجّل الدخول لرؤية أسطولك",
 };
 
 const zh: PageMessages = {
@@ -539,6 +695,31 @@ const zh: PageMessages = {
     "开通免费账号,将您的船舶加入监视列表,在所有港口监控 ETA 精度。",
   "precision.cta.button": "查看价格",
   "precision.cta.dashboard": "打开仪表板",
+
+  // /fleet
+  "fleet.title": "我的船队",
+  "fleet.subtitle":
+    "跨港口的跟踪船舶视图。实时位置、活跃航次、最近活动。",
+  "fleet.empty.title": "暂无跟踪船舶",
+  "fleet.empty.lead": "在仪表板收藏船舶后,即可在此跟踪。",
+  "fleet.empty.cta": "打开仪表板",
+  "fleet.col.vessel": "船舶",
+  "fleet.col.cargo": "货物",
+  "fleet.col.currentPort": "当前港口",
+  "fleet.col.voyage": "活跃航次",
+  "fleet.col.eta": "预测 ETA",
+  "fleet.col.last": "最近活动",
+  "fleet.col.actions": "",
+  "fleet.state.open": "接近 {port}",
+  "fleet.state.atPort": "在 {port}",
+  "fleet.state.atSea": "海上",
+  "fleet.state.unknown": "—",
+  "fleet.last.arrival": "{port} {h} 小时前",
+  "fleet.last.none": "—",
+  "fleet.action.remove": "移除",
+  "fleet.action.dashboard": "查看",
+  "fleet.refresh": "每 60 秒刷新",
+  "fleet.signIn": "登录以查看您的船队",
 };
 
 const ja: PageMessages = {
@@ -615,6 +796,32 @@ const ja: PageMessages = {
     "Free アカウントを開設し、ウォッチリストに船舶を追加して全港の ETA 精度をモニタリング。",
   "precision.cta.button": "料金を見る",
   "precision.cta.dashboard": "ダッシュボードを開く",
+
+  // /fleet
+  "fleet.title": "マイフリート",
+  "fleet.subtitle":
+    "追跡中の船舶を港横断で表示。ライブ位置、進行中の航海、最終活動。",
+  "fleet.empty.title": "追跡中の船舶なし",
+  "fleet.empty.lead":
+    "ダッシュボードで船舶をブックマークしてここで追跡。",
+  "fleet.empty.cta": "ダッシュボードを開く",
+  "fleet.col.vessel": "船舶",
+  "fleet.col.cargo": "貨物",
+  "fleet.col.currentPort": "現在の港",
+  "fleet.col.voyage": "進行中の航海",
+  "fleet.col.eta": "予測 ETA",
+  "fleet.col.last": "最終活動",
+  "fleet.col.actions": "",
+  "fleet.state.open": "{port} に接近中",
+  "fleet.state.atPort": "{port} に在港",
+  "fleet.state.atSea": "海上",
+  "fleet.state.unknown": "—",
+  "fleet.last.arrival": "{port} {h} 時間前",
+  "fleet.last.none": "—",
+  "fleet.action.remove": "削除",
+  "fleet.action.dashboard": "表示",
+  "fleet.refresh": "60 秒ごとに更新",
+  "fleet.signIn": "ログインしてフリートを表示",
 };
 
 export const PAGE_MESSAGES: Record<Locale, PageMessages> = {

@@ -503,6 +503,14 @@ export default function Page() {
           >
             Sources
           </Link>
+          {vesselBookmarksEnabled ? (
+            <Link
+              href="/fleet"
+              className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-sky-500 hover:text-sky-300"
+            >
+              ● {t("nav.fleet")}
+            </Link>
+          ) : null}
           <Link
             href="/pricing"
             className="rounded border border-sky-700 bg-sky-500/10 px-2 py-1 text-sky-300 hover:border-sky-400 hover:text-sky-200"
