@@ -73,7 +73,7 @@ const fr: PageMessages = {
   "precision.method.b2":
     "Voyage = première observation en approche/mouillage → arrivée à quai (NavStatus moored ou SOG < 0,3 kn dans une zone de quai).",
   "precision.method.b3":
-    "Modèle ETA v1 : distance / SOG recalculé toutes les 5 minutes. Modèles plus avancés (saisonnier, congestion-aware, tide-aware) en roadmap.",
+    "Modèle ETA v2 : distance / SOG corrigé par médiane (port × jour × heure × cargo) avec fallback hiérarchique + pénalité congestion live (anchored count). Recalculé toutes les 5 minutes. Roadmap : modèle tidal + tirant d'eau.",
   "precision.method.b4":
     "Référence : champ ETA broadcast extrait des messages ShipStaticData (saisi par l'équipage).",
   "precision.method.b5":
@@ -175,7 +175,7 @@ const en: PageMessages = {
   "precision.method.b2":
     "Voyage = first observation in approach/anchorage → moored at berth (NavStatus moored or SOG < 0.3 kn in a berth zone).",
   "precision.method.b3":
-    "ETA model v1: distance / SOG recomputed every 5 minutes. Roadmap: seasonal, congestion-aware, tide-aware models.",
+    "ETA model v2: distance / SOG corrected by median (port × day × hour × cargo) with hierarchical fallback + live congestion penalty (anchored count). Recomputed every 5 minutes. Roadmap: tide-aware + draught-aware refinement.",
   "precision.method.b4":
     "Reference: broadcast ETA field extracted from ShipStaticData messages (entered by the crew).",
   "precision.method.b5":

@@ -12,6 +12,7 @@ import { correctEta } from "./seasonal";
 import { getStatic, inStartupGrace } from "./store";
 import type { CargoClass, Vessel } from "./types";
 import { fireVesselEvent } from "./alerts";
+import { predictEtaV2 } from "./eta-v2";
 
 const NM_PER_DEG_LAT = 60;
 const PREDICTION_INTERVAL_MS = 5 * 60_000;
@@ -163,7 +164,7 @@ export function observeVoyage(opts: ObserveOpts) {
   if (open.arrived_ts == null && vessel.state === "underway" && vessel.sog > 1) {
     const last = lastPredictionAt.get(open.voyage_id) ?? 0;
     if (ts - last >= PREDICTION_INTERVAL_MS) {
-      const eta = predictEta(portId, vessel);
+      const eta = predictEta(portId, vessel, open.cargo_class);
       if (eta) {
         setVoyagePrediction(open.voyage_id, eta, ts);
         lastPredictionAt.set(open.voyage_id, ts);
@@ -172,9 +173,22 @@ export function observeVoyage(opts: ObserveOpts) {
   }
 }
 
-function predictEta(portId: string, vessel: Vessel): number | undefined {
+function predictEta(
+  portId: string,
+  vessel: Vessel,
+  cargoClass?: string | null,
+): number | undefined {
   const distance = distanceToPortNm(portId, vessel.latitude, vessel.longitude);
   if (distance == null) return undefined;
+
+  const v2 = predictEtaV2({
+    portId,
+    vessel,
+    cargoClass: cargoClass ?? null,
+    distanceNm: distance,
+  });
+  if (v2) return v2.predictedEta;
+
   if (vessel.sog < 1 || distance < 0.5) return undefined;
   const hoursToArrival = distance / vessel.sog;
   if (hoursToArrival > 72) return undefined;
