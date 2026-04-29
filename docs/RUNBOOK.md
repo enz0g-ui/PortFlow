@@ -85,13 +85,44 @@ bash scripts/remote.sh exec 'npm audit --production --omit=dev 2>&1 | head -40'
 If high/critical: locally `npm audit fix` → commit → deploy.
 
 ### Backup
+**One-shot manual backup** (downloads to local):
 ```bash
-bash scripts/remote.sh exec 'cd /opt/projects/portflow && tar czf /tmp/portflow-$(date +%Y%m%d).tar.gz data/ .env.local'
-bash scripts/remote.sh exec 'ls -lh /tmp/portflow-*.tar.gz | tail -3'
-# Then SCP locally:
-scp -P "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST:/tmp/portflow-*.tar.gz" ~/Backups/portflow/
+bash scripts/remote.sh backup ~/Backups/portflow
 ```
-Recommend cron weekly. Keep 4 weeks rolling locally + monthly off-site.
+
+**Daily automated backup** (recommended for production):
+```bash
+# 1. Install the cron script (one-time setup)
+bash scripts/remote.sh exec 'sudo install -m 755 -o deploy -g deploy /opt/projects/portflow/scripts/backup-cron.sh /usr/local/bin/portflow-backup-cron.sh'
+
+# 2. Add deploy user crontab (one-time)
+bash scripts/remote.sh ssh   # interactive
+crontab -e
+# Add line:
+30 3 * * * /opt/projects/portflow/scripts/backup-cron.sh >> /var/log/portflow-backup.log 2>&1
+
+# 3. Verify after 24h:
+bash scripts/remote.sh exec 'ls -lh /var/backups/portflow/'
+bash scripts/remote.sh exec 'tail -20 /var/log/portflow-backup.log'
+```
+
+Local rotation: 7 daily backups, older auto-deleted.
+
+**Optional offsite ship** (recommended — local disk lost = backup lost):
+- Set `BACKUP_S3_BUCKET=your-bucket` in env (requires `aws` CLI configured)
+- Or `BACKUP_B2_BUCKET=your-bucket` for Backblaze B2 (cheaper)
+
+**Restore procedure:**
+```bash
+# Pull backup locally:
+scp deploy@portflow.uk:/var/backups/portflow/portflow-YYYYMMDD-HHMMSS.tar.gz ./
+
+# On the target server (after PM2 stop):
+sudo systemctl stop port-flow-web   # or pm2 stop
+tar xzf portflow-YYYYMMDD-HHMMSS.tar.gz -C /opt/projects/portflow/
+chmod 600 /opt/projects/portflow/.env.local
+pm2 start ecosystem.config.js --update-env
+```
 
 ### SQLite VACUUM (if DB > 500 MB)
 ```bash
