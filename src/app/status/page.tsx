@@ -49,17 +49,34 @@ function dot(state: "ok" | "warn" | "down" | "idle") {
   );
 }
 
+interface AccuracyResp {
+  rmseHours: number | null;
+  baselineRmseHours: number | null;
+  sampleCount: number;
+}
+
 export default function StatusPage() {
   const [data, setData] = useState<StatusResp | null>(null);
+  const [accuracy, setAccuracy] = useState<AccuracyResp | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        const r = await fetch("/api/status", { cache: "no-store" });
-        if (!r.ok) return;
-        const json = (await r.json()) as StatusResp;
-        if (!cancelled) setData(json);
+        const [statusR, accR] = await Promise.all([
+          fetch("/api/status", { cache: "no-store" }),
+          fetch("/api/voyages/accuracy?port=rotterdam&days=30", {
+            cache: "no-store",
+          }),
+        ]);
+        if (statusR.ok) {
+          const json = (await statusR.json()) as StatusResp;
+          if (!cancelled) setData(json);
+        }
+        if (accR.ok) {
+          const json = (await accR.json()) as AccuracyResp;
+          if (!cancelled) setAccuracy(json);
+        }
       } catch {
         /* ignore */
       }
@@ -71,6 +88,14 @@ export default function StatusPage() {
       clearInterval(id);
     };
   }, []);
+
+  const accuracyDelta =
+    accuracy?.rmseHours != null && accuracy?.baselineRmseHours != null
+      ? ((accuracy.rmseHours - accuracy.baselineRmseHours) /
+          accuracy.baselineRmseHours) *
+        100
+      : null;
+  const accuracyBeats = accuracyDelta !== null && accuracyDelta < 0;
 
   return (
     <main className="mx-auto flex w-full max-w-[900px] flex-1 flex-col gap-6 p-6">
@@ -189,6 +214,43 @@ export default function StatusPage() {
                 ],
               ]}
             />
+            {accuracy && accuracy.sampleCount > 0 ? (
+              <ServiceCard
+                title="Précision ETA — Rotterdam · 30j"
+                state={accuracyBeats ? "ok" : "warn"}
+                rows={[
+                  [
+                    "RMSE Port Flow",
+                    accuracy.rmseHours != null
+                      ? `${accuracy.rmseHours.toFixed(2)} h`
+                      : "—",
+                  ],
+                  [
+                    "RMSE broadcast",
+                    accuracy.baselineRmseHours != null
+                      ? `${accuracy.baselineRmseHours.toFixed(2)} h`
+                      : "—",
+                  ],
+                  [
+                    "Avantage",
+                    accuracyDelta !== null
+                      ? `${accuracyBeats ? "" : "+"}${accuracyDelta.toFixed(1)}%`
+                      : "—",
+                  ],
+                  [
+                    "Voyages clos",
+                    String(accuracy.sampleCount),
+                  ],
+                ]}
+                footer={
+                  accuracyBeats
+                    ? "Plus précis que l'ETA déclarée par les armateurs"
+                    : accuracyDelta !== null
+                      ? "Moins précis — modèle en apprentissage"
+                      : undefined
+                }
+              />
+            ) : null}
           </section>
         </>
       ) : (
