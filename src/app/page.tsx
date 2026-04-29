@@ -13,6 +13,7 @@ import { WeatherWidget } from "./components/WeatherWidget";
 import { VesselDetailPanel } from "./components/VesselDetailPanel";
 import { PortSelector, type PortInfo } from "./components/PortSelector";
 import { LanguageSwitcher } from "./components/LanguageSwitcher";
+import { AuthButtons } from "./components/AuthButtons";
 import { Attributions } from "./components/Attributions";
 import { CARGO_LABELS } from "@/lib/cargo";
 import { useI18n } from "@/lib/i18n/context";
@@ -359,6 +360,7 @@ export default function Page() {
             onSelect={setPortId}
           />
           <LanguageSwitcher />
+          <AuthButtons />
           <Link
             href={`/precision?port=${portId}`}
             className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-sky-500 hover:text-sky-300"
