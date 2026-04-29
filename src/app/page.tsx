@@ -425,6 +425,12 @@ export default function Page() {
     return list;
   }, [allVessels, tankersOnly, fleetOnly, bookmarkedMmsis]);
 
+  const filteredVoyages = useMemo(() => {
+    let list = voyagesResp?.voyages ?? [];
+    if (fleetOnly) list = list.filter((v) => bookmarkedMmsis.has(v.mmsi));
+    return list;
+  }, [voyagesResp, fleetOnly, bookmarkedMmsis]);
+
   const filteredVessels = useMemo(
     () => (stateFilter ? vessels.filter((v) => v.state === stateFilter) : []),
     [vessels, stateFilter],
@@ -722,7 +728,7 @@ export default function Page() {
         </div>
         <div className="h-[440px] sm:h-[560px] lg:h-[680px]">
           <VoyagesTable
-            voyages={voyagesResp?.voyages ?? []}
+            voyages={filteredVoyages}
             loading={!voyagesResp}
             selectedMmsi={selectedMmsi}
             onSelect={setSelectedMmsi}
@@ -823,6 +829,9 @@ export default function Page() {
           mmsi={selectedMmsi}
           port={portId}
           onClose={() => setSelectedMmsi(null)}
+          bookmarked={bookmarkedMmsis.has(selectedMmsi)}
+          onToggleBookmark={toggleVesselBookmark}
+          bookmarksEnabled={vesselBookmarksEnabled}
         />
       ) : null}
     </main>

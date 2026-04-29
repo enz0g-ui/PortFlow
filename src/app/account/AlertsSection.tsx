@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Kind = "slack" | "discord" | "webhook";
+type Kind = "slack" | "discord" | "telegram" | "webhook";
 type EventName = "vessel.arrived" | "vessel.departed" | "vessel.anomaly";
 
 interface Alert {
@@ -204,6 +204,7 @@ export function AlertsSection() {
               className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-slate-100"
             >
               <option value="slack">Slack incoming webhook</option>
+              <option value="telegram">Telegram bot</option>
               <option value="discord">Discord webhook</option>
               <option value="webhook">Generic webhook (JSON)</option>
             </select>
@@ -222,11 +223,29 @@ export function AlertsSection() {
           <input
             type="url"
             required
-            placeholder="https://hooks.slack.com/services/…"
+            placeholder={
+              form.kind === "telegram"
+                ? "https://api.telegram.org/bot<TOKEN>/sendMessage?chat_id=<CHAT_ID>"
+                : form.kind === "slack"
+                  ? "https://hooks.slack.com/services/…"
+                  : form.kind === "discord"
+                    ? "https://discord.com/api/webhooks/…"
+                    : "https://your-server.example/webhook"
+            }
             value={form.targetUrl}
             onChange={(e) => setForm({ ...form, targetUrl: e.target.value })}
-            className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-slate-100 placeholder:text-slate-500"
+            className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 font-mono"
           />
+          {form.kind === "telegram" ? (
+            <p className="text-[10px] text-slate-500">
+              Crée un bot via @BotFather, envoie-lui /start, récupère le chat_id
+              via{" "}
+              <code className="rounded bg-slate-800 px-1">
+                https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates
+              </code>
+              .
+            </p>
+          ) : null}
           <input
             type="text"
             placeholder="label (optional)"

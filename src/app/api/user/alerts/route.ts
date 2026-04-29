@@ -14,7 +14,12 @@ import type { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-const VALID_KINDS = new Set<AlertKind>(["slack", "discord", "webhook"]);
+const VALID_KINDS = new Set<AlertKind>([
+  "slack",
+  "discord",
+  "telegram",
+  "webhook",
+]);
 const VALID_EVENTS = new Set<AlertEvent>([
   "vessel.arrived",
   "vessel.departed",

@@ -239,7 +239,13 @@ export default function MapInner({
               onSelect ? { click: () => onSelect(v.mmsi) } : undefined
             }
           >
-            <Tooltip>
+            <Tooltip
+              permanent={isSelected}
+              direction={isSelected ? "top" : "auto"}
+              offset={isSelected ? [0, -10] : undefined}
+              opacity={isSelected ? 1 : 0.9}
+              className={isSelected ? "selected-vessel-tip" : undefined}
+            >
               <div className="text-xs">
                 <div className="font-semibold">
                   {v.name ?? `MMSI ${v.mmsi}`}
@@ -251,6 +257,9 @@ export default function MapInner({
                   {v.sog.toFixed(1)} kn · cap {Math.round(v.cog)}°
                 </div>
                 {v.destination ? <div>→ {v.destination}</div> : null}
+                {v.zone ? (
+                  <div className="text-slate-400">zone : {v.zone}</div>
+                ) : null}
               </div>
             </Tooltip>
           </CircleMarker>

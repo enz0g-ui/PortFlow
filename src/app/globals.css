@@ -66,3 +66,15 @@ body {
 .scroll-thin::-webkit-scrollbar-thumb:hover {
   background-color: rgba(148, 163, 184, 0.45);
 }
+
+.leaflet-tooltip.selected-vessel-tip {
+  background: rgba(15, 23, 42, 0.95);
+  color: #e0f2fe;
+  border: 1px solid #38bdf8;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+  font-size: 11px;
+  padding: 6px 8px;
+}
+.leaflet-tooltip.selected-vessel-tip::before {
+  border-top-color: #38bdf8;
+}

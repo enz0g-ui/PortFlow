@@ -46,6 +46,9 @@ interface Props {
   mmsi: number;
   port: string;
   onClose: () => void;
+  bookmarked?: boolean;
+  onToggleBookmark?: (mmsi: number) => void;
+  bookmarksEnabled?: boolean;
 }
 
 function fmtTs(ts: number | null | undefined, locale: string): string {
@@ -65,7 +68,14 @@ function fmtEtaDelta(ts: number | null | undefined): string {
   return `${sign}${Math.abs(diff).toFixed(1)} h`;
 }
 
-export function VesselDetailPanel({ mmsi, port, onClose }: Props) {
+export function VesselDetailPanel({
+  mmsi,
+  port,
+  onClose,
+  bookmarked = false,
+  onToggleBookmark,
+  bookmarksEnabled = false,
+}: Props) {
   const { t, locale } = useI18n();
   const [data, setData] = useState<DetailResp | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -134,12 +144,49 @@ export function VesselDetailPanel({ mmsi, port, onClose }: Props) {
                 : ""}
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:border-sky-500 hover:text-sky-300"
-          >
-            ✕ {t("vessel.close")}
-          </button>
+          <div className="flex items-start gap-2">
+            {bookmarksEnabled && onToggleBookmark ? (
+              <button
+                onClick={() => onToggleBookmark(mmsi)}
+                title={
+                  bookmarked
+                    ? t("vessel.bookmark.remove")
+                    : t("vessel.bookmark.add")
+                }
+                aria-label={
+                  bookmarked
+                    ? t("vessel.bookmark.remove")
+                    : t("vessel.bookmark.add")
+                }
+                className={`flex h-7 w-7 items-center justify-center rounded border transition-colors ${
+                  bookmarked
+                    ? "border-sky-700 bg-sky-500/15 text-sky-300"
+                    : "border-slate-700 text-slate-500 hover:text-sky-400 hover:border-sky-700"
+                }`}
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  className="h-4 w-4"
+                  fill="currentColor"
+                >
+                  {bookmarked ? (
+                    <path d="M3 2v12.5l5-3 5 3V2H3z" />
+                  ) : (
+                    <path
+                      d="M3.5 2v11.5l4.5-2.7 4.5 2.7V2h-9zm1 1h7v9.2L8 10.5l-3.5 1.7V3z"
+                      fillRule="evenodd"
+                    />
+                  )}
+                </svg>
+              </button>
+            ) : null}
+            <button
+              onClick={onClose}
+              className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:border-sky-500 hover:text-sky-300"
+            >
+              ✕ {t("vessel.close")}
+            </button>
+          </div>
         </header>
 
         {error ? (

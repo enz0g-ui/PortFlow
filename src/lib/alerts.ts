@@ -2,7 +2,7 @@ import { db } from "./db";
 import { isVesselWatchlisted } from "./watchlist";
 import { TIER_LIMITS, type Tier } from "./auth/tier";
 
-export type AlertKind = "slack" | "discord" | "webhook";
+export type AlertKind = "slack" | "discord" | "telegram" | "webhook";
 export type AlertEvent =
   | "vessel.arrived"
   | "vessel.departed"
@@ -127,12 +127,38 @@ function formatHumanLine(
 
 async function deliver(alert: UserAlert, payload: VesselEventPayload) {
   const text = formatHumanLine(alert.event as AlertEvent, payload);
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+  let url = alert.target_url;
   let body: string;
-  let headers: Record<string, string> = { "content-type": "application/json" };
   if (alert.kind === "slack") {
     body = JSON.stringify({ text });
   } else if (alert.kind === "discord") {
     body = JSON.stringify({ content: text });
+  } else if (alert.kind === "telegram") {
+    try {
+      const u = new URL(alert.target_url);
+      const chatId = u.searchParams.get("chat_id");
+      if (!chatId) {
+        db()
+          .raw.prepare(
+            `UPDATE user_alerts SET last_fired_at = ?, last_status = -2 WHERE id = ?`,
+          )
+          .run(Date.now(), alert.id);
+        return;
+      }
+      u.search = "";
+      url = u.toString();
+      body = JSON.stringify({ chat_id: chatId, text });
+    } catch {
+      db()
+        .raw.prepare(
+          `UPDATE user_alerts SET last_fired_at = ?, last_status = -2 WHERE id = ?`,
+        )
+        .run(Date.now(), alert.id);
+      return;
+    }
   } else {
     body = JSON.stringify({
       event: alert.event,
@@ -141,11 +167,7 @@ async function deliver(alert: UserAlert, payload: VesselEventPayload) {
     });
   }
   try {
-    const r = await fetch(alert.target_url, {
-      method: "POST",
-      headers,
-      body,
-    });
+    const r = await fetch(url, { method: "POST", headers, body });
     db()
       .raw.prepare(
         `UPDATE user_alerts SET last_fired_at = ?, last_status = ? WHERE id = ?`,
