@@ -23,6 +23,8 @@
 #   bash scripts/remote.sh deps-audit          # npm audit production
 #   bash scripts/remote.sh certbot-renew       # renew TLS + reload nginx
 #   bash scripts/remote.sh disk                # disk usage breakdown
+#   bash scripts/remote.sh reset-tier <email> [tier=free]
+#                                              # set Clerk publicMetadata.tier
 #
 # Quick example:
 #   bash scripts/remote.sh exec "find .next -name '*.css' | head"
@@ -221,6 +223,17 @@ case "$cmd" in
   disk)
     log "Disk usage breakdown"
     ssh_run "df -h / && echo --- && du -sh '$DEPLOY_PROJECT_DIR'/.next '$DEPLOY_PROJECT_DIR'/data '$DEPLOY_PROJECT_DIR'/node_modules 2>/dev/null && echo --- && find '$DEPLOY_PROJECT_DIR'/data -type f | xargs ls -lh 2>/dev/null | head"
+    ;;
+
+  reset-tier)
+    if [[ $# -eq 0 ]]; then
+      err "reset-tier requires <email> [tier=free]"
+      exit 1
+    fi
+    email="$1"
+    tier="${2:-free}"
+    log "Setting tier=$tier for $email"
+    ssh_run "cd '$DEPLOY_PROJECT_DIR' && set -a && . ./.env.local && set +a && node scripts/reset-tier.mjs '$email' '$tier'"
     ;;
 
   help|-h|--help|"")

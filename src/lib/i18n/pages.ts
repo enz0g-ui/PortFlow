@@ -37,12 +37,12 @@ const fr: PageMessages = {
   "pricing.tier.professional.features":
     "30 ports stratégiques|API 18 k req/h|Screening sanctions OFAC + UK OFSI|Alertes multi-canal|Demurrage risk score|Export CSV|60 j d'historique|100 navires en watchlist",
   "pricing.tier.professional.cta": "Choisir Professional",
-  "pricing.tier.pro.name": "Pro",
+  "pricing.tier.pro.name": "Pro+",
   "pricing.tier.pro.price": "499 €",
   "pricing.tier.pro.period": "/ mois",
   "pricing.tier.pro.features":
     "Les 51 ports|API 600 req/min|ETA precision détaillée + attribution des retards|Fusion AIS + SAR Sentinel-1|Détection dark fleet|Screening sanctions OFAC + UK OFSI|Émissions CO2 par voyage|90 j d'historique|250 navires en watchlist",
-  "pricing.tier.pro.cta": "Choisir Pro",
+  "pricing.tier.pro.cta": "Choisir Pro+",
   "pricing.tier.enterprise.name": "Enterprise",
   "pricing.tier.enterprise.price": "Sur devis",
   "pricing.tier.enterprise.period": "",
@@ -145,12 +145,12 @@ const en: PageMessages = {
   "pricing.tier.professional.features":
     "30 strategic ports|API 18k req/hour|OFAC + UK OFSI sanctions screening|Multi-channel alerts|Demurrage risk score|CSV export|60-day history|100 vessels in watchlist",
   "pricing.tier.professional.cta": "Choose Professional",
-  "pricing.tier.pro.name": "Pro",
+  "pricing.tier.pro.name": "Pro+",
   "pricing.tier.pro.price": "€499",
   "pricing.tier.pro.period": "/ month",
   "pricing.tier.pro.features":
     "All 51 ports|API 600 req/min|Detailed ETA precision + delay attribution|AIS + SAR Sentinel-1 fusion|Dark fleet detection|OFAC + UK OFSI sanctions screening|CO2 emissions per voyage|90-day history|250 vessels in watchlist",
-  "pricing.tier.pro.cta": "Choose Pro",
+  "pricing.tier.pro.cta": "Choose Pro+",
   "pricing.tier.enterprise.name": "Enterprise",
   "pricing.tier.enterprise.price": "On request",
   "pricing.tier.enterprise.period": "",
@@ -253,12 +253,12 @@ const nl: PageMessages = {
   "pricing.tier.professional.features":
     "30 strategische havens|API 18k req/uur|OFAC + UK OFSI sanctie-screening|Multi-channel meldingen|Demurrage-risk score|CSV-export|60 dagen historie|100 schepen in watchlist",
   "pricing.tier.professional.cta": "Kies Professional",
-  "pricing.tier.pro.name": "Pro",
+  "pricing.tier.pro.name": "Pro+",
   "pricing.tier.pro.price": "€499",
   "pricing.tier.pro.period": "/ maand",
   "pricing.tier.pro.features":
     "Alle 51 havens|API 600 req/min|Gedetailleerde ETA-precisie + vertragingsattributie|AIS + SAR Sentinel-1 fusie|Detectie donkere vloot|Sancties OFAC + UK OFSI screening|CO2-emissies per reis|90 dagen historie|250 schepen in watchlist",
-  "pricing.tier.pro.cta": "Kies Pro",
+  "pricing.tier.pro.cta": "Kies Pro+",
   "pricing.tier.enterprise.name": "Enterprise",
   "pricing.tier.enterprise.price": "Op aanvraag",
   "pricing.tier.enterprise.period": "",
@@ -361,12 +361,12 @@ const de: PageMessages = {
   "pricing.tier.professional.features":
     "30 strategische Häfen|API 18k Req/Stunde|OFAC + UK OFSI Sanktions-Screening|Multi-Channel-Benachrichtigungen|Demurrage-Risk-Score|CSV-Export|60 Tage Historie|100 Schiffe in der Watchlist",
   "pricing.tier.professional.cta": "Professional wählen",
-  "pricing.tier.pro.name": "Pro",
+  "pricing.tier.pro.name": "Pro+",
   "pricing.tier.pro.price": "499 €",
   "pricing.tier.pro.period": "/ Monat",
   "pricing.tier.pro.features":
     "Alle 51 Häfen|API 600 Req/Min|Detaillierte ETA-Genauigkeit + Verzögerungs-Attribution|AIS + SAR Sentinel-1 Fusion|Dark-Fleet-Erkennung|OFAC + UK OFSI Sanktions-Screening|CO2-Emissionen pro Reise|90 Tage Historie|250 Schiffe in der Watchlist",
-  "pricing.tier.pro.cta": "Pro wählen",
+  "pricing.tier.pro.cta": "Pro+ wählen",
   "pricing.tier.enterprise.name": "Enterprise",
   "pricing.tier.enterprise.price": "Auf Anfrage",
   "pricing.tier.enterprise.period": "",
@@ -469,12 +469,12 @@ const es: PageMessages = {
   "pricing.tier.professional.features":
     "30 puertos estratégicos|API 18k req/hora|Screening sanciones OFAC + UK OFSI|Alertas multicanal|Score de riesgo demurrage|Exportación CSV|60 días de historial|100 buques en watchlist",
   "pricing.tier.professional.cta": "Elegir Professional",
-  "pricing.tier.pro.name": "Pro",
+  "pricing.tier.pro.name": "Pro+",
   "pricing.tier.pro.price": "499 €",
   "pricing.tier.pro.period": "/ mes",
   "pricing.tier.pro.features":
     "Los 51 puertos|API 600 req/min|Precisión ETA detallada + atribución de retrasos|Fusión AIS + SAR Sentinel-1|Detección de flota oscura|Screening OFAC + UK OFSI|Emisiones CO2 por travesía|90 días de historial|250 buques en watchlist",
-  "pricing.tier.pro.cta": "Elegir Pro",
+  "pricing.tier.pro.cta": "Elegir Pro+",
   "pricing.tier.enterprise.name": "Enterprise",
   "pricing.tier.enterprise.price": "Bajo presupuesto",
   "pricing.tier.enterprise.period": "",
@@ -577,12 +577,12 @@ const ar: PageMessages = {
   "pricing.tier.professional.features":
     "30 ميناء استراتيجي|API 18 ألف طلب/ساعة|فحص عقوبات OFAC + UK OFSI|تنبيهات متعددة القنوات|درجة مخاطر الديموراج|تصدير CSV|تاريخ 60 يوماً|100 سفينة في قائمة المراقبة",
   "pricing.tier.professional.cta": "اختر Professional",
-  "pricing.tier.pro.name": "Pro",
+  "pricing.tier.pro.name": "Pro+",
   "pricing.tier.pro.price": "499 €",
   "pricing.tier.pro.period": "/ شهر",
   "pricing.tier.pro.features":
     "جميع الموانئ الـ 51|API 600 طلب/دقيقة|دقة ETA تفصيلية + توزيع التأخيرات|دمج AIS + SAR Sentinel-1|كشف الأسطول المظلم|فحص عقوبات OFAC + UK OFSI|انبعاثات CO2 لكل رحلة|تاريخ 90 يوماً|250 سفينة في قائمة المراقبة",
-  "pricing.tier.pro.cta": "اختر Pro",
+  "pricing.tier.pro.cta": "اختر Pro+",
   "pricing.tier.enterprise.name": "Enterprise",
   "pricing.tier.enterprise.price": "حسب الطلب",
   "pricing.tier.enterprise.period": "",
@@ -685,12 +685,12 @@ const zh: PageMessages = {
   "pricing.tier.professional.features":
     "30 个战略港口|API 18k 次/小时|OFAC + UK OFSI 制裁筛查|多渠道警报|滞期费风险评分|CSV 导出|60 天历史|100 艘船监视列表",
   "pricing.tier.professional.cta": "选择 Professional",
-  "pricing.tier.pro.name": "Pro",
+  "pricing.tier.pro.name": "Pro+",
   "pricing.tier.pro.price": "€499",
   "pricing.tier.pro.period": "/ 月",
   "pricing.tier.pro.features":
     "全部 51 个港口|API 600 次/分|详细 ETA 精度 + 延误归因|AIS + SAR Sentinel-1 融合|暗船队检测|OFAC + UK OFSI 制裁筛查|每次航行 CO2 排放|90 天历史|250 艘船监视列表",
-  "pricing.tier.pro.cta": "选择 Pro",
+  "pricing.tier.pro.cta": "选择 Pro+",
   "pricing.tier.enterprise.name": "Enterprise",
   "pricing.tier.enterprise.price": "按需报价",
   "pricing.tier.enterprise.period": "",
@@ -792,12 +792,12 @@ const ja: PageMessages = {
   "pricing.tier.professional.features":
     "30 戦略港|API 18k リクエスト/時|OFAC + UK OFSI 制裁スクリーニング|マルチチャネルアラート|デマレッジリスクスコア|CSV エクスポート|60 日履歴|ウォッチリストに 100 隻",
   "pricing.tier.professional.cta": "Professional を選択",
-  "pricing.tier.pro.name": "Pro",
+  "pricing.tier.pro.name": "Pro+",
   "pricing.tier.pro.price": "€499",
   "pricing.tier.pro.period": "/ 月",
   "pricing.tier.pro.features":
     "全 51 港|API 600 リクエスト/分|詳細 ETA 精度 + 遅延要因分析|AIS + SAR Sentinel-1 融合|ダークフリート検出|OFAC + UK OFSI 制裁スクリーニング|航海ごとの CO2 排出量|90 日履歴|ウォッチリストに 250 隻",
-  "pricing.tier.pro.cta": "Pro を選択",
+  "pricing.tier.pro.cta": "Pro+ を選択",
   "pricing.tier.enterprise.name": "Enterprise",
   "pricing.tier.enterprise.price": "お問い合わせ",
   "pricing.tier.enterprise.period": "",
