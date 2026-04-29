@@ -107,8 +107,8 @@ const T = {
     "label.PORT_API_TOKENS": "Jetons bearer API (PORT_API_TOKENS)",
     "hint.PORT_API_TOKENS":
       "Liste séparée par virgules. Servent à l'accès /api/v1/*",
-    "label.CLERK_PUBLISHABLE_KEY": "Clé publishable Clerk",
-    "hint.CLERK_PUBLISHABLE_KEY":
+    "label.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "Clé publishable Clerk",
+    "hint.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY":
       "https://dashboard.clerk.com → API keys → Publishable key",
     "label.CLERK_SECRET_KEY": "Clé secrète Clerk",
     "hint.CLERK_SECRET_KEY":
@@ -204,8 +204,8 @@ const T = {
     "label.PORT_API_TOKENS": "API bearer tokens (PORT_API_TOKENS)",
     "hint.PORT_API_TOKENS":
       "Comma-separated list of bearer tokens for /api/v1/* access",
-    "label.CLERK_PUBLISHABLE_KEY": "Clerk publishable key",
-    "hint.CLERK_PUBLISHABLE_KEY":
+    "label.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "Clerk publishable key",
+    "hint.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY":
       "https://dashboard.clerk.com → API keys → Publishable key",
     "label.CLERK_SECRET_KEY": "Clerk secret key",
     "hint.CLERK_SECRET_KEY":
@@ -303,8 +303,8 @@ const T = {
     "label.PORT_API_TOKENS": "API bearer-tokens (PORT_API_TOKENS)",
     "hint.PORT_API_TOKENS":
       "Komma-gescheiden lijst voor /api/v1/* toegang",
-    "label.CLERK_PUBLISHABLE_KEY": "Clerk publishable key",
-    "hint.CLERK_PUBLISHABLE_KEY":
+    "label.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "Clerk publishable key",
+    "hint.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY":
       "https://dashboard.clerk.com → API keys",
     "label.CLERK_SECRET_KEY": "Clerk secret key",
     "hint.CLERK_SECRET_KEY": "Alleen server-side, nooit aan client tonen",
@@ -403,8 +403,8 @@ const T = {
     "label.PORT_API_TOKENS": "API Bearer-Tokens (PORT_API_TOKENS)",
     "hint.PORT_API_TOKENS":
       "Kommagetrennte Liste für /api/v1/* Zugriff",
-    "label.CLERK_PUBLISHABLE_KEY": "Clerk Publishable Key",
-    "hint.CLERK_PUBLISHABLE_KEY": "https://dashboard.clerk.com",
+    "label.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "Clerk Publishable Key",
+    "hint.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "https://dashboard.clerk.com",
     "label.CLERK_SECRET_KEY": "Clerk Secret Key",
     "hint.CLERK_SECRET_KEY": "Nur server-seitig, niemals an Client zeigen",
     "label.STRIPE_SECRET_KEY": "Stripe Secret Key",
@@ -501,8 +501,8 @@ const T = {
     "label.PORT_API_TOKENS": "Tokens bearer API (PORT_API_TOKENS)",
     "hint.PORT_API_TOKENS":
       "Lista separada por comas para acceso /api/v1/*",
-    "label.CLERK_PUBLISHABLE_KEY": "Clave publishable Clerk",
-    "hint.CLERK_PUBLISHABLE_KEY":
+    "label.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "Clave publishable Clerk",
+    "hint.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY":
       "https://dashboard.clerk.com → API keys",
     "label.CLERK_SECRET_KEY": "Clave secreta Clerk",
     "hint.CLERK_SECRET_KEY": "Solo lado servidor, nunca exponer al cliente",
@@ -627,7 +627,7 @@ const GROUPS = [
   {
     title: "section.auth",
     keys: [
-      "CLERK_PUBLISHABLE_KEY",
+      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
       "CLERK_SECRET_KEY",
       "NEXT_PUBLIC_CLERK_SIGN_IN_URL",
       "NEXT_PUBLIC_CLERK_SIGN_UP_URL",
@@ -872,9 +872,9 @@ async function main() {
 
   // Auth
   await section("section.auth");
-  env.CLERK_PUBLISHABLE_KEY = await askWithDefault(
-    "CLERK_PUBLISHABLE_KEY",
-    env.CLERK_PUBLISHABLE_KEY,
+  env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = await askWithDefault(
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+    env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
   );
   env.CLERK_SECRET_KEY = await askWithDefault(
     "CLERK_SECRET_KEY",
