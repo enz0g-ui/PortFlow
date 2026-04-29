@@ -32,6 +32,9 @@ interface Props {
   ports: PortInfo[];
   selectedId: string;
   onSelect: (id: string) => void;
+  bookmarkedIds?: ReadonlySet<string>;
+  onToggleBookmark?: (portId: string) => void;
+  bookmarksEnabled?: boolean;
 }
 
 const REGION_ORDER: PortRegion[] = [
@@ -72,15 +75,24 @@ function searchableText(port: PortInfo): string {
   return parts.join(" ").toLowerCase();
 }
 
-export function PortSelector({ ports, selectedId, onSelect }: Props) {
+export function PortSelector({
+  ports,
+  selectedId,
+  onSelect,
+  bookmarkedIds,
+  onToggleBookmark,
+  bookmarksEnabled = false,
+}: Props) {
   const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState<PortRegion | "all">("all");
   const [strategicOnly, setStrategicOnly] = useState(false);
+  const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const selected = ports.find((p) => p.id === selectedId);
+  const isBookmarked = (id: string) => bookmarkedIds?.has(id) ?? false;
 
   useEffect(() => {
     if (!open) return;
@@ -98,12 +110,24 @@ export function PortSelector({ ports, selectedId, onSelect }: Props) {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return ports.filter((p) => {
+      if (bookmarkedOnly && !isBookmarked(p.id)) return false;
       if (strategicOnly && !p.strategic) return false;
       if (region !== "all" && p.region !== region) return false;
       if (q && !searchableText(p).includes(q)) return false;
       return true;
     });
-  }, [ports, query, region, strategicOnly]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ports, query, region, strategicOnly, bookmarkedOnly, bookmarkedIds]);
+
+  const bookmarkedList = useMemo(() => {
+    if (!bookmarkedIds || bookmarkedIds.size === 0) return [];
+    return ports
+      .filter((p) => bookmarkedIds.has(p.id))
+      .sort((a, b) => {
+        if (b.vesselCount !== a.vesselCount) return b.vesselCount - a.vesselCount;
+        return a.name.localeCompare(b.name);
+      });
+  }, [ports, bookmarkedIds]);
 
   const grouped = useMemo(() => {
     const map: Record<PortRegion, PortInfo[]> = {
@@ -195,18 +219,67 @@ export function PortSelector({ ports, selectedId, onSelect }: Props) {
                 );
               })}
             </div>
-            <label className="flex items-center gap-2 text-[11px] text-slate-400">
-              <input
-                type="checkbox"
-                checked={strategicOnly}
-                onChange={(e) => setStrategicOnly(e.target.checked)}
-                className="accent-sky-500"
-              />
-              ★ {t("filter.starredOnly")}
-            </label>
+            <div className="flex flex-wrap gap-3 text-[11px] text-slate-400">
+              <label className="flex items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  checked={strategicOnly}
+                  onChange={(e) => setStrategicOnly(e.target.checked)}
+                  className="accent-sky-500"
+                />
+                ★ {t("filter.starredOnly")}
+              </label>
+              {bookmarksEnabled ? (
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    checked={bookmarkedOnly}
+                    onChange={(e) => setBookmarkedOnly(e.target.checked)}
+                    className="accent-sky-500"
+                  />
+                  <span className="text-sky-400">●</span>{" "}
+                  {t("filter.myPortsOnly")}
+                  {bookmarkedIds && bookmarkedIds.size > 0 ? (
+                    <span className="text-slate-500">
+                      ({bookmarkedIds.size})
+                    </span>
+                  ) : null}
+                </label>
+              ) : null}
+            </div>
           </div>
 
           <div className="scroll-thin max-h-[400px] overflow-y-auto">
+            {bookmarksEnabled &&
+            !bookmarkedOnly &&
+            !query &&
+            region === "all" &&
+            !strategicOnly &&
+            bookmarkedList.length > 0 ? (
+              <div>
+                <div className="sticky top-0 bg-slate-900 px-3 py-1 text-[10px] uppercase tracking-wider text-sky-400">
+                  ● {t("port.section.mine")} · {bookmarkedList.length}
+                </div>
+                {bookmarkedList.map((p) => (
+                  <PortRow
+                    key={`bm-${p.id}`}
+                    port={p}
+                    locale={locale}
+                    selected={p.id === selectedId}
+                    bookmarked
+                    bookmarksEnabled={bookmarksEnabled}
+                    onSelect={(id) => {
+                      onSelect(id);
+                      setOpen(false);
+                    }}
+                    onToggleBookmark={onToggleBookmark}
+                    bookmarkAddLabel={t("port.bookmark.add")}
+                    bookmarkRemoveLabel={t("port.bookmark.remove")}
+                  />
+                ))}
+              </div>
+            ) : null}
+
             {REGION_ORDER.map((r) => {
               const list = grouped[r];
               if (list.length === 0) return null;
@@ -215,55 +288,23 @@ export function PortSelector({ ports, selectedId, onSelect }: Props) {
                   <div className="sticky top-0 bg-slate-900 px-3 py-1 text-[10px] uppercase tracking-wider text-slate-500">
                     {t(`region.${r}`)} · {list.length}
                   </div>
-                  {list.map((p) => {
-                    const l = localized(p, locale);
-                    return (
-                      <button
-                        key={p.id}
-                        onClick={() => {
-                          onSelect(p.id);
-                          setOpen(false);
-                        }}
-                        className={`flex w-full items-start gap-3 px-3 py-2 text-left hover:bg-slate-800 ${
-                          p.id === selectedId ? "bg-sky-500/10" : ""
-                        }`}
-                      >
-                        <span className="text-xl leading-none">{p.flag}</span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-baseline justify-between">
-                            <span className="text-sm font-semibold text-slate-100">
-                              {l.name}
-                              {p.strategic ? (
-                                <span
-                                  className="ml-1 text-amber-400"
-                                  title="Strategic"
-                                >
-                                  ★
-                                </span>
-                              ) : null}
-                              {l.nativeName ? (
-                                <span className="ml-2 text-xs italic text-slate-400">
-                                  {l.nativeName}
-                                </span>
-                              ) : null}
-                            </span>
-                            <span className="text-[10px] text-slate-500">
-                              {l.country}{" "}
-                              <span className="ml-1 text-slate-600">
-                                {LOCALE_FLAGS[p.nativeLocale]}
-                              </span>
-                            </span>
-                          </div>
-                          <div className="mt-0.5 line-clamp-1 text-[11px] text-slate-400">
-                            {l.blurb}
-                          </div>
-                          <div className="mt-1 text-[10px] tabular-nums text-slate-500">
-                            {p.vesselCount} navires
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                  {list.map((p) => (
+                    <PortRow
+                      key={p.id}
+                      port={p}
+                      locale={locale}
+                      selected={p.id === selectedId}
+                      bookmarked={isBookmarked(p.id)}
+                      bookmarksEnabled={bookmarksEnabled}
+                      onSelect={(id) => {
+                        onSelect(id);
+                        setOpen(false);
+                      }}
+                      onToggleBookmark={onToggleBookmark}
+                      bookmarkAddLabel={t("port.bookmark.add")}
+                      bookmarkRemoveLabel={t("port.bookmark.remove")}
+                    />
+                  ))}
                 </div>
               );
             })}
@@ -274,6 +315,99 @@ export function PortSelector({ ports, selectedId, onSelect }: Props) {
             ) : null}
           </div>
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+function PortRow({
+  port,
+  locale,
+  selected,
+  bookmarked,
+  bookmarksEnabled,
+  onSelect,
+  onToggleBookmark,
+  bookmarkAddLabel,
+  bookmarkRemoveLabel,
+}: {
+  port: PortInfo;
+  locale: Locale;
+  selected: boolean;
+  bookmarked: boolean;
+  bookmarksEnabled: boolean;
+  onSelect: (id: string) => void;
+  onToggleBookmark?: (id: string) => void;
+  bookmarkAddLabel: string;
+  bookmarkRemoveLabel: string;
+}) {
+  const l = localized(port, locale);
+  return (
+    <div
+      className={`flex w-full items-start gap-2 hover:bg-slate-800 ${
+        selected ? "bg-sky-500/10" : ""
+      }`}
+    >
+      <button
+        onClick={() => onSelect(port.id)}
+        className="flex flex-1 items-start gap-3 px-3 py-2 text-left"
+      >
+        <span className="text-xl leading-none">{port.flag}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between">
+            <span className="text-sm font-semibold text-slate-100">
+              {l.name}
+              {port.strategic ? (
+                <span className="ml-1 text-amber-400" title="Strategic">
+                  ★
+                </span>
+              ) : null}
+              {l.nativeName ? (
+                <span className="ml-2 text-xs italic text-slate-400">
+                  {l.nativeName}
+                </span>
+              ) : null}
+            </span>
+            <span className="text-[10px] text-slate-500">
+              {l.country}{" "}
+              <span className="ml-1 text-slate-600">
+                {LOCALE_FLAGS[port.nativeLocale]}
+              </span>
+            </span>
+          </div>
+          <div className="mt-0.5 line-clamp-1 text-[11px] text-slate-400">
+            {l.blurb}
+          </div>
+          <div className="mt-1 text-[10px] tabular-nums text-slate-500">
+            {port.vesselCount} navires
+          </div>
+        </div>
+      </button>
+      {bookmarksEnabled && onToggleBookmark ? (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleBookmark(port.id);
+          }}
+          title={bookmarked ? bookmarkRemoveLabel : bookmarkAddLabel}
+          aria-label={bookmarked ? bookmarkRemoveLabel : bookmarkAddLabel}
+          className={`mt-2 mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded transition-colors ${
+            bookmarked
+              ? "text-sky-400 hover:bg-sky-500/20"
+              : "text-slate-600 hover:text-sky-400 hover:bg-slate-700"
+          }`}
+        >
+          <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor">
+            {bookmarked ? (
+              <path d="M3 2v12.5l5-3 5 3V2H3z" />
+            ) : (
+              <path
+                d="M3.5 2v11.5l4.5-2.7 4.5 2.7V2h-9zm1 1h7v9.2L8 10.5l-3.5 1.7V3z"
+                fillRule="evenodd"
+              />
+            )}
+          </svg>
+        </button>
       ) : null}
     </div>
   );

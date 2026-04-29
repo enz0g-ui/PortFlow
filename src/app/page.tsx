@@ -204,6 +204,66 @@ export default function Page() {
   const [stateFilter, setStateFilter] = useState<
     "anchored" | "underway" | "moored" | null
   >(null);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [bookmarksEnabled, setBookmarksEnabled] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/user/watchlist/ports", { cache: "no-store" })
+      .then(async (r) => {
+        if (!r.ok) return null;
+        return (await r.json()) as { portIds: string[] };
+      })
+      .then((data) => {
+        if (cancelled || !data) return;
+        setBookmarkedIds(new Set(data.portIds));
+        setBookmarksEnabled(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggleBookmark = async (id: string) => {
+    const wasBookmarked = bookmarkedIds.has(id);
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev);
+      if (wasBookmarked) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    try {
+      const r = wasBookmarked
+        ? await fetch(
+            `/api/user/watchlist/ports?portId=${encodeURIComponent(id)}`,
+            { method: "DELETE" },
+          )
+        : await fetch("/api/user/watchlist/ports", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ portId: id }),
+          });
+      if (!r.ok) {
+        setBookmarkedIds((prev) => {
+          const next = new Set(prev);
+          if (wasBookmarked) next.add(id);
+          else next.delete(id);
+          return next;
+        });
+        return;
+      }
+      const data = (await r.json()) as { portIds: string[] };
+      setBookmarkedIds(new Set(data.portIds));
+    } catch {
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        if (wasBookmarked) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+    }
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -358,6 +418,9 @@ export default function Page() {
             ports={ports}
             selectedId={portId}
             onSelect={setPortId}
+            bookmarkedIds={bookmarkedIds}
+            onToggleBookmark={toggleBookmark}
+            bookmarksEnabled={bookmarksEnabled}
           />
           <LanguageSwitcher />
           <AuthButtons />

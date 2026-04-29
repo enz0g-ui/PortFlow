@@ -146,6 +146,12 @@ const fr: Messages = {
   "region.chokepoint": "Chokepoints",
   "search.placeholder": "Rechercher un port…",
   "filter.starredOnly": "Stratégiques uniquement",
+  "filter.myPortsOnly": "Mes ports uniquement",
+  "port.bookmark.add": "Ajouter aux favoris",
+  "port.bookmark.remove": "Retirer des favoris",
+  "port.bookmark.signIn": "Connecte-toi pour suivre des ports",
+  "port.bookmark.limit": "Limite de favoris atteinte ({n}). Passe en plan supérieur pour en ajouter.",
+  "port.section.mine": "Mes ports",
 };
 
 const en: Messages = {
@@ -258,6 +264,12 @@ const en: Messages = {
   "region.chokepoint": "Chokepoints",
   "search.placeholder": "Search a port…",
   "filter.starredOnly": "Strategic only",
+  "filter.myPortsOnly": "My ports only",
+  "port.bookmark.add": "Add to favorites",
+  "port.bookmark.remove": "Remove from favorites",
+  "port.bookmark.signIn": "Sign in to bookmark ports",
+  "port.bookmark.limit": "Favorites limit reached ({n}). Upgrade to add more.",
+  "port.section.mine": "My ports",
 };
 
 const nl: Messages = {
@@ -370,6 +382,12 @@ const nl: Messages = {
   "region.chokepoint": "Knelpunten",
   "search.placeholder": "Zoek een haven…",
   "filter.starredOnly": "Alleen strategisch",
+  "filter.myPortsOnly": "Alleen mijn havens",
+  "port.bookmark.add": "Aan favorieten toevoegen",
+  "port.bookmark.remove": "Uit favorieten verwijderen",
+  "port.bookmark.signIn": "Log in om havens te bewaren",
+  "port.bookmark.limit": "Limiet bereikt ({n}). Upgrade om er meer toe te voegen.",
+  "port.section.mine": "Mijn havens",
 };
 
 const de: Messages = {
@@ -482,6 +500,12 @@ const de: Messages = {
   "region.chokepoint": "Engpässe",
   "search.placeholder": "Hafen suchen…",
   "filter.starredOnly": "Nur strategisch",
+  "filter.myPortsOnly": "Nur meine Häfen",
+  "port.bookmark.add": "Zu Favoriten hinzufügen",
+  "port.bookmark.remove": "Aus Favoriten entfernen",
+  "port.bookmark.signIn": "Anmelden, um Häfen zu speichern",
+  "port.bookmark.limit": "Favoritenlimit erreicht ({n}). Upgraden, um weitere hinzuzufügen.",
+  "port.section.mine": "Meine Häfen",
 };
 
 const es: Messages = {
@@ -595,6 +619,12 @@ const es: Messages = {
   "region.chokepoint": "Puntos estratégicos",
   "search.placeholder": "Buscar puerto…",
   "filter.starredOnly": "Solo estratégicos",
+  "filter.myPortsOnly": "Solo mis puertos",
+  "port.bookmark.add": "Añadir a favoritos",
+  "port.bookmark.remove": "Quitar de favoritos",
+  "port.bookmark.signIn": "Inicia sesión para guardar puertos",
+  "port.bookmark.limit": "Límite de favoritos alcanzado ({n}). Mejora tu plan.",
+  "port.section.mine": "Mis puertos",
 };
 
 const ar: Messages = {
@@ -707,6 +737,12 @@ const ar: Messages = {
   "region.chokepoint": "ممرات استراتيجية",
   "search.placeholder": "ابحث عن ميناء…",
   "filter.starredOnly": "استراتيجي فقط",
+  "filter.myPortsOnly": "موانئي فقط",
+  "port.bookmark.add": "أضف إلى المفضلة",
+  "port.bookmark.remove": "إزالة من المفضلة",
+  "port.bookmark.signIn": "سجل الدخول لحفظ الموانئ",
+  "port.bookmark.limit": "تم بلوغ حد المفضلة ({n}). قم بالترقية لإضافة المزيد.",
+  "port.section.mine": "موانئي",
 };
 
 const zh: Messages = {
@@ -816,6 +852,12 @@ const zh: Messages = {
   "region.chokepoint": "战略要冲",
   "search.placeholder": "搜索港口…",
   "filter.starredOnly": "仅战略港口",
+  "filter.myPortsOnly": "仅我的港口",
+  "port.bookmark.add": "加入收藏",
+  "port.bookmark.remove": "从收藏中移除",
+  "port.bookmark.signIn": "登录以收藏港口",
+  "port.bookmark.limit": "收藏已达上限 ({n})。升级以添加更多。",
+  "port.section.mine": "我的港口",
 };
 
 const ja: Messages = {
@@ -927,6 +969,12 @@ const ja: Messages = {
   "region.chokepoint": "戦略的要衝",
   "search.placeholder": "港を検索…",
   "filter.starredOnly": "戦略的のみ",
+  "filter.myPortsOnly": "マイ港のみ",
+  "port.bookmark.add": "お気に入りに追加",
+  "port.bookmark.remove": "お気に入りから削除",
+  "port.bookmark.signIn": "ログインして港をブックマーク",
+  "port.bookmark.limit": "お気に入り上限に達しました ({n})。プランをアップグレード。",
+  "port.section.mine": "マイ港",
 };
 
 export const MESSAGES: Record<Locale, Messages> = {
