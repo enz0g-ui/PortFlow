@@ -27,6 +27,19 @@ interface Resp {
   sources: SourceInfo[];
 }
 
+interface UserKey {
+  sourceId: string;
+  envKeyName: string;
+  masked: string;
+  configuredAt: number;
+}
+
+interface UserIntegrations {
+  keys: UserKey[];
+  canByoKey: boolean;
+  tier: string;
+}
+
 const TIER_LABEL: Record<SourceInfo["tier"], string> = {
   "ais-terrestrial": "AIS terrestre",
   "ais-satellite": "AIS satellite",
@@ -54,6 +67,23 @@ const TARIFF_BADGE: Record<
 
 export default function SourcesPage() {
   const [data, setData] = useState<Resp | null>(null);
+  const [userInt, setUserInt] = useState<UserIntegrations | null>(null);
+  const [userIntUnauth, setUserIntUnauth] = useState(false);
+
+  const loadUserInt = async () => {
+    try {
+      const r = await fetch("/api/user/integrations", { cache: "no-store" });
+      if (r.status === 401) {
+        setUserIntUnauth(true);
+        return;
+      }
+      if (!r.ok) return;
+      setUserInt((await r.json()) as UserIntegrations);
+      setUserIntUnauth(false);
+    } catch {
+      /* ignore */
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -68,12 +98,16 @@ export default function SourcesPage() {
       }
     };
     load();
+    loadUserInt();
     const id = setInterval(load, 30_000);
     return () => {
       cancelled = true;
       clearInterval(id);
     };
   }, []);
+
+  const userKeyByEnv = (envKeyName: string): UserKey | undefined =>
+    userInt?.keys.find((k) => k.envKeyName === envKeyName);
 
   return (
     <main className="mx-auto flex w-full max-w-[1100px] flex-1 flex-col gap-6 p-6">
@@ -164,14 +198,18 @@ export default function SourcesPage() {
             ) : null}
 
             {s.envKeys.length > 0 ? (
-              <div className="mt-2 flex flex-wrap gap-1 text-[10px]">
+              <div className="mt-3 space-y-1.5">
                 {s.envKeys.map((k) => (
-                  <code
+                  <KeyRowEditor
                     key={k}
-                    className="rounded bg-slate-800 px-1.5 py-0.5 text-slate-300"
-                  >
-                    {k}
-                  </code>
+                    sourceId={s.id}
+                    envKeyName={k}
+                    operatorConfigured={s.status.configured}
+                    userKey={userKeyByEnv(k)}
+                    canByoKey={userInt?.canByoKey ?? false}
+                    isAuthenticated={!userIntUnauth}
+                    onChanged={loadUserInt}
+                  />
                 ))}
               </div>
             ) : null}
@@ -227,5 +265,181 @@ export default function SourcesPage() {
         <Attributions compact />
       </footer>
     </main>
+  );
+}
+
+function KeyRowEditor({
+  sourceId,
+  envKeyName,
+  operatorConfigured,
+  userKey,
+  canByoKey,
+  isAuthenticated,
+  onChanged,
+}: {
+  sourceId: string;
+  envKeyName: string;
+  operatorConfigured: boolean;
+  userKey?: UserKey;
+  canByoKey: boolean;
+  isAuthenticated: boolean;
+  onChanged: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!value.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await fetch("/api/user/integrations", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sourceId, envKeyName, value: value.trim() }),
+      });
+      if (!r.ok) {
+        const j = (await r.json().catch(() => ({}))) as { error?: string };
+        setError(j.error ?? `error ${r.status}`);
+        return;
+      }
+      setValue("");
+      setEditing(false);
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await fetch(
+        `/api/user/integrations?sourceId=${encodeURIComponent(sourceId)}&envKeyName=${encodeURIComponent(envKeyName)}`,
+        { method: "DELETE" },
+      );
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const sourceLabel = (
+    <code className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-300">
+      {envKeyName}
+    </code>
+  );
+
+  if (userKey) {
+    return (
+      <div className="flex items-center gap-2 rounded border border-emerald-700/40 bg-emerald-500/5 px-2 py-1.5">
+        {sourceLabel}
+        <span className="font-mono text-[11px] text-emerald-300">
+          {userKey.masked}
+        </span>
+        <span className="text-[10px] text-slate-500">votre clé</span>
+        <button
+          onClick={remove}
+          disabled={busy}
+          className="ml-auto rounded border border-slate-700 px-2 py-0.5 text-[10px] text-slate-400 hover:border-rose-500 hover:text-rose-400 disabled:opacity-50"
+        >
+          ✕
+        </button>
+      </div>
+    );
+  }
+
+  if (operatorConfigured) {
+    return (
+      <div className="flex items-center gap-2 rounded border border-slate-800 px-2 py-1.5">
+        {sourceLabel}
+        <span className="text-[10px] text-slate-500">
+          fournie par l&apos;opérateur
+        </span>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center gap-2 rounded border border-slate-800 px-2 py-1.5">
+        {sourceLabel}
+        <Link
+          href="/sign-in"
+          className="text-[10px] text-sky-400 hover:underline"
+        >
+          Connecte-toi pour ajouter ta clé →
+        </Link>
+      </div>
+    );
+  }
+
+  if (!canByoKey) {
+    return (
+      <div className="flex items-center gap-2 rounded border border-slate-800 px-2 py-1.5">
+        {sourceLabel}
+        <Link
+          href="/pricing"
+          className="text-[10px] text-amber-400 hover:underline"
+        >
+          Plan Pro requis pour utiliser ta propre clé →
+        </Link>
+      </div>
+    );
+  }
+
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-2 rounded border border-slate-800 px-2 py-1.5">
+        {sourceLabel}
+        <button
+          onClick={() => setEditing(true)}
+          className="text-[10px] text-sky-400 hover:underline"
+        >
+          + Coller ma clé
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="flex items-center gap-2 rounded border border-sky-700/40 bg-sky-500/5 px-2 py-1.5"
+    >
+      {sourceLabel}
+      <input
+        type="password"
+        autoFocus
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="Colle ta clé ici"
+        className="min-w-0 flex-1 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100 placeholder:text-slate-600 focus:border-sky-500 focus:outline-none"
+      />
+      <button
+        type="submit"
+        disabled={busy || !value.trim()}
+        className="rounded bg-sky-500 px-2 py-1 text-[10px] font-medium text-white hover:bg-sky-400 disabled:opacity-50"
+      >
+        ✓
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setEditing(false);
+          setValue("");
+          setError(null);
+        }}
+        className="rounded border border-slate-700 px-2 py-1 text-[10px] text-slate-400"
+      >
+        ✕
+      </button>
+      {error ? (
+        <span className="text-[10px] text-rose-400">{error}</span>
+      ) : null}
+    </form>
   );
 }
