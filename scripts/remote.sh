@@ -140,8 +140,8 @@ case "$cmd" in
     ;;
 
   health)
-    log "GET /api/_health"
-    ssh_run "curl -s -o /dev/stdout -w '\\nHTTP %{http_code}\\n' http://localhost:3000/api/_health"
+    log "GET /api/health"
+    ssh_run "curl -s -o /dev/stdout -w '\\nHTTP %{http_code}\\n' http://localhost:3000/api/health"
     ;;
 
   integrations)
@@ -196,8 +196,8 @@ case "$cmd" in
       ssh_run "ss -tlnp 2>/dev/null | grep -E ':(80|443|3000)' || echo none"
       echo "=== disk ==="
       ssh_run "df -h / && du -sh '$DEPLOY_PROJECT_DIR'/.next '$DEPLOY_PROJECT_DIR'/data 2>/dev/null"
-      echo "=== /api/_health ==="
-      ssh_run "curl -s http://localhost:3000/api/_health"
+      echo "=== /api/health ==="
+      ssh_run "curl -s http://localhost:3000/api/health"
       echo "=== nginx ==="
       ssh_run "sudo nginx -t 2>&1 | tail -5"
       echo "=== last 200 PM2 lines ==="

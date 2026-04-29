@@ -9,10 +9,10 @@ and `bash scripts/remote.sh` works.
 
 ```bash
 bash scripts/remote.sh diag                                 # PM2 + build + listener
-bash scripts/remote.sh exec 'curl -s localhost:3000/api/_health | head -c 1000'
+bash scripts/remote.sh exec 'curl -s localhost:3000/api/health | head -c 1000'
 ```
 
-`/api/_health` returns `200` if all subsystems OK, `503` otherwise. JSON includes
+`/api/health` returns `200` if all subsystems OK, `503` otherwise. JSON includes
 db / ais / sanctions / migrations / clerk / stripe state.
 
 ---
@@ -37,7 +37,7 @@ bash scripts/remote.sh exec 'pm2 logs port-flow-web --lines 200 --nostream | gre
 
 ### Stripe webhook stops processing
 ```bash
-bash scripts/remote.sh exec 'curl -s localhost:3000/api/_health | grep stripe'
+bash scripts/remote.sh exec 'curl -s localhost:3000/api/health | grep stripe'
 ```
 - Verify webhook secret in Stripe dashboard matches `STRIPE_WEBHOOK_SECRET` in `.env.local`
 - Check signature errors: `bash scripts/remote.sh logs 200 | grep webhook`
