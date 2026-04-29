@@ -241,8 +241,6 @@ export default function MapInner({
           >
             <Tooltip
               permanent={isSelected}
-              direction={isSelected ? "top" : "auto"}
-              offset={isSelected ? [0, -10] : undefined}
               opacity={isSelected ? 1 : 0.9}
               className={isSelected ? "selected-vessel-tip" : undefined}
             >
