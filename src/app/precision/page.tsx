@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Attributions } from "../components/Attributions";
+import { useI18n } from "@/lib/i18n/context";
 
 interface VoyageSample {
   voyageId: string;
@@ -25,6 +26,19 @@ interface AccuracyResp {
   voyages: VoyageSample[];
 }
 
+interface PortMini {
+  id: string;
+  name: string;
+  flag?: string;
+  country?: string;
+  names?: Record<string, string>;
+  countryNames?: Record<string, string>;
+}
+
+interface PortsResp {
+  ports: PortMini[];
+}
+
 function fmtH(v: number | null | undefined, digits = 2): string {
   if (v === null || v === undefined) return "—";
   return `${v.toFixed(digits)} h`;
@@ -43,8 +57,10 @@ function fmtTs(ts?: number | null): string {
 function PrecisionInner() {
   const searchParams = useSearchParams();
   const portId = searchParams.get("port") ?? "rotterdam";
+  const { tp, locale } = useI18n();
   const [data, setData] = useState<AccuracyResp | null>(null);
   const [days, setDays] = useState(30);
+  const [port, setPort] = useState<PortMini | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,6 +85,26 @@ function PrecisionInner() {
     };
   }, [days, portId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/ports", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json: PortsResp | null) => {
+        if (cancelled || !json) return;
+        const p = json.ports.find((x) => x.id === portId) ?? null;
+        setPort(p);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [portId]);
+
+  const portLabel = port
+    ? (port.names?.[locale] ?? port.name)
+    : portId.charAt(0).toUpperCase() + portId.slice(1);
+  const portCountry = port ? (port.countryNames?.[locale] ?? port.country) : "";
+
   const rmse = data?.rmseHours ?? null;
   const baseline = data?.baselineRmseHours ?? null;
   const delta =
@@ -84,10 +120,10 @@ function PrecisionInner() {
           href="/"
           className="text-xs text-slate-400 hover:text-slate-200"
         >
-          ← retour au dashboard
+          {tp("nav.back")}
         </Link>
         <span className="text-xs text-slate-500">
-          fenêtre :
+          {tp("precision.window")} :
           {[7, 30, 90].map((d) => (
             <button
               key={d}
@@ -106,41 +142,50 @@ function PrecisionInner() {
 
       <section className="space-y-4">
         <h1 className="text-3xl font-bold tracking-tight">
-          ETA precision · {portId}
+          {tp("precision.title")} ·{" "}
+          <span className="text-sky-400">
+            {port?.flag ? `${port.flag} ` : ""}
+            {portLabel}
+          </span>
+          {portCountry ? (
+            <span className="ml-2 text-base font-normal text-slate-500">
+              {portCountry}
+            </span>
+          ) : null}
         </h1>
         <p className="max-w-2xl text-base text-slate-300">
-          Nous prédisons l&apos;heure d&apos;arrivée des navires au Port de
-          Rotterdam à partir de la position AIS, vitesse, et cap, puis
-          comparons à l&apos;heure d&apos;arrivée réelle{" "}
-          <em>et</em> à l&apos;ETA déclarée par les armateurs (champ ETA
-          broadcast AIS). Tout est public, recalculé à chaque voyage clos, et
-          reproductible — voir la méthodologie en bas de page.
+          {tp("precision.lead", { port: portLabel })}
         </p>
       </section>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Stat
-          label="Notre RMSE"
+          label={tp("precision.stat.our")}
           value={fmtH(rmse)}
           tone={beats ? "good" : "warn"}
-          hint={`MAE ${fmtH(data?.maeHours ?? null)} · ${data?.sampleCount ?? 0} voyages`}
+          hint={tp("precision.stat.our.hint", {
+            mae: fmtH(data?.maeHours ?? null),
+            n: data?.sampleCount ?? 0,
+          })}
         />
         <Stat
-          label="RMSE ETA broadcast"
+          label={tp("precision.stat.broadcast")}
           value={fmtH(baseline)}
           tone="default"
-          hint="Référence : ETA déclarée par les armateurs"
+          hint={tp("precision.stat.broadcast.hint")}
         />
         <Stat
-          label={beats ? "Avantage modèle" : "Écart"}
+          label={
+            beats ? tp("precision.stat.advantage") : tp("precision.stat.gap")
+          }
           value={delta !== null ? `${Math.abs(delta).toFixed(1)} %` : "—"}
           tone={beats ? "good" : "warn"}
           hint={
             delta === null
-              ? "Comparaison disponible après quelques voyages"
+              ? tp("precision.stat.delta.notEnough")
               : beats
-                ? "Plus précis que l'ETA broadcast"
-                : "Moins précis que l'ETA broadcast"
+                ? tp("precision.stat.delta.beats")
+                : tp("precision.stat.delta.behind")
           }
         />
       </section>
@@ -148,10 +193,10 @@ function PrecisionInner() {
       <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
         <div className="mb-3 flex items-baseline justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
-            50 derniers voyages clos
+            {tp("precision.table.title")}
           </h2>
           <span className="text-xs text-slate-500">
-            err = predicted − actual
+            {tp("precision.table.errHelp")}
           </span>
         </div>
         {data && data.voyages.length > 0 ? (
@@ -159,14 +204,20 @@ function PrecisionInner() {
             <table className="w-full text-xs">
               <thead className="text-slate-500">
                 <tr className="text-left">
-                  <th className="py-1 pr-3 font-normal">MMSI</th>
-                  <th className="py-1 pr-3 font-normal">Cargo</th>
-                  <th className="py-1 pr-3 font-normal">Arrivée</th>
-                  <th className="py-1 pr-3 font-normal text-right">
-                    Erreur modèle
+                  <th className="py-1 pr-3 font-normal">
+                    {tp("precision.table.col.mmsi")}
+                  </th>
+                  <th className="py-1 pr-3 font-normal">
+                    {tp("precision.table.col.cargo")}
+                  </th>
+                  <th className="py-1 pr-3 font-normal">
+                    {tp("precision.table.col.arrival")}
                   </th>
                   <th className="py-1 pr-3 font-normal text-right">
-                    Erreur broadcast
+                    {tp("precision.table.col.errModel")}
+                  </th>
+                  <th className="py-1 pr-3 font-normal text-right">
+                    {tp("precision.table.col.errBroadcast")}
                   </th>
                 </tr>
               </thead>
@@ -197,38 +248,48 @@ function PrecisionInner() {
           </div>
         ) : (
           <p className="text-sm text-slate-500">
-            Pas encore de voyages clos sur la fenêtre. La table se remplit dès
-            qu&apos;un navire suivi se met à quai.
+            {tp("precision.table.empty")}
           </p>
         )}
       </section>
 
+      <section className="rounded-lg border border-sky-700/40 bg-gradient-to-br from-sky-500/10 to-slate-900/40 p-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-100">
+              {tp("precision.cta.title")}
+            </h2>
+            <p className="mt-1 max-w-xl text-sm text-slate-300">
+              {tp("precision.cta.lead")}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/?port=${portId}`}
+              className="rounded border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:border-sky-500"
+            >
+              {tp("precision.cta.dashboard")}
+            </Link>
+            <Link
+              href="/pricing"
+              className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400"
+            >
+              {tp("precision.cta.button")} →
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-300">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-200">
-          Méthodologie
+          {tp("precision.method.title")}
         </h2>
         <ul className="list-disc space-y-1 pl-5 text-slate-400">
-          <li>
-            Source : flux AIS aisstream.io filtré sur la bbox Rotterdam (incluant
-            les zones de mouillage offshore).
-          </li>
-          <li>
-            Voyage = première observation en approche/mouillage → arrivée à quai
-            (NavStatus moored ou SOG &lt; 0,3 kn dans une zone de quai).
-          </li>
-          <li>
-            Modèle ETA v1 : <code>distance / SOG</code> recalculé toutes les 5
-            minutes. Modèles plus avancés (saisonnier, congestion-aware,
-            tide-aware) en roadmap.
-          </li>
-          <li>
-            Référence : champ ETA broadcast extrait des messages
-            <code> ShipStaticData </code> (saisi par l&apos;équipage).
-          </li>
-          <li>
-            Métriques : RMSE et MAE sur les voyages clos avec ETA prédit et ETA
-            broadcast disponibles.
-          </li>
+          <li>{tp("precision.method.b1")}</li>
+          <li>{tp("precision.method.b2")}</li>
+          <li>{tp("precision.method.b3")}</li>
+          <li>{tp("precision.method.b4")}</li>
+          <li>{tp("precision.method.b5")}</li>
         </ul>
       </section>
 
@@ -244,7 +305,7 @@ export default function PrecisionPage() {
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">
-          Chargement…
+          …
         </div>
       }
     >

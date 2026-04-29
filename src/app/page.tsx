@@ -385,6 +385,12 @@ export default function Page() {
           >
             Sources
           </Link>
+          <Link
+            href="/pricing"
+            className="rounded border border-sky-700 bg-sky-500/10 px-2 py-1 text-sky-300 hover:border-sky-400 hover:text-sky-200"
+          >
+            {t("nav.pricing")}
+          </Link>
           <span
             className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 ${
               tone === "good"
@@ -506,7 +512,7 @@ export default function Page() {
               ✕
             </button>
           </div>
-          <div className="max-h-48 overflow-y-auto">
+          <div className="scroll-thin max-h-48 overflow-y-auto">
             <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3">
               {filteredVessels.slice(0, 60).map((v) => (
                 <li key={v.mmsi}>
@@ -541,7 +547,7 @@ export default function Page() {
         </section>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+      <section className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:items-stretch">
         <div className="lg:col-span-2 h-[440px] sm:h-[560px] lg:h-[680px]">
           {port ? (
             <MapView
@@ -567,12 +573,14 @@ export default function Page() {
             <div className="flex h-full w-full items-center justify-center rounded-lg border border-slate-800 bg-slate-900/40 text-sm text-slate-500" />
           )}
         </div>
-        <VoyagesTable
-          voyages={voyagesResp?.voyages ?? []}
-          loading={!voyagesResp}
-          selectedMmsi={selectedMmsi}
-          onSelect={setSelectedMmsi}
-        />
+        <div className="h-[440px] sm:h-[560px] lg:h-[680px]">
+          <VoyagesTable
+            voyages={voyagesResp?.voyages ?? []}
+            loading={!voyagesResp}
+            selectedMmsi={selectedMmsi}
+            onSelect={setSelectedMmsi}
+          />
+        </div>
       </section>
 
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">

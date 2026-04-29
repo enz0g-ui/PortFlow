@@ -39,10 +39,10 @@ export default async function AccountPage() {
           ← retour
         </Link>
         <Link
-          href="/billing"
+          href="/pricing"
           className="rounded border border-slate-700 px-3 py-1 text-xs hover:border-sky-500"
         >
-          Facturation →
+          Tarifs →
         </Link>
       </header>
 

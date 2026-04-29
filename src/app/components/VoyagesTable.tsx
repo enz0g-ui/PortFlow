@@ -49,7 +49,7 @@ export function VoyagesTable({
 }: Props) {
   const { t, locale } = useI18n();
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+    <div className="flex h-full min-h-[440px] flex-col rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <div className="mb-2 flex items-baseline justify-between text-xs">
         <span className="uppercase tracking-wider text-slate-400">
           {t("section.activeVoyages")}
@@ -58,7 +58,7 @@ export function VoyagesTable({
           {t("voyages.count", { n: voyages.length })}
         </span>
       </div>
-      <div className="max-h-[420px] overflow-auto">
+      <div className="scroll-thin flex-1 overflow-auto">
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-slate-900 text-slate-500">
             <tr className="text-left">

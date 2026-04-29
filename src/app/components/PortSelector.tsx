@@ -206,7 +206,7 @@ export function PortSelector({ ports, selectedId, onSelect }: Props) {
             </label>
           </div>
 
-          <div className="max-h-[400px] overflow-y-auto">
+          <div className="scroll-thin max-h-[400px] overflow-y-auto">
             {REGION_ORDER.map((r) => {
               const list = grouped[r];
               if (list.length === 0) return null;
