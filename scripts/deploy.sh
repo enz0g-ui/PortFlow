@@ -28,8 +28,8 @@ log "Pulling latest from $(git remote get-url origin) …"
 git fetch --tags --prune
 git pull --ff-only
 
-log "Installing dependencies (npm ci)"
-npm ci --omit=dev --no-audit --no-fund || npm ci --no-audit --no-fund
+log "Installing dependencies (npm ci, full incl. devDeps for build tools)"
+npm ci --no-audit --no-fund
 
 log "Building production bundle"
 NODE_ENV=production npm run build
