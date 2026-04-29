@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Kind = "slack" | "discord" | "telegram" | "webhook";
+type Kind = "slack" | "discord" | "telegram" | "email" | "webhook";
 type EventName = "vessel.arrived" | "vessel.departed" | "vessel.anomaly";
 
 interface Alert {
@@ -205,6 +205,7 @@ export function AlertsSection() {
             >
               <option value="slack">Slack incoming webhook</option>
               <option value="telegram">Telegram bot</option>
+              <option value="email">Email</option>
               <option value="discord">Discord webhook</option>
               <option value="webhook">Generic webhook (JSON)</option>
             </select>
@@ -221,7 +222,7 @@ export function AlertsSection() {
             </select>
           </div>
           <input
-            type="url"
+            type={form.kind === "email" ? "email" : "url"}
             required
             placeholder={
               form.kind === "telegram"
@@ -230,7 +231,9 @@ export function AlertsSection() {
                   ? "https://hooks.slack.com/services/…"
                   : form.kind === "discord"
                     ? "https://discord.com/api/webhooks/…"
-                    : "https://your-server.example/webhook"
+                    : form.kind === "email"
+                      ? "you@example.com"
+                      : "https://your-server.example/webhook"
             }
             value={form.targetUrl}
             onChange={(e) => setForm({ ...form, targetUrl: e.target.value })}

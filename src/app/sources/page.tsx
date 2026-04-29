@@ -268,6 +268,100 @@ export default function SourcesPage() {
   );
 }
 
+function UserKeyRow({
+  sourceId,
+  envKeyName,
+  userKey,
+  onChanged,
+  sourceLabel,
+}: {
+  sourceId: string;
+  envKeyName: string;
+  userKey: UserKey;
+  onChanged: () => void;
+  sourceLabel: React.ReactNode;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [testResult, setTestResult] = useState<{
+    ok: boolean;
+    message: string;
+  } | null>(null);
+
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await fetch(
+        `/api/user/integrations?sourceId=${encodeURIComponent(sourceId)}&envKeyName=${encodeURIComponent(envKeyName)}`,
+        { method: "DELETE" },
+      );
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const test = async () => {
+    setBusy(true);
+    setTestResult(null);
+    try {
+      const r = await fetch("/api/user/integrations/test", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sourceId, envKeyName }),
+      });
+      const json = (await r.json().catch(() => ({}))) as {
+        ok?: boolean;
+        message?: string;
+        error?: string;
+      };
+      setTestResult({
+        ok: json.ok ?? false,
+        message: json.message ?? json.error ?? "no response",
+      });
+    } catch (err) {
+      setTestResult({ ok: false, message: (err as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded border border-emerald-700/40 bg-emerald-500/5 px-2 py-1.5">
+      <div className="flex items-center gap-2">
+        {sourceLabel}
+        <span className="font-mono text-[11px] text-emerald-300">
+          {userKey.masked}
+        </span>
+        <span className="text-[10px] text-slate-500">votre clé</span>
+        <button
+          onClick={test}
+          disabled={busy}
+          className="ml-auto rounded border border-slate-700 px-2 py-0.5 text-[10px] text-slate-300 hover:border-sky-500 disabled:opacity-50"
+        >
+          Tester
+        </button>
+        <button
+          onClick={remove}
+          disabled={busy}
+          className="rounded border border-slate-700 px-2 py-0.5 text-[10px] text-slate-400 hover:border-rose-500 hover:text-rose-400 disabled:opacity-50"
+        >
+          ✕
+        </button>
+      </div>
+      {testResult ? (
+        <div
+          className={`mt-1.5 text-[10px] ${
+            testResult.ok ? "text-emerald-300" : "text-rose-300"
+          }`}
+        >
+          {testResult.ok ? "✓ " : "✗ "}
+          {testResult.message}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function KeyRowEditor({
   sourceId,
   envKeyName,
@@ -335,20 +429,13 @@ function KeyRowEditor({
 
   if (userKey) {
     return (
-      <div className="flex items-center gap-2 rounded border border-emerald-700/40 bg-emerald-500/5 px-2 py-1.5">
-        {sourceLabel}
-        <span className="font-mono text-[11px] text-emerald-300">
-          {userKey.masked}
-        </span>
-        <span className="text-[10px] text-slate-500">votre clé</span>
-        <button
-          onClick={remove}
-          disabled={busy}
-          className="ml-auto rounded border border-slate-700 px-2 py-0.5 text-[10px] text-slate-400 hover:border-rose-500 hover:text-rose-400 disabled:opacity-50"
-        >
-          ✕
-        </button>
-      </div>
+      <UserKeyRow
+        sourceId={sourceId}
+        envKeyName={envKeyName}
+        userKey={userKey}
+        onChanged={onChanged}
+        sourceLabel={sourceLabel}
+      />
     );
   }
 

@@ -2,7 +2,12 @@ import { db } from "./db";
 import { isVesselWatchlisted } from "./watchlist";
 import { TIER_LIMITS, type Tier } from "./auth/tier";
 
-export type AlertKind = "slack" | "discord" | "telegram" | "webhook";
+export type AlertKind =
+  | "slack"
+  | "discord"
+  | "telegram"
+  | "email"
+  | "webhook";
 export type AlertEvent =
   | "vessel.arrived"
   | "vessel.departed"
@@ -125,7 +130,75 @@ function formatHumanLine(
   }
 }
 
+function formatEmailHtml(
+  event: AlertEvent,
+  payload: VesselEventPayload,
+): string {
+  const t = new Date(payload.ts).toUTCString();
+  const cargo = payload.cargoClass ? ` (${payload.cargoClass})` : "";
+  const verb =
+    event === "vessel.arrived"
+      ? "arrived at"
+      : event === "vessel.departed"
+        ? "departed"
+        : "anomaly at";
+  return `
+<!doctype html>
+<html><body style="font-family: system-ui, sans-serif; background: #0b0f17; color: #e6edf3; padding: 24px;">
+  <div style="max-width: 540px; margin: 0 auto; background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 20px;">
+    <h2 style="margin: 0 0 8px; color: #38bdf8; font-size: 18px;">Port Flow</h2>
+    <p style="margin: 0 0 16px; font-size: 13px; color: #94a3b8;">${event}</p>
+    <p style="margin: 0 0 4px; font-size: 16px; font-weight: 600;">${payload.vesselName}${cargo}</p>
+    <p style="margin: 0 0 8px; color: #cbd5e1;">${verb} <strong>${payload.portName}</strong></p>
+    <p style="margin: 0 0 16px; font-size: 12px; color: #64748b;">${t} · MMSI ${payload.mmsi}</p>
+    <hr style="border: none; border-top: 1px solid #1f2937; margin: 16px 0;" />
+    <p style="margin: 0; font-size: 11px; color: #64748b;">
+      <a href="https://portflow.uk/fleet" style="color: #38bdf8; text-decoration: none;">Open my fleet →</a>
+    </p>
+  </div>
+</body></html>`.trim();
+}
+
+async function deliverEmail(
+  alert: UserAlert,
+  payload: VesselEventPayload,
+): Promise<number> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return -3;
+  const from = process.env.RESEND_FROM ?? "Port Flow <noreply@portflow.uk>";
+  const html = formatEmailHtml(alert.event as AlertEvent, payload);
+  const subject = `[Port Flow] ${formatHumanLine(alert.event as AlertEvent, payload)}`;
+  try {
+    const r = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [alert.target_url],
+        subject: subject.slice(0, 200),
+        html,
+      }),
+    });
+    return r.status;
+  } catch {
+    return -1;
+  }
+}
+
 async function deliver(alert: UserAlert, payload: VesselEventPayload) {
+  if (alert.kind === "email") {
+    const status = await deliverEmail(alert, payload);
+    db()
+      .raw.prepare(
+        `UPDATE user_alerts SET last_fired_at = ?, last_status = ? WHERE id = ?`,
+      )
+      .run(Date.now(), status, alert.id);
+    return;
+  }
+
   const text = formatHumanLine(alert.event as AlertEvent, payload);
   const headers: Record<string, string> = {
     "content-type": "application/json",

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCurrentUser, isClerkEnabled } from "@/lib/auth/session";
 import { TIER_LIMITS } from "@/lib/auth/tier";
 import { AlertsSection } from "./AlertsSection";
+import { ApiKeysSection } from "./ApiKeysSection";
 
 export default async function AccountPage() {
   const user = await getCurrentUser();
@@ -90,6 +91,7 @@ export default async function AccountPage() {
         </dl>
       </section>
 
+      <ApiKeysSection />
       <AlertsSection />
     </main>
   );

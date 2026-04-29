@@ -18,6 +18,7 @@ const VALID_KINDS = new Set<AlertKind>([
   "slack",
   "discord",
   "telegram",
+  "email",
   "webhook",
 ]);
 const VALID_EVENTS = new Set<AlertEvent>([
@@ -33,6 +34,15 @@ function isHttpsUrl(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+function isEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function validateTarget(kind: AlertKind, target: string): boolean {
+  if (kind === "email") return isEmail(target);
+  return isHttpsUrl(target);
 }
 
 export async function GET() {
@@ -78,11 +88,12 @@ export async function POST(request: NextRequest) {
   if (!VALID_EVENTS.has(event)) {
     return Response.json({ error: "invalid event" }, { status: 400 });
   }
-  if (!body.targetUrl || !isHttpsUrl(body.targetUrl)) {
-    return Response.json(
-      { error: "targetUrl must be a valid https URL" },
-      { status: 400 },
-    );
+  if (!body.targetUrl || !validateTarget(kind, body.targetUrl)) {
+    const detail =
+      kind === "email"
+        ? "targetUrl must be a valid email address"
+        : "targetUrl must be a valid https URL";
+    return Response.json({ error: detail }, { status: 400 });
   }
   if (countAlerts(user.id) >= maxAlerts(user.tier)) {
     return Response.json(
