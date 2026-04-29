@@ -40,6 +40,14 @@ interface FleetVessel {
     arrivedTs: number;
     departedTs?: number | null;
   };
+  demurrageRisk?: {
+    score: number;
+    voyageAgeHours: number;
+    p50Hours: number;
+    p75Hours: number;
+    congestionFactor: number;
+    sampleCount: number;
+  };
 }
 
 interface FleetResp {
@@ -64,6 +72,31 @@ function fmtEta(ts: number | null | undefined, locale: string): string {
 
 function hoursAgo(ts: number): number {
   return Math.max(0, Math.round((Date.now() - ts) / 3_600_000));
+}
+
+function DemurrageBadge({
+  risk,
+}: {
+  risk?: FleetVessel["demurrageRisk"];
+}) {
+  if (!risk || risk.sampleCount < 5) {
+    return <span className="text-slate-600">—</span>;
+  }
+  const pct = Math.round(risk.score * 100);
+  const tone =
+    pct >= 70
+      ? "bg-rose-500/15 text-rose-300 border-rose-700"
+      : pct >= 40
+        ? "bg-amber-500/15 text-amber-300 border-amber-700"
+        : "bg-emerald-500/15 text-emerald-300 border-emerald-800";
+  return (
+    <span
+      title={`age ${risk.voyageAgeHours.toFixed(1)}h · p50 ${risk.p50Hours.toFixed(1)}h · p75 ${risk.p75Hours.toFixed(1)}h · cong x${risk.congestionFactor.toFixed(2)}`}
+      className={`inline-flex rounded border px-2 py-0.5 text-[10px] ${tone}`}
+    >
+      {pct}%
+    </span>
+  );
 }
 
 export default function FleetPage() {
@@ -191,6 +224,9 @@ export default function FleetPage() {
                   <th className="px-3 py-2 font-normal">
                     {tp("fleet.col.last")}
                   </th>
+                  <th className="px-3 py-2 font-normal text-right">
+                    Demurrage
+                  </th>
                   <th className="px-3 py-2 font-normal text-right"></th>
                 </tr>
               </thead>
@@ -246,6 +282,9 @@ export default function FleetPage() {
                       </td>
                       <td className="px-3 py-2.5 text-slate-400">
                         {lastLabel}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums">
+                        <DemurrageBadge risk={v.demurrageRisk} />
                       </td>
                       <td className="px-3 py-2.5 text-right">
                         <div className="flex justify-end gap-2">

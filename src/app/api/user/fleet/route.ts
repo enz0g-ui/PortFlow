@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { db, type VoyageRow } from "@/lib/db";
 import { findPortByPosition, getPort } from "@/lib/ports";
 import { vesselWatchlistMmsis } from "@/lib/watchlist";
+import { computeDemurrageScore } from "@/lib/demurrage";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,14 @@ interface FleetRow {
     arrivedTs: number;
     departedTs?: number | null;
     durationHours?: number | null;
+  };
+  demurrageRisk?: {
+    score: number;
+    voyageAgeHours: number;
+    p50Hours: number;
+    p75Hours: number;
+    congestionFactor: number;
+    sampleCount: number;
   };
 }
 
@@ -149,6 +158,26 @@ export async function GET() {
           }
         : undefined,
     };
+
+    const stillAtPort =
+      lastClosed?.arrived_ts && !lastClosed.departed_ts
+        ? lastClosed
+        : undefined;
+    if (stillAtPort) {
+      const ds = computeDemurrageScore({
+        portId: stillAtPort.port,
+        cargoClass: stillAtPort.cargo_class ?? null,
+        arrivedTs: stillAtPort.arrived_ts!,
+      });
+      row.demurrageRisk = {
+        score: ds.score,
+        voyageAgeHours: ds.voyageAgeHours,
+        p50Hours: ds.p50Hours,
+        p75Hours: ds.p75Hours,
+        congestionFactor: ds.congestionFactor,
+        sampleCount: ds.sampleCount,
+      };
+    }
     return row;
   });
 
