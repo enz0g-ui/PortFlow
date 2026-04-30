@@ -185,6 +185,12 @@ const TANKER_CARGO: ReadonlySet<CargoClass> = new Set([
   "lpg",
 ]);
 
+// Stable references so MapView's FlyTo effect doesn't re-run on every poll.
+const WORLD_CENTER: [number, number] = [20, 0];
+const WORLD_BBOX: [number, number, number, number] = [-60, -170, 70, 170];
+const EMPTY_TRACK: Array<[number, number]> = [];
+const EMPTY_ZONES: never[] = [];
+
 function workerTone(
   status: KpiResponse["worker"] | undefined,
 ): "good" | "warn" | "bad" {
@@ -928,13 +934,13 @@ export default function Page() {
           {worldView ? (
             <MapView
               vessels={worldVessels}
-              center={[20, 0]}
-              bbox={[-60, -170, 70, 170]}
-              zones={[]}
+              center={WORLD_CENTER}
+              bbox={WORLD_BBOX}
+              zones={EMPTY_ZONES}
               portKey="__world__"
               selectedMmsi={selectedMmsi}
               onSelect={setSelectedMmsi}
-              selectedTrack={[]}
+              selectedTrack={EMPTY_TRACK}
               highlightedMmsis={undefined}
               sarDetections={undefined}
             />
