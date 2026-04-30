@@ -356,21 +356,38 @@ function PortRow({
   const l = localized(port, locale);
   return (
     <div
-      className={`flex w-full items-start gap-2 hover:bg-slate-800 ${
-        selected ? "bg-sky-500/10" : ""
-      } ${!accessible ? "opacity-60" : ""}`}
+      className={`flex w-full items-start gap-2 transition-colors ${
+        !accessible
+          ? "bg-slate-950/40 hover:bg-slate-900/60"
+          : selected
+            ? "bg-sky-500/15 ring-1 ring-inset ring-sky-600/40"
+            : "hover:bg-slate-800/60"
+      }`}
     >
       <button
         onClick={() => onSelect(port.id)}
         className="flex flex-1 items-start gap-3 px-3 py-2 text-left"
       >
-        <span className="text-xl leading-none">{port.flag}</span>
+        <span
+          className={`text-xl leading-none transition-all ${
+            !accessible ? "grayscale opacity-40" : ""
+          }`}
+        >
+          {port.flag}
+        </span>
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm font-semibold text-slate-100">
+          <div className="flex items-baseline justify-between gap-2">
+            <span
+              className={`flex items-center gap-1.5 text-sm font-semibold ${
+                accessible ? "text-slate-100" : "text-slate-500"
+              }`}
+            >
               {!accessible ? (
-                <span className="mr-1 text-amber-400" title="Plan supérieur requis">
-                  🔒
+                <span
+                  className="rounded border border-amber-700/50 bg-amber-500/10 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-400"
+                  title="Plan supérieur requis"
+                >
+                  🔒 Upgrade
                 </span>
               ) : null}
               {l.name}
