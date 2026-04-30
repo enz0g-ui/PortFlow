@@ -220,6 +220,80 @@ export default function Page() {
   const [fleetPortMap, setFleetPortMap] = useState<Map<string, number>>(
     new Map(),
   );
+  const [worldView, setWorldView] = useState(false);
+  const [worldVessels, setWorldVessels] = useState<Vessel[]>([]);
+
+  useEffect(() => {
+    if (!worldView) {
+      setWorldVessels([]);
+      return;
+    }
+    let cancelled = false;
+    const load = () => {
+      fetch("/api/user/fleet", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (cancelled || !data) return;
+          const mapped: Vessel[] = (data.vessels ?? [])
+            .filter(
+              (
+                x: {
+                  position?: { lat: number; lon: number; ts: number };
+                },
+              ) => !!x.position,
+            )
+            .map(
+              (x: {
+                mmsi: number;
+                name: string;
+                cargoClass?: string | null;
+                draught?: number | null;
+                position: {
+                  ts: number;
+                  lat: number;
+                  lon: number;
+                  sog: number;
+                  state?: string | null;
+                };
+              }): Vessel => {
+                const cargo = (x.cargoClass ?? null) as CargoClass | null;
+                const vClass: VesselClass =
+                  cargo &&
+                  ["crude", "product", "chemical", "lng", "lpg"].includes(cargo)
+                    ? "tanker"
+                    : cargo &&
+                        ["container", "dry-bulk", "general-cargo", "ro-ro"].includes(
+                          cargo,
+                        )
+                      ? "cargo"
+                      : "other";
+                return {
+                  mmsi: x.mmsi,
+                  name: x.name,
+                  latitude: x.position.lat,
+                  longitude: x.position.lon,
+                  sog: x.position.sog,
+                  cog: 0,
+                  state:
+                    (x.position.state as Vessel["state"]) ?? "underway",
+                  vesselClass: vClass,
+                  cargoClass: cargo ?? undefined,
+                  lastUpdate: x.position.ts,
+                  draught: x.draught ?? undefined,
+                };
+              },
+            );
+          setWorldVessels(mapped);
+        })
+        .catch(() => {});
+    };
+    load();
+    const id = setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [worldView]);
 
   useEffect(() => {
     if (!fleetOnly || bookmarkedMmsis.size === 0) {
@@ -737,6 +811,28 @@ export default function Page() {
               flotte sur {fleetPortMap.size} ports — clic ▶ pour cycler
             </span>
           ) : null}
+          {vesselBookmarksEnabled && bookmarkedMmsis.size > 0 ? (
+            <button
+              onClick={() => setWorldView((v) => !v)}
+              title={
+                worldView
+                  ? "Revenir à la vue port"
+                  : "Voir tous tes navires de flotte sur une carte mondiale"
+              }
+              className={`rounded px-3 py-1 ${
+                worldView
+                  ? "bg-emerald-500/15 text-emerald-300"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              🌍 {worldView ? "Vue monde" : "Vue monde"}
+              {worldView ? (
+                <span className="ml-1 text-[10px] text-emerald-400">
+                  ({worldVessels.length}/{bookmarkedMmsis.size})
+                </span>
+              ) : null}
+            </button>
+          ) : null}
         </div>
         <span className="text-slate-500">{t("filter.subclasses")}</span>
       </div>
@@ -829,7 +925,20 @@ export default function Page() {
 
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:items-stretch">
         <div className="lg:col-span-2 h-[440px] sm:h-[560px] lg:h-[680px]">
-          {port ? (
+          {worldView ? (
+            <MapView
+              vessels={worldVessels}
+              center={[20, 0]}
+              bbox={[-60, -170, 70, 170]}
+              zones={[]}
+              portKey="__world__"
+              selectedMmsi={selectedMmsi}
+              onSelect={setSelectedMmsi}
+              selectedTrack={[]}
+              highlightedMmsis={undefined}
+              sarDetections={undefined}
+            />
+          ) : port ? (
             <MapView
               vessels={vessels}
               center={port.center}
