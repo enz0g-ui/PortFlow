@@ -46,7 +46,7 @@ function fmtEta(ts: number | null | undefined): string {
 
 interface Props {
   selectedMmsi?: number | null;
-  onSelect?: (mmsi: number) => void;
+  onSelect?: (mmsi: number, pos?: { lat: number; lon: number }) => void;
   onSelectPort?: (portId: string) => void;
   onToggleBookmark?: (mmsi: number) => void;
 }
@@ -119,7 +119,14 @@ export function FavoritesPanel({
                   }`}
                 >
                   <button
-                    onClick={() => onSelect?.(v.mmsi)}
+                    onClick={() =>
+                      onSelect?.(
+                        v.mmsi,
+                        v.position
+                          ? { lat: v.position.lat, lon: v.position.lon }
+                          : undefined,
+                      )
+                    }
                     className="min-w-0 flex-1 text-left"
                   >
                     <div className="flex items-baseline justify-between gap-2">

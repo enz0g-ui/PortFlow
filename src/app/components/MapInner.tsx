@@ -51,6 +51,13 @@ interface Props {
   highlightedMmsis?: Set<number>;
   sarDetections?: SarDetection[];
   resetTick?: number;
+  /**
+   * Forced pan target — increments panTick triggers a flyTo on the
+   * supplied lat/lon regardless of the auto-pan policy. Used by the
+   * favorites list to recenter on a vessel that's hard to find on a
+   * crowded world map.
+   */
+  panTo?: { lat: number; lon: number; tick: number };
 }
 
 function FlyTo({
@@ -97,6 +104,21 @@ function PanToSelected({
   return null;
 }
 
+function ForcePanTo({
+  target,
+}: {
+  target?: { lat: number; lon: number; tick: number };
+}) {
+  const map = useMap();
+  useEffect(() => {
+    if (!target) return;
+    const z = Math.max(map.getZoom(), 9);
+    map.flyTo([target.lat, target.lon], z, { duration: 0.7 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, target?.tick]);
+  return null;
+}
+
 function ResizeOnExpand({ expanded }: { expanded?: boolean }) {
   const map = useMap();
   useEffect(() => {
@@ -119,6 +141,7 @@ export default function MapInner({
   highlightedMmsis,
   sarDetections,
   resetTick,
+  panTo,
 }: Props) {
   const selected = vessels.find((v) => v.mmsi === selectedMmsi);
 
@@ -138,6 +161,7 @@ export default function MapInner({
       {portKey !== "__world__" ? (
         <PanToSelected vessel={selected} />
       ) : null}
+      <ForcePanTo target={panTo} />
       {zones.map((z) => (
         <Rectangle
           key={`${portKey}-${z.id}`}

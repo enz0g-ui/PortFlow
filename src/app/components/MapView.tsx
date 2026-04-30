@@ -25,6 +25,7 @@ interface Props {
   selectedTrack?: Array<[number, number]>;
   highlightedMmsis?: Set<number>;
   sarDetections?: SarDetection[];
+  panTo?: { lat: number; lon: number; tick: number };
 }
 
 export function MapView(props: Props) {
@@ -55,7 +56,12 @@ export function MapView(props: Props) {
       <div
         className={`${containerClass} overflow-hidden rounded-lg border border-slate-800 bg-slate-900`}
       >
-        <MapInner {...props} expanded={expanded} resetTick={resetTick} />
+        <MapInner
+          {...props}
+          expanded={expanded}
+          resetTick={resetTick}
+          panTo={props.panTo}
+        />
         <div className="absolute right-3 top-3 z-[1700] flex gap-1.5">
           <button
             onClick={() => setResetTick((t) => t + 1)}

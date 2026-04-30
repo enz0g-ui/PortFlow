@@ -230,6 +230,21 @@ export default function Page() {
   const [worldView, setWorldView] = useState(false);
   const [worldVessels, setWorldVessels] = useState<Vessel[]>([]);
   const [showFavoritesPanel, setShowFavoritesPanel] = useState(false);
+  const [panTo, setPanTo] = useState<{
+    lat: number;
+    lon: number;
+    tick: number;
+  } | null>(null);
+
+  const handleFavoritesSelect = (
+    mmsi: number,
+    pos?: { lat: number; lon: number },
+  ) => {
+    setSelectedMmsi(mmsi);
+    if (pos) {
+      setPanTo({ lat: pos.lat, lon: pos.lon, tick: Date.now() });
+    }
+  };
 
   useEffect(() => {
     if (!worldView) {
@@ -968,6 +983,7 @@ export default function Page() {
               selectedTrack={EMPTY_TRACK}
               highlightedMmsis={undefined}
               sarDetections={undefined}
+              panTo={panTo ?? undefined}
             />
           ) : port ? (
             <MapView
@@ -988,6 +1004,7 @@ export default function Page() {
                 intensity: d.intensity,
                 sizePx: d.size_px,
               }))}
+              panTo={panTo ?? undefined}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center rounded-lg border border-slate-800 bg-slate-900/40 text-sm text-slate-500" />
@@ -997,7 +1014,7 @@ export default function Page() {
           {showFavoritesPanel ? (
             <FavoritesPanel
               selectedMmsi={selectedMmsi}
-              onSelect={setSelectedMmsi}
+              onSelect={handleFavoritesSelect}
               onSelectPort={(id) => {
                 trySelectPort(id);
                 setShowFavoritesPanel(false);
