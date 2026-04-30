@@ -233,8 +233,10 @@ export default function Page() {
         if (cancelled || !data) return;
         const m = new Map<string, number>();
         for (const v of data.vessels ?? []) {
-          const portIdOf =
-            v.currentPort?.id ?? v.openVoyage?.port ?? null;
+          // Only the live position determines presence — not openVoyage.port
+          // (which would include vessels still 50+nm out, not yet in the
+          // port's live bbox = invisible on the dashboard).
+          const portIdOf = v.currentPort?.id ?? null;
           if (!portIdOf) continue;
           m.set(portIdOf, (m.get(portIdOf) ?? 0) + 1);
         }
