@@ -82,11 +82,14 @@ function PanToSelected({
 }) {
   const map = useMap();
   // Only fly to a vessel when the *selection* changes (mmsi), not on every
-  // position update. Lets the user keep their manual zoom while a vessel is
-  // selected and moving.
+  // position update. Center on the vessel, but don't force a city-level zoom
+  // — keep whatever zoom the user is at unless they're absurdly far out
+  // (then ease to a moderate regional zoom).
   useEffect(() => {
     if (!vessel) return;
-    map.flyTo([vessel.latitude, vessel.longitude], Math.max(map.getZoom(), 13), {
+    const currentZoom = map.getZoom();
+    const targetZoom = currentZoom < 6 ? 6 : currentZoom;
+    map.flyTo([vessel.latitude, vessel.longitude], targetZoom, {
       duration: 0.5,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

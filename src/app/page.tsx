@@ -819,7 +819,14 @@ export default function Page() {
           ) : null}
           {vesselBookmarksEnabled && bookmarkedMmsis.size > 0 ? (
             <button
-              onClick={() => setWorldView((v) => !v)}
+              onClick={() => {
+                setWorldView((v) => {
+                  // Clear vessel selection when entering or leaving world
+                  // view so PanToSelected doesn't snap back to a stale pin.
+                  setSelectedMmsi(null);
+                  return !v;
+                });
+              }}
               title={
                 worldView
                   ? "Revenir à la vue port"
