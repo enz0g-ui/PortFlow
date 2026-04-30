@@ -135,7 +135,9 @@ export default function MapInner({
       />
       <FlyTo bbox={bbox} portKey={portKey} resetTick={resetTick} />
       <ResizeOnExpand expanded={expanded} />
-      <PanToSelected vessel={selected} />
+      {portKey !== "__world__" ? (
+        <PanToSelected vessel={selected} />
+      ) : null}
       {zones.map((z) => (
         <Rectangle
           key={`${portKey}-${z.id}`}
