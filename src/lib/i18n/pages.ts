@@ -23,7 +23,7 @@ const fr: PageMessages = {
   "pricing.tier.free.price": "0 €",
   "pricing.tier.free.period": "",
   "pricing.tier.free.features":
-    "3 ports stratégiques|Dashboard live, 7 j d'historique|Pas d'API publique",
+    "3 ports max (à choisir parmi 51)|Dashboard live · ETA · congestion · sanctions|7 j d'historique voyages|Visualisation seule|Pas de watchlist navires · pas d'alertes · pas d'API · pas d'export CSV",
   "pricing.tier.free.cta": "Démarrer",
   "pricing.tier.starter.name": "Starter",
   "pricing.tier.starter.price": "129 €",
@@ -131,7 +131,7 @@ const en: PageMessages = {
   "pricing.tier.free.price": "€0",
   "pricing.tier.free.period": "",
   "pricing.tier.free.features":
-    "3 strategic ports|Live dashboard, 7-day history|No public API",
+    "3 ports max (pick from 51)|Live dashboard · ETA · congestion · sanctions|7-day voyage history|Read-only|No vessel watchlist · no alerts · no API · no CSV export",
   "pricing.tier.free.cta": "Get started",
   "pricing.tier.starter.name": "Starter",
   "pricing.tier.starter.price": "€129",

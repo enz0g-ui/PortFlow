@@ -275,6 +275,11 @@ export default function Page() {
     setPortId(id);
   };
 
+  const [upgradeFeature, setUpgradeFeature] = useState<{
+    title: string;
+    body: string;
+  } | null>(null);
+
   const toggleVesselBookmark = async (mmsi: number) => {
     const wasBookmarked = bookmarkedMmsis.has(mmsi);
     setBookmarkedMmsis((prev) => {
@@ -300,6 +305,22 @@ export default function Page() {
           else next.delete(mmsi);
           return next;
         });
+        if (r.status === 403) {
+          const json = (await r.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          if (json.error?.includes("tier does not allow")) {
+            setUpgradeFeature({
+              title: "🔒 Watchlist navires non disponible en Free",
+              body: "Le suivi de navires spécifiques (favoris) débloque à partir du plan Starter (25 navires) — Professional (100) — Pro+ (250). C'est ce qui te permet de recevoir une alerte quand UN navire précis arrive ou bouge, sans surveiller manuellement le dashboard.",
+            });
+          } else if (json.error?.includes("limit reached")) {
+            setUpgradeFeature({
+              title: "Limite watchlist atteinte",
+              body: `Tu as atteint le maximum de navires en watchlist pour ton plan. Passe en plan supérieur ou supprime un navire existant.`,
+            });
+          }
+        }
         return;
       }
       const data = (await r.json()) as { mmsis: number[] };
@@ -868,6 +889,39 @@ export default function Page() {
           onToggleBookmark={toggleVesselBookmark}
           bookmarksEnabled={vesselBookmarksEnabled}
         />
+      ) : null}
+
+      {upgradeFeature ? (
+        <div
+          className="fixed inset-0 z-[2100] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
+          onClick={() => setUpgradeFeature(null)}
+        >
+          <div
+            className="max-w-md rounded-lg border border-sky-700 bg-slate-900 p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-slate-100">
+              {upgradeFeature.title}
+            </h3>
+            <p className="mt-2 text-sm text-slate-300">
+              {upgradeFeature.body}
+            </p>
+            <div className="mt-4 flex gap-2">
+              <Link
+                href="/pricing"
+                className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400"
+              >
+                Voir les tarifs →
+              </Link>
+              <button
+                onClick={() => setUpgradeFeature(null)}
+                className="rounded border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:border-sky-500"
+              >
+                Plus tard
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {upgradePort ? (

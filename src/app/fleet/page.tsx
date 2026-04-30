@@ -56,6 +56,12 @@ interface FleetResp {
   ts: number;
 }
 
+interface MeResp {
+  authenticated: boolean;
+  tier: string;
+  limits?: { csvExport: boolean };
+}
+
 function fmtEta(ts: number | null | undefined, locale: string): string {
   if (!ts) return "—";
   const d = new Date(ts);
@@ -103,6 +109,7 @@ export default function FleetPage() {
   const { tp, t, locale } = useI18n();
   const [data, setData] = useState<FleetResp | null>(null);
   const [unauth, setUnauth] = useState(false);
+  const [me, setMe] = useState<MeResp | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,6 +125,14 @@ export default function FleetPage() {
         if (!cancelled) {
           setData(json);
           setUnauth(false);
+        }
+      } catch {
+        /* ignore */
+      }
+      try {
+        const r = await fetch("/api/user/me", { cache: "no-store" });
+        if (r.ok && !cancelled) {
+          setMe((await r.json()) as MeResp);
         }
       } catch {
         /* ignore */
@@ -172,13 +187,23 @@ export default function FleetPage() {
         </Link>
         <div className="flex items-center gap-3">
           {data && data.vessels.length > 0 ? (
-            <a
-              href="/api/user/fleet?format=csv"
-              download
-              className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:border-sky-500 hover:text-sky-300"
-            >
-              ⬇ Export CSV
-            </a>
+            me?.limits?.csvExport ? (
+              <a
+                href="/api/user/fleet?format=csv"
+                download
+                className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:border-sky-500 hover:text-sky-300"
+              >
+                ⬇ Export CSV
+              </a>
+            ) : (
+              <Link
+                href="/pricing"
+                className="rounded border border-slate-800 px-2 py-1 text-xs text-slate-500 hover:border-amber-500 hover:text-amber-400"
+                title="Export CSV disponible à partir de Starter"
+              >
+                🔒 Export CSV
+              </Link>
+            )
           ) : null}
           <span className="text-xs text-slate-500">{tp("fleet.refresh")}</span>
         </div>
