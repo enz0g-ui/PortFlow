@@ -46,7 +46,11 @@ function fmtEta(ts: number | null | undefined): string {
 
 interface Props {
   selectedMmsi?: number | null;
-  onSelect?: (mmsi: number, pos?: { lat: number; lon: number }) => void;
+  onSelect?: (
+    mmsi: number,
+    pos?: { lat: number; lon: number },
+    portId?: string,
+  ) => void;
   onSelectPort?: (portId: string) => void;
   onToggleBookmark?: (mmsi: number) => void;
 }
@@ -125,6 +129,7 @@ export function FavoritesPanel({
                         v.position
                           ? { lat: v.position.lat, lon: v.position.lon }
                           : undefined,
+                        v.currentPort?.id,
                       )
                     }
                     className="min-w-0 flex-1 text-left"

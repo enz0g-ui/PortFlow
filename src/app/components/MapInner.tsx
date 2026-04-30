@@ -282,19 +282,35 @@ export default function MapInner({
               opacity={isSelected ? 1 : 0.9}
               className={isSelected ? "selected-vessel-tip" : undefined}
             >
-              <div className="text-xs">
+              <div className="text-xs leading-snug">
                 <div className="font-semibold">
                   {v.name ?? `MMSI ${v.mmsi}`}
                 </div>
-                <div>
+                <div className="text-[10px] text-slate-400">
+                  MMSI {v.mmsi}
+                  {v.callsign ? ` · ${v.callsign}` : ""}
+                </div>
+                <div className="mt-1">
                   {v.cargoClass ?? v.vesselClass} · {v.state}
                 </div>
                 <div>
                   {v.sog.toFixed(1)} kn · cap {Math.round(v.cog)}°
                 </div>
+                {v.lengthM || v.draught ? (
+                  <div className="text-[10px] text-slate-400">
+                    {v.lengthM ? `L ${Math.round(v.lengthM)} m` : ""}
+                    {v.lengthM && v.draught ? " · " : ""}
+                    {v.draught ? `tirant d'eau ${v.draught.toFixed(1)} m` : ""}
+                  </div>
+                ) : null}
                 {v.destination ? <div>→ {v.destination}</div> : null}
                 {v.zone ? (
                   <div className="text-slate-400">zone : {v.zone}</div>
+                ) : null}
+                {v.lastUpdate ? (
+                  <div className="text-[10px] text-slate-500">
+                    màj {Math.max(0, Math.round((Date.now() - v.lastUpdate) / 1000))}s
+                  </div>
                 ) : null}
               </div>
             </Tooltip>

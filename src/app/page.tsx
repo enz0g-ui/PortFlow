@@ -239,8 +239,17 @@ export default function Page() {
   const handleFavoritesSelect = (
     mmsi: number,
     pos?: { lat: number; lon: number },
+    vesselPortId?: string,
   ) => {
     setSelectedMmsi(mmsi);
+    if (
+      vesselPortId &&
+      vesselPortId !== portId &&
+      canAccessPort(vesselPortId) &&
+      !worldView
+    ) {
+      setPortId(vesselPortId);
+    }
     if (pos) {
       setPanTo({ lat: pos.lat, lon: pos.lon, tick: Date.now() });
     }
