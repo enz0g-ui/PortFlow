@@ -1,5 +1,7 @@
 import { getStripe, tierFromPriceId } from "@/lib/billing/stripe";
 import { db } from "@/lib/db";
+import { autoFillToTierLimit } from "@/lib/port-watchlist";
+import type { Tier } from "@/lib/auth/tier";
 import type Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
@@ -77,6 +79,16 @@ export async function POST(request: Request) {
           (s.customer as string) ?? undefined,
           (s.subscription as string) ?? undefined,
         );
+        try {
+          const added = autoFillToTierLimit(userId, tier as Tier);
+          if (added > 0) {
+            console.log(
+              `[stripe webhook] auto-filled ${added} ports for ${userId} → ${tier}`,
+            );
+          }
+        } catch (err) {
+          console.error("[stripe webhook] autofill failed", err);
+        }
       }
       break;
     }
@@ -92,6 +104,16 @@ export async function POST(request: Request) {
         const finalTier =
           event.type === "customer.subscription.deleted" ? "free" : (tier ?? "free");
         await syncUserTier(userId, finalTier, customerId, sub.id);
+        try {
+          const added = autoFillToTierLimit(userId, finalTier as Tier);
+          if (added > 0) {
+            console.log(
+              `[stripe webhook] auto-filled ${added} ports for ${userId} → ${finalTier}`,
+            );
+          }
+        } catch (err) {
+          console.error("[stripe webhook] autofill failed", err);
+        }
       }
       break;
     }

@@ -6,23 +6,27 @@ import { listPortWatchlist } from "../port-watchlist";
  * data feeds (vessels, kpis, voyages, anomalies, etc.).
  *
  * Model:
- * - **Free** is strict: dashboard access is gated by the user's 3-port
- *   watchlist. They MUST pick which 3 ports they care about (forces /welcome
- *   engagement and demonstrates the limit). The watchlist IS the access list.
- * - **Paid tiers** (starter/professional/pro/enterprise) get unrestricted
- *   dashboard access to all 51 ports. The TIER_LIMITS.ports number for paid
- *   tiers is the maximum watchlist size (favorites for alerts / CSV / personal
- *   layers), not a dashboard view restriction. The pitch on /pricing is
- *   "your alerts/CSV scope is N ports", not "you can only browse N ports".
- * - Dev user (Clerk disabled): treated as enterprise upstream by
- *   getCurrentUser, so this function never blocks.
+ * - **Tier with numeric `ports` cap** (free 3, starter 15, professional 30):
+ *   dashboard access = the user's watchlist, capped to the tier limit.
+ *   Most recent N picks survive a downgrade (older lose access).
+ * - **Tier with `ports: "all"`** (pro+ / enterprise): unrestricted, "all".
+ *
+ * Auto-fill on tier upgrade (in webhook) ensures the watchlist is pre-loaded
+ * with strategic ports up to the tier's limit, so a fresh paid signup
+ * doesn't see an empty dashboard.
+ *
+ * Dev user (Clerk disabled): treated as enterprise upstream, never blocks.
  */
 export function userAccessiblePortIds(
   userId: string,
   tier: Tier,
 ): "all" | Set<string> {
-  if (tier !== "free") return "all";
-  return new Set(listPortWatchlist(userId));
+  const limit = TIER_LIMITS[tier].ports;
+  if (limit === "all") return "all";
+  // listPortWatchlist returns ORDER BY created_at DESC — keeps the most
+  // recent picks accessible if a downgrade leaves leftover entries.
+  const watchlist = listPortWatchlist(userId);
+  return new Set(watchlist.slice(0, limit));
 }
 
 export function userCanAccessPort(

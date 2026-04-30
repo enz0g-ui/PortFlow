@@ -27,6 +27,13 @@ const email = process.argv[2];
 const tier = process.argv[3] ?? "free";
 
 const VALID_TIERS = ["free", "starter", "professional", "pro", "enterprise"];
+const TIER_PORT_LIMIT = {
+  free: 3,
+  starter: 15,
+  professional: 30,
+  pro: 51,
+  enterprise: 51,
+};
 
 if (!email) {
   console.error("Usage: node scripts/reset-tier.mjs <email> [tier=free]");
@@ -78,8 +85,56 @@ for (const u of users) {
       Date.now(),
       Date.now(),
     );
-    db.close();
     console.log(`db: users row updated for ${u.id}`);
+
+    // Auto-fill the port watchlist up to the tier limit so the dashboard
+    // is usable immediately. Strategic ports first.
+    const limit = TIER_PORT_LIMIT[tier] ?? 3;
+    const currentCount = (
+      db
+        .prepare(
+          `SELECT COUNT(*) as n FROM user_port_watchlist WHERE user_id = ?`,
+        )
+        .get(u.id)
+    ).n;
+    if (currentCount < limit) {
+      const have = new Set(
+        db
+          .prepare(
+            `SELECT port_id FROM user_port_watchlist WHERE user_id = ?`,
+          )
+          .all(u.id)
+          .map((r) => r.port_id),
+      );
+      const STRATEGIC_DEFAULTS = [
+        "rotterdam", "antwerp", "amsterdam", "singapore", "hormuz",
+        "fujairah", "houston", "rasLaffan", "shanghai", "hamburg",
+        "leHavre", "algeciras", "felixstowe", "bremerhaven", "ningbo",
+        "newYorkNJ", "shenzhen", "hongKong", "busan", "yokohama",
+        "tangerMed", "dunkerque", "marseilleFos", "milfordHaven", "gdansk",
+        "genoa", "trieste", "piraeus", "valencia", "savannah",
+        "longBeach", "losAngeles", "sabine", "corpusChristi", "newOrleans",
+        "santos", "cartagena", "jebelAli", "jeddah", "salalah",
+        "kaohsiung", "portKlang", "colombo", "nhavaSheva", "durban",
+        "lagos", "djibouti", "suez", "malacca", "stNazaire", "southampton",
+      ];
+      const needed = limit - currentCount;
+      const toAdd = STRATEGIC_DEFAULTS.filter((id) => !have.has(id)).slice(
+        0,
+        needed,
+      );
+      const baseTs = Date.now() - 90 * 24 * 60 * 60 * 1000;
+      const stmt = db.prepare(
+        `INSERT OR IGNORE INTO user_port_watchlist (user_id, port_id, created_at) VALUES (?, ?, ?)`,
+      );
+      for (let i = 0; i < toAdd.length; i++) {
+        stmt.run(u.id, toAdd[i], baseTs - i * 1000);
+      }
+      console.log(
+        `db: auto-filled ${toAdd.length} ports for ${u.id} (limit ${limit})`,
+      );
+    }
+    db.close();
   } catch (err) {
     console.error(`db update failed: ${err.message}`);
   }
