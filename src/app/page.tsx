@@ -895,6 +895,11 @@ export default function Page() {
         <KpiCard
           label={t("kpi.totalVessels")}
           value={k?.totalVessels ?? "—"}
+          active={stateFilter === null}
+          onClick={() => setStateFilter(null)}
+          hint={
+            stateFilter ? "Cliquer pour effacer le filtre d'état" : undefined
+          }
         />
         <KpiCard
           label={t("kpi.anchored")}
