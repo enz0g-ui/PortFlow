@@ -246,6 +246,14 @@ export default function Page() {
     }
   };
 
+  const handleVoyageSelect = (mmsi: number) => {
+    setSelectedMmsi(mmsi);
+    const v = allVessels.find((x) => x.mmsi === mmsi);
+    if (v) {
+      setPanTo({ lat: v.latitude, lon: v.longitude, tick: Date.now() });
+    }
+  };
+
   useEffect(() => {
     if (!worldView) {
       setWorldVessels([]);
@@ -1026,7 +1034,7 @@ export default function Page() {
               voyages={filteredVoyages}
               loading={!voyagesResp}
               selectedMmsi={selectedMmsi}
-              onSelect={setSelectedMmsi}
+              onSelect={handleVoyageSelect}
               bookmarkedMmsis={bookmarkedMmsis}
               onToggleBookmark={toggleVesselBookmark}
               bookmarksEnabled={vesselBookmarksEnabled}
