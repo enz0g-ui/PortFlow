@@ -53,6 +53,7 @@ interface Props {
   ) => void;
   onSelectPort?: (portId: string) => void;
   onToggleBookmark?: (mmsi: number) => void;
+  searchQuery?: string;
 }
 
 export function FavoritesPanel({
@@ -60,9 +61,21 @@ export function FavoritesPanel({
   onSelect,
   onSelectPort,
   onToggleBookmark,
+  searchQuery,
 }: Props) {
   const { t } = useI18n();
   const [data, setData] = useState<FleetResp | null>(null);
+
+  const filteredVessels = (() => {
+    if (!data) return [];
+    const q = (searchQuery ?? "").trim().toLowerCase();
+    if (!q) return data.vessels;
+    return data.vessels.filter((v) => {
+      if (String(v.mmsi).includes(q)) return true;
+      if (v.name && v.name.toLowerCase().includes(q)) return true;
+      return false;
+    });
+  })();
 
   useEffect(() => {
     let cancelled = false;
@@ -90,7 +103,11 @@ export function FavoritesPanel({
           ★ {t("port.section.mine") || "Favoris"} · navires
         </span>
         <span className="text-slate-500">
-          {data ? `${data.count} navires` : "…"}
+          {data
+            ? searchQuery
+              ? `${filteredVessels.length}/${data.count}`
+              : `${data.count} navires`
+            : "…"}
         </span>
       </div>
       <div className="scroll-thin flex-1 overflow-auto">
@@ -101,9 +118,13 @@ export function FavoritesPanel({
             Aucun navire favori. Click ☐ sur une ligne de Voyages actifs pour
             ajouter.
           </div>
+        ) : filteredVessels.length === 0 ? (
+          <div className="py-6 text-center text-xs text-slate-500">
+            Aucun match pour &quot;{searchQuery}&quot;.
+          </div>
         ) : (
           <ul className="space-y-1 text-xs">
-            {data.vessels.map((v) => {
+            {filteredVessels.map((v) => {
               const cargo = v.cargoClass
                 ? (CARGO_LABELS[v.cargoClass as CargoClass] ?? v.cargoClass)
                 : null;

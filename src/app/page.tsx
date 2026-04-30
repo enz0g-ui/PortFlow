@@ -1039,7 +1039,13 @@ export default function Page() {
         <div className="lg:col-span-2 h-[440px] sm:h-[560px] lg:h-[680px]">
           {worldView ? (
             <MapView
-              vessels={worldVessels}
+              vessels={
+                searchMatches
+                  ? worldVessels.filter((v) =>
+                      searchMatches(v.mmsi, v.name, v.callsign),
+                    )
+                  : worldVessels
+              }
               center={WORLD_CENTER}
               bbox={WORLD_BBOX}
               zones={EMPTY_ZONES}
@@ -1086,6 +1092,7 @@ export default function Page() {
                 setShowFavoritesPanel(false);
               }}
               onToggleBookmark={toggleVesselBookmark}
+              searchQuery={searchQuery}
             />
           ) : (
             <VoyagesTable
