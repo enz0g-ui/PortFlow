@@ -223,6 +223,7 @@ export default function Page() {
     portsAccessible: "all" | string[];
   } | null>(null);
   const [upgradePort, setUpgradePort] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [fleetPortMap, setFleetPortMap] = useState<Map<string, number>>(
     new Map(),
@@ -636,6 +637,17 @@ export default function Page() {
     setStateFilter((cur) => (cur === s ? null : s));
 
   const allVessels = vesselsResp?.vessels ?? [];
+  const searchMatches = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return null;
+    return (mmsi: number, name?: string, callsign?: string): boolean => {
+      if (String(mmsi).includes(q)) return true;
+      if (name && name.toLowerCase().includes(q)) return true;
+      if (callsign && callsign.toLowerCase().includes(q)) return true;
+      return false;
+    };
+  }, [searchQuery]);
+
   const vessels = useMemo(() => {
     let list = allVessels;
     if (fleetOnly) list = list.filter((v) => bookmarkedMmsis.has(v.mmsi));
@@ -643,14 +655,18 @@ export default function Page() {
       list = list.filter(
         (v) => v.cargoClass && TANKER_CARGO.has(v.cargoClass),
       );
+    if (searchMatches)
+      list = list.filter((v) => searchMatches(v.mmsi, v.name, v.callsign));
     return list;
-  }, [allVessels, tankersOnly, fleetOnly, bookmarkedMmsis]);
+  }, [allVessels, tankersOnly, fleetOnly, bookmarkedMmsis, searchMatches]);
 
   const filteredVoyages = useMemo(() => {
     let list = voyagesResp?.voyages ?? [];
     if (fleetOnly) list = list.filter((v) => bookmarkedMmsis.has(v.mmsi));
+    if (searchMatches)
+      list = list.filter((v) => searchMatches(v.mmsi, v.name));
     return list;
-  }, [voyagesResp, fleetOnly, bookmarkedMmsis]);
+  }, [voyagesResp, fleetOnly, bookmarkedMmsis, searchMatches]);
 
   const filteredVessels = useMemo(
     () => (stateFilter ? vessels.filter((v) => v.state === stateFilter) : []),
@@ -867,6 +883,34 @@ export default function Page() {
               flotte sur {fleetPortMap.size} ports — clic ▶ pour cycler
             </span>
           ) : null}
+          <div className="relative ml-auto flex items-center">
+            <svg
+              className="pointer-events-none absolute left-2 h-3.5 w-3.5 text-slate-500"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="7" cy="7" r="5" />
+              <line x1="14" y1="14" x2="11" y2="11" />
+            </svg>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Rechercher navire (nom, MMSI, callsign…)"
+              className="w-56 rounded border border-slate-700 bg-slate-950 pl-7 pr-7 py-1 text-xs text-slate-100 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none"
+            />
+            {searchQuery ? (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-1 flex h-5 w-5 items-center justify-center text-slate-500 hover:text-slate-200"
+                aria-label="Effacer la recherche"
+              >
+                ✕
+              </button>
+            ) : null}
+          </div>
           {vesselBookmarksEnabled && bookmarkedMmsis.size > 0 ? (
             <button
               onClick={() => {
