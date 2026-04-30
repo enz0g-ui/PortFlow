@@ -211,9 +211,28 @@ export default function Page() {
   );
   const [vesselBookmarksEnabled, setVesselBookmarksEnabled] = useState(false);
   const [fleetOnly, setFleetOnly] = useState(false);
+  const [me, setMe] = useState<{
+    tier: string;
+    portsAccessible: "all" | string[];
+  } | null>(null);
+  const [upgradePort, setUpgradePort] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    fetch("/api/user/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        if (data.authenticated) {
+          setMe({
+            tier: data.tier,
+            portsAccessible: data.portsAccessible,
+          });
+        } else {
+          setMe(null);
+        }
+      })
+      .catch(() => {});
     fetch("/api/user/watchlist/ports", { cache: "no-store" })
       .then(async (r) => {
         if (!r.ok) return null;
@@ -240,6 +259,21 @@ export default function Page() {
       cancelled = true;
     };
   }, []);
+
+  const canAccessPort = (id: string): boolean => {
+    if (!me) return true;
+    if (me.portsAccessible === "all") return true;
+    return me.portsAccessible.includes(id);
+  };
+
+  const trySelectPort = (id: string) => {
+    if (id === portId) return;
+    if (!canAccessPort(id)) {
+      setUpgradePort(id);
+      return;
+    }
+    setPortId(id);
+  };
 
   const toggleVesselBookmark = async (mmsi: number) => {
     const wasBookmarked = bookmarkedMmsis.has(mmsi);
@@ -478,10 +512,11 @@ export default function Page() {
           <PortSelector
             ports={ports}
             selectedId={portId}
-            onSelect={setPortId}
+            onSelect={trySelectPort}
             bookmarkedIds={bookmarkedIds}
             onToggleBookmark={toggleBookmark}
             bookmarksEnabled={bookmarksEnabled}
+            accessiblePortIds={me?.portsAccessible}
           />
           <LanguageSwitcher />
           <AuthButtons />
@@ -833,6 +868,47 @@ export default function Page() {
           onToggleBookmark={toggleVesselBookmark}
           bookmarksEnabled={vesselBookmarksEnabled}
         />
+      ) : null}
+
+      {upgradePort ? (
+        <div
+          className="fixed inset-0 z-[2100] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
+          onClick={() => setUpgradePort(null)}
+        >
+          <div
+            className="max-w-md rounded-lg border border-sky-700 bg-slate-900 p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-slate-100">
+              🔒 Port verrouillé en plan Free
+            </h3>
+            <p className="mt-2 text-sm text-slate-300">
+              Ton plan Free te donne accès à <strong>3 ports</strong> que tu
+              choisis dans ta liste favoris (★). Pour accéder à tous les 51
+              ports stratégiques, passe en plan{" "}
+              <strong>Starter</strong> (15 ports, 129 €/mois) ou{" "}
+              <strong>Pro+</strong> (les 51, 499 €/mois).
+            </p>
+            <div className="mt-4 flex gap-2">
+              <Link
+                href="/pricing"
+                className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400"
+              >
+                Voir les tarifs →
+              </Link>
+              <button
+                onClick={() => setUpgradePort(null)}
+                className="rounded border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:border-sky-500"
+              >
+                Plus tard
+              </button>
+            </div>
+            <p className="mt-3 text-[11px] text-slate-500">
+              Astuce : tu peux remplacer un de tes 3 favoris en cliquant l&apos;icône
+              ☐ dans le sélecteur de port.
+            </p>
+          </div>
+        </div>
       ) : null}
     </main>
   );

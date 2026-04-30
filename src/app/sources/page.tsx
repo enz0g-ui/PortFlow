@@ -128,9 +128,32 @@ export default function SourcesPage() {
         <p className="text-sm text-slate-300">
           Mix multi-source : AIS terrestre temps réel + radar SAR (gratuit, ~6
           jours de revisite) + connecteurs prêts pour les fournisseurs S-AIS
-          payants. Chaque source peut être activée par variable
-          d&apos;environnement, sans toucher au code.
+          payants.
         </p>
+        <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-xs text-slate-400">
+          <strong className="text-slate-200">Comment lire cette page :</strong>{" "}
+          <span className="rounded border border-emerald-700 bg-emerald-500/10 px-1.5 py-0.5 text-emerald-300">
+            Actif
+          </span>{" "}
+          = la source est configurée par l&apos;opérateur et alimente le
+          dashboard pour tous les utilisateurs.{" "}
+          <span className="rounded border border-sky-700 bg-sky-500/10 px-1.5 py-0.5 text-sky-300">
+            votre clé
+          </span>{" "}
+          = vous avez ajouté la vôtre (Pro+).{" "}
+          <strong className="text-slate-200">
+            Visualiser les données dans le dashboard
+          </strong>{" "}
+          est gratuit (limité aux ports de votre plan).{" "}
+          <strong className="text-slate-200">
+            Accéder via API
+          </strong>{" "}
+          nécessite le plan Starter+.{" "}
+          <strong className="text-slate-200">
+            Apporter votre propre clé (BYO)
+          </strong>{" "}
+          pour Spire / VIIRS / Orbcomm est réservé Pro+.
+        </div>
       </section>
 
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
@@ -450,32 +473,10 @@ function KeyRowEditor({
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="flex items-center gap-2 rounded border border-slate-800 px-2 py-1.5">
-        {sourceLabel}
-        <Link
-          href="/sign-in"
-          className="text-[10px] text-sky-400 hover:underline"
-        >
-          Connecte-toi pour ajouter ta clé →
-        </Link>
-      </div>
-    );
-  }
-
-  if (!canByoKey) {
-    return (
-      <div className="flex items-center gap-2 rounded border border-slate-800 px-2 py-1.5">
-        {sourceLabel}
-        <Link
-          href="/pricing"
-          className="text-[10px] text-amber-400 hover:underline"
-        >
-          Plan Pro requis pour utiliser ta propre clé →
-        </Link>
-      </div>
-    );
+  if (!isAuthenticated || !canByoKey) {
+    // Page informative for visitors / Free / Starter / Professional users.
+    // No upgrade pitch here (that lives on /pricing).
+    return null;
   }
 
   if (!editing) {

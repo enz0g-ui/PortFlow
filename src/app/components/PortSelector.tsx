@@ -35,6 +35,7 @@ interface Props {
   bookmarkedIds?: ReadonlySet<string>;
   onToggleBookmark?: (portId: string) => void;
   bookmarksEnabled?: boolean;
+  accessiblePortIds?: "all" | string[];
 }
 
 const REGION_ORDER: PortRegion[] = [
@@ -82,6 +83,7 @@ export function PortSelector({
   bookmarkedIds,
   onToggleBookmark,
   bookmarksEnabled = false,
+  accessiblePortIds,
 }: Props) {
   const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
@@ -93,6 +95,12 @@ export function PortSelector({
   const inputRef = useRef<HTMLInputElement>(null);
   const selected = ports.find((p) => p.id === selectedId);
   const isBookmarked = (id: string) => bookmarkedIds?.has(id) ?? false;
+  const isAccessible = (id: string): boolean => {
+    if (!accessiblePortIds || accessiblePortIds === "all") return true;
+    return accessiblePortIds.includes(id);
+  };
+  const limitedAccess =
+    accessiblePortIds !== undefined && accessiblePortIds !== "all";
 
   useEffect(() => {
     if (!open) return;
@@ -268,6 +276,7 @@ export function PortSelector({
                     selected={p.id === selectedId}
                     bookmarked
                     bookmarksEnabled={bookmarksEnabled}
+                    accessible={isAccessible(p.id)}
                     onSelect={(id) => {
                       onSelect(id);
                       setOpen(false);
@@ -296,6 +305,7 @@ export function PortSelector({
                       selected={p.id === selectedId}
                       bookmarked={isBookmarked(p.id)}
                       bookmarksEnabled={bookmarksEnabled}
+                      accessible={isAccessible(p.id)}
                       onSelect={(id) => {
                         onSelect(id);
                         setOpen(false);
@@ -326,6 +336,7 @@ function PortRow({
   selected,
   bookmarked,
   bookmarksEnabled,
+  accessible = true,
   onSelect,
   onToggleBookmark,
   bookmarkAddLabel,
@@ -336,6 +347,7 @@ function PortRow({
   selected: boolean;
   bookmarked: boolean;
   bookmarksEnabled: boolean;
+  accessible?: boolean;
   onSelect: (id: string) => void;
   onToggleBookmark?: (id: string) => void;
   bookmarkAddLabel: string;
@@ -346,7 +358,7 @@ function PortRow({
     <div
       className={`flex w-full items-start gap-2 hover:bg-slate-800 ${
         selected ? "bg-sky-500/10" : ""
-      }`}
+      } ${!accessible ? "opacity-60" : ""}`}
     >
       <button
         onClick={() => onSelect(port.id)}
@@ -356,6 +368,11 @@ function PortRow({
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between">
             <span className="text-sm font-semibold text-slate-100">
+              {!accessible ? (
+                <span className="mr-1 text-amber-400" title="Plan supérieur requis">
+                  🔒
+                </span>
+              ) : null}
               {l.name}
               {port.strategic ? (
                 <span className="ml-1 text-amber-400" title="Strategic">
