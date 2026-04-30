@@ -6,6 +6,7 @@ import { KpiCard } from "./components/KpiCard";
 import { FlowChart } from "./components/FlowChart";
 import { MapView } from "./components/MapView";
 import { VoyagesTable, type ActiveVoyage } from "./components/VoyagesTable";
+import { FavoritesPanel } from "./components/FavoritesPanel";
 import { AccuracyPanel } from "./components/AccuracyPanel";
 import { AnomalyPanel } from "./components/AnomalyPanel";
 import { CongestionGauge } from "./components/CongestionGauge";
@@ -228,6 +229,7 @@ export default function Page() {
   );
   const [worldView, setWorldView] = useState(false);
   const [worldVessels, setWorldVessels] = useState<Vessel[]>([]);
+  const [showFavoritesPanel, setShowFavoritesPanel] = useState(false);
 
   useEffect(() => {
     if (!worldView) {
@@ -789,7 +791,7 @@ export default function Page() {
               title={
                 fleetOnly && fleetPortIds.length > 1
                   ? `Cycle vers le port suivant de ta flotte (${fleetPortIds.length} ports)`
-                  : t("filter.fleet")
+                  : "Filtrer la carte sur tes navires favoris, port par port"
               }
               className={`rounded px-3 py-1 ${
                 fleetOnly
@@ -797,7 +799,7 @@ export default function Page() {
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              ● {t("filter.fleet")}
+              👁 {t("filter.fleet")}
               {fleetOnly && fleetPortMap.size > 0 ? (
                 <span className="ml-1 text-[10px] text-sky-400">
                   ({allVessels.filter((v) => bookmarkedMmsis.has(v.mmsi)).length}/{bookmarkedMmsis.size})
@@ -810,6 +812,22 @@ export default function Page() {
               {fleetOnly && fleetPortIds.length > 1 ? (
                 <span className="ml-1.5 text-sky-400">▶</span>
               ) : null}
+            </button>
+          ) : null}
+          {vesselBookmarksEnabled && bookmarkedMmsis.size > 0 ? (
+            <button
+              onClick={() => setShowFavoritesPanel((v) => !v)}
+              title="Liste de tous tes navires favoris dans le panneau de droite"
+              className={`rounded px-3 py-1 ${
+                showFavoritesPanel
+                  ? "bg-amber-500/15 text-amber-300"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              ★ Favoris
+              <span className="ml-1 text-[10px]">
+                ({bookmarkedMmsis.size})
+              </span>
             </button>
           ) : null}
           {fleetOnly && fleetPortMap.size > 1 ? (
@@ -976,15 +994,27 @@ export default function Page() {
           )}
         </div>
         <div className="h-[440px] sm:h-[560px] lg:h-[680px]">
-          <VoyagesTable
-            voyages={filteredVoyages}
-            loading={!voyagesResp}
-            selectedMmsi={selectedMmsi}
-            onSelect={setSelectedMmsi}
-            bookmarkedMmsis={bookmarkedMmsis}
-            onToggleBookmark={toggleVesselBookmark}
-            bookmarksEnabled={vesselBookmarksEnabled}
-          />
+          {showFavoritesPanel ? (
+            <FavoritesPanel
+              selectedMmsi={selectedMmsi}
+              onSelect={setSelectedMmsi}
+              onSelectPort={(id) => {
+                trySelectPort(id);
+                setShowFavoritesPanel(false);
+              }}
+              onToggleBookmark={toggleVesselBookmark}
+            />
+          ) : (
+            <VoyagesTable
+              voyages={filteredVoyages}
+              loading={!voyagesResp}
+              selectedMmsi={selectedMmsi}
+              onSelect={setSelectedMmsi}
+              bookmarkedMmsis={bookmarkedMmsis}
+              onToggleBookmark={toggleVesselBookmark}
+              bookmarksEnabled={vesselBookmarksEnabled}
+            />
+          )}
         </div>
       </section>
 
