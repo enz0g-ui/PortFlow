@@ -1,8 +1,18 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { CARGO_LABELS } from "@/lib/cargo";
 import { useI18n } from "@/lib/i18n/context";
 import type { CargoClass } from "@/lib/types";
+
+type SortKey =
+  | "name"
+  | "cargo"
+  | "sog"
+  | "distance"
+  | "predictedEta"
+  | "broadcastEta";
+type SortDir = "asc" | "desc";
 
 export interface ActiveVoyage {
   voyageId: string;
@@ -55,6 +65,54 @@ export function VoyagesTable({
 }: Props) {
   const { t, locale } = useI18n();
   const isBookmarked = (mmsi: number) => bookmarkedMmsis?.has(mmsi) ?? false;
+  const [sortKey, setSortKey] = useState<SortKey>("predictedEta");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const cycleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(
+        key === "name" || key === "cargo" ? "asc" : "asc",
+      );
+    }
+  };
+
+  const sortIndicator = (key: SortKey) =>
+    sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "";
+
+  const sortedVoyages = useMemo(() => {
+    const arr = [...voyages];
+    const dir = sortDir === "asc" ? 1 : -1;
+    arr.sort((a, b) => {
+      switch (sortKey) {
+        case "name":
+          return a.name.localeCompare(b.name) * dir;
+        case "cargo":
+          return (a.cargoClass ?? "").localeCompare(b.cargoClass ?? "") * dir;
+        case "sog":
+          return (a.currentSog - b.currentSog) * dir;
+        case "distance":
+          return (
+            ((a.currentDistanceNm ?? Infinity) -
+              (b.currentDistanceNm ?? Infinity)) *
+            dir
+          );
+        case "predictedEta":
+          return (
+            ((a.predictedEta ?? Infinity) - (b.predictedEta ?? Infinity)) * dir
+          );
+        case "broadcastEta":
+          return (
+            ((a.broadcastEta ?? Infinity) - (b.broadcastEta ?? Infinity)) * dir
+          );
+        default:
+          return 0;
+      }
+    });
+    return arr;
+  }, [voyages, sortKey, sortDir]);
   return (
     <div className="flex h-full min-h-[440px] flex-col rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <div className="mb-2 flex items-baseline justify-between text-xs">
@@ -72,19 +130,53 @@ export function VoyagesTable({
               {bookmarksEnabled ? (
                 <th className="py-1 pr-1 font-normal w-6"></th>
               ) : null}
-              <th className="py-1 pr-2 font-normal">{t("table.vessel")}</th>
-              <th className="py-1 pr-2 font-normal">{t("table.cargo")}</th>
-              <th className="py-1 pr-2 font-normal text-right">
+              <th
+                className="cursor-pointer py-1 pr-2 font-normal hover:text-slate-300"
+                onClick={() => cycleSort("name")}
+                title="Trier par nom"
+              >
+                {t("table.vessel")}
+                {sortIndicator("name")}
+              </th>
+              <th
+                className="cursor-pointer py-1 pr-2 font-normal hover:text-slate-300"
+                onClick={() => cycleSort("cargo")}
+                title="Trier par cargo"
+              >
+                {t("table.cargo")}
+                {sortIndicator("cargo")}
+              </th>
+              <th
+                className="cursor-pointer py-1 pr-2 font-normal text-right hover:text-slate-300"
+                onClick={() => cycleSort("sog")}
+                title="Trier par vitesse"
+              >
                 {t("table.sog")}
+                {sortIndicator("sog")}
               </th>
-              <th className="py-1 pr-2 font-normal text-right">
+              <th
+                className="cursor-pointer py-1 pr-2 font-normal text-right hover:text-slate-300"
+                onClick={() => cycleSort("distance")}
+                title="Trier par distance"
+              >
                 {t("table.distance")}
+                {sortIndicator("distance")}
               </th>
-              <th className="py-1 pr-2 font-normal">
+              <th
+                className="cursor-pointer py-1 pr-2 font-normal hover:text-slate-300"
+                onClick={() => cycleSort("predictedEta")}
+                title="Trier par ETA prédit"
+              >
                 {t("table.predictedEta")}
+                {sortIndicator("predictedEta")}
               </th>
-              <th className="py-1 pr-2 font-normal">
+              <th
+                className="cursor-pointer py-1 pr-2 font-normal hover:text-slate-300"
+                onClick={() => cycleSort("broadcastEta")}
+                title="Trier par ETA broadcast"
+              >
                 {t("table.broadcastEta")}
+                {sortIndicator("broadcastEta")}
               </th>
             </tr>
           </thead>
@@ -104,7 +196,7 @@ export function VoyagesTable({
                   </tr>
                 ))
               : null}
-            {voyages.map((v) => (
+            {sortedVoyages.map((v) => (
               <tr
                 key={v.voyageId}
                 className={`cursor-pointer border-t border-slate-800 transition-colors ${
