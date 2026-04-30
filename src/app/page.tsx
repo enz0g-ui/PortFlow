@@ -217,6 +217,56 @@ export default function Page() {
   } | null>(null);
   const [upgradePort, setUpgradePort] = useState<string | null>(null);
 
+  const [fleetPortMap, setFleetPortMap] = useState<Map<string, number>>(
+    new Map(),
+  );
+
+  useEffect(() => {
+    if (!fleetOnly || bookmarkedMmsis.size === 0) {
+      setFleetPortMap(new Map());
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/user/fleet", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        const m = new Map<string, number>();
+        for (const v of data.vessels ?? []) {
+          const portIdOf =
+            v.currentPort?.id ?? v.openVoyage?.port ?? null;
+          if (!portIdOf) continue;
+          m.set(portIdOf, (m.get(portIdOf) ?? 0) + 1);
+        }
+        setFleetPortMap(m);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [fleetOnly, bookmarkedMmsis]);
+
+  const fleetPortIds = useMemo(() => {
+    return Array.from(fleetPortMap.keys()).filter((id) => {
+      if (!me) return true;
+      if (me.portsAccessible === "all") return true;
+      return me.portsAccessible.includes(id);
+    });
+  }, [fleetPortMap, me]);
+
+  const onFleetChipClick = () => {
+    if (!fleetOnly) {
+      setFleetOnly(true);
+      setTankersOnly(false);
+      return;
+    }
+    if (fleetPortIds.length <= 1) return;
+    const currentIdx = fleetPortIds.indexOf(portId);
+    const nextIdx =
+      currentIdx === -1 ? 0 : (currentIdx + 1) % fleetPortIds.length;
+    setPortId(fleetPortIds[nextIdx]);
+  };
+
   useEffect(() => {
     let cancelled = false;
     fetch("/api/user/me", { cache: "no-store" })
@@ -653,18 +703,37 @@ export default function Page() {
           </button>
           {vesselBookmarksEnabled ? (
             <button
-              onClick={() => {
-                setFleetOnly(true);
-                setTankersOnly(false);
-              }}
+              onClick={onFleetChipClick}
+              title={
+                fleetOnly && fleetPortIds.length > 1
+                  ? `Cycle vers le port suivant de ta flotte (${fleetPortIds.length} ports)`
+                  : t("filter.fleet")
+              }
               className={`rounded px-3 py-1 ${
                 fleetOnly
                   ? "bg-sky-500/15 text-sky-300"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              ● {t("filter.fleet")} ({bookmarkedMmsis.size})
+              ● {t("filter.fleet")}
+              {fleetOnly && fleetPortMap.size > 0 ? (
+                <span className="ml-1 text-[10px] text-sky-400">
+                  ({allVessels.filter((v) => bookmarkedMmsis.has(v.mmsi)).length}/{bookmarkedMmsis.size})
+                </span>
+              ) : (
+                <span className="ml-1 text-[10px]">
+                  ({bookmarkedMmsis.size})
+                </span>
+              )}
+              {fleetOnly && fleetPortIds.length > 1 ? (
+                <span className="ml-1.5 text-sky-400">▶</span>
+              ) : null}
             </button>
+          ) : null}
+          {fleetOnly && fleetPortMap.size > 1 ? (
+            <span className="text-[10px] text-slate-500">
+              flotte sur {fleetPortMap.size} ports — clic ▶ pour cycler
+            </span>
           ) : null}
         </div>
         <span className="text-slate-500">{t("filter.subclasses")}</span>
