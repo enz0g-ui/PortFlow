@@ -44,6 +44,7 @@ interface MeResp {
   authenticated: boolean;
   tier: string;
   portsAccessible?: "all" | string[];
+  portsLimit?: number | "all";
   limits?: { apiAccess: boolean; sarFusion: boolean };
 }
 
@@ -61,13 +62,28 @@ function userAccessLine(
 ): string | null {
   if (!me || !me.authenticated) return null;
   if (!src.status.active) return null;
-  const portsCount =
-    me.portsAccessible === "all"
-      ? "tous les 51 ports"
-      : `${me.portsAccessible?.length ?? 0} ports de ta watchlist`;
-  const apiNote = me.limits?.apiAccess ? "" : " · API non incluse dans Free";
   const tierLabel = TIER_LABEL_FR[me.tier] ?? me.tier;
-  return `Disponible pour toi (${tierLabel}) : visible dans le dashboard sur ${portsCount}${apiNote}`;
+  const apiNote = me.limits?.apiAccess
+    ? " · API incluse"
+    : " · API non incluse";
+
+  if (me.portsAccessible === "all") {
+    return `Plan ${tierLabel} : visible sur tous les 51 ports${apiNote}.`;
+  }
+
+  const count = me.portsAccessible?.length ?? 0;
+  const max = typeof me.portsLimit === "number" ? me.portsLimit : null;
+
+  if (count === 0) {
+    return max
+      ? `Plan ${tierLabel} : choisis jusqu'à ${max} ports favoris (★ dans le sélecteur de port) pour activer le suivi.`
+      : `Plan ${tierLabel} : choisis tes ports favoris (★ dans le sélecteur) pour activer le suivi.`;
+  }
+
+  const plural = count > 1 ? "s" : "";
+  return max
+    ? `Plan ${tierLabel} : visible sur ${count}/${max} port${plural} favori${plural}${apiNote}.`
+    : `Plan ${tierLabel} : visible sur ${count} port${plural} favori${plural}${apiNote}.`;
 }
 
 const TIER_LABEL: Record<SourceInfo["tier"], string> = {
