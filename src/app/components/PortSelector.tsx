@@ -150,12 +150,16 @@ export function PortSelector({
     for (const p of filtered) map[p.region].push(p);
     for (const arr of Object.values(map)) {
       arr.sort((a, b) => {
+        const aAcc = isAccessible(a.id) ? 0 : 1;
+        const bAcc = isAccessible(b.id) ? 0 : 1;
+        if (aAcc !== bAcc) return aAcc - bAcc;
         if (b.vesselCount !== a.vesselCount) return b.vesselCount - a.vesselCount;
         return a.name.localeCompare(b.name);
       });
     }
     return map;
-  }, [filtered]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, accessiblePortIds]);
 
   const sel = selected ? localized(selected, locale) : null;
 
@@ -384,10 +388,11 @@ function PortRow({
             >
               {!accessible ? (
                 <span
-                  className="rounded border border-amber-700/50 bg-amber-500/10 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-400"
+                  className="text-amber-400"
                   title="Plan supérieur requis"
+                  aria-label="Verrouillé"
                 >
-                  🔒 Upgrade
+                  🔒
                 </span>
               ) : null}
               {l.name}
