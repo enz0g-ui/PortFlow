@@ -23,23 +23,33 @@ const STREAM_URL = "wss://stream.aisstream.io/v0/stream";
 const MIN_RECONNECT_MS = 1_000;
 const MAX_RECONNECT_MS = 60_000;
 
+/**
+ * AIS strings (Name, CallSign, Destination) are encoded in 6-bit ASCII per
+ * ITU-R M.1371. Unused trailing positions are filled with '@' (0x40 in
+ * 6-bit), and partially-received messages can leave embedded '@' or NUL
+ * bytes. Strip all of those + non-printable controls, then trim.
+ */
+function cleanAisString(s: unknown): string | undefined {
+  if (typeof s !== "string") return undefined;
+  const cleaned = s
+    .replace(/@/g, "")
+    .replace(/[\x00-\x1f\x7f]/g, "")
+    .trim();
+  return cleaned.length > 0 ? cleaned : undefined;
+}
+
 function readStatic(payload: any): StaticInfo {
   const dim = payload?.Dimension ?? {};
   const lengthM =
     typeof dim?.A === "number" && typeof dim?.B === "number"
       ? dim.A + dim.B
       : undefined;
-  const name =
-    typeof payload?.Name === "string" ? payload.Name.trim() : undefined;
+  const name = cleanAisString(payload?.Name);
   const shipType = typeof payload?.Type === "number" ? payload.Type : undefined;
-  const destination =
-    typeof payload?.Destination === "string"
-      ? payload.Destination.trim()
-      : undefined;
+  const destination = cleanAisString(payload?.Destination);
   return {
     name,
-    callsign:
-      typeof payload?.CallSign === "string" ? payload.CallSign.trim() : undefined,
+    callsign: cleanAisString(payload?.CallSign),
     shipType,
     destination,
     draught:
@@ -171,11 +181,7 @@ function handleMessage(raw: WebSocket.RawData) {
 
   const vessel: Vessel = {
     mmsi,
-    name:
-      stat.name ??
-      (typeof msg.MetaData?.ShipName === "string"
-        ? msg.MetaData.ShipName.trim()
-        : undefined),
+    name: stat.name ?? cleanAisString(msg.MetaData?.ShipName),
     callsign: stat.callsign,
     shipType: stat.shipType,
     vesselClass,
