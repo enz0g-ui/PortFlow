@@ -277,6 +277,7 @@ export default function MapInner({
             }
           >
             <Tooltip
+              key={isSelected ? `sel-${v.mmsi}` : `def-${v.mmsi}`}
               permanent={isSelected}
               opacity={isSelected ? 1 : 0.9}
               className={isSelected ? "selected-vessel-tip" : undefined}
