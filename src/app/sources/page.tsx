@@ -40,6 +40,36 @@ interface UserIntegrations {
   tier: string;
 }
 
+interface MeResp {
+  authenticated: boolean;
+  tier: string;
+  portsAccessible?: "all" | string[];
+  limits?: { apiAccess: boolean; sarFusion: boolean };
+}
+
+const TIER_LABEL_FR: Record<string, string> = {
+  free: "Free",
+  starter: "Starter",
+  professional: "Professional",
+  pro: "Pro+",
+  enterprise: "Enterprise",
+};
+
+function userAccessLine(
+  src: SourceInfo,
+  me: MeResp | null,
+): string | null {
+  if (!me || !me.authenticated) return null;
+  if (!src.status.active) return null;
+  const portsCount =
+    me.portsAccessible === "all"
+      ? "tous les 51 ports"
+      : `${me.portsAccessible?.length ?? 0} ports de ta watchlist`;
+  const apiNote = me.limits?.apiAccess ? "" : " · API non incluse dans Free";
+  const tierLabel = TIER_LABEL_FR[me.tier] ?? me.tier;
+  return `Disponible pour toi (${tierLabel}) : visible dans le dashboard sur ${portsCount}${apiNote}`;
+}
+
 const TIER_LABEL: Record<SourceInfo["tier"], string> = {
   "ais-terrestrial": "AIS terrestre",
   "ais-satellite": "AIS satellite",
@@ -69,6 +99,7 @@ export default function SourcesPage() {
   const [data, setData] = useState<Resp | null>(null);
   const [userInt, setUserInt] = useState<UserIntegrations | null>(null);
   const [userIntUnauth, setUserIntUnauth] = useState(false);
+  const [me, setMe] = useState<MeResp | null>(null);
 
   const loadUserInt = async () => {
     try {
@@ -80,6 +111,12 @@ export default function SourcesPage() {
       if (!r.ok) return;
       setUserInt((await r.json()) as UserIntegrations);
       setUserIntUnauth(false);
+    } catch {
+      /* ignore */
+    }
+    try {
+      const r = await fetch("/api/user/me", { cache: "no-store" });
+      if (r.ok) setMe((await r.json()) as MeResp);
     } catch {
       /* ignore */
     }
@@ -217,6 +254,12 @@ export default function SourcesPage() {
             {s.status.reason ? (
               <p className="mt-2 text-[11px] italic text-slate-500">
                 {s.status.reason}
+              </p>
+            ) : null}
+
+            {userAccessLine(s, me) ? (
+              <p className="mt-2 rounded border border-slate-800 bg-slate-950/60 px-2 py-1.5 text-[11px] text-slate-300">
+                {userAccessLine(s, me)}
               </p>
             ) : null}
 
