@@ -225,6 +225,65 @@ export default function Page() {
   const [upgradePort, setUpgradePort] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
+  interface SearchMatch {
+    mmsi: number;
+    name?: string;
+    callsign?: string;
+    portId: string;
+    portName: string;
+    flag: string;
+    country: string;
+    lat: number;
+    lon: number;
+    sog: number;
+    state: string;
+    cargoClass?: string;
+  }
+  const [globalSearchMatches, setGlobalSearchMatches] = useState<
+    SearchMatch[]
+  >([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setGlobalSearchMatches([]);
+      return;
+    }
+    let cancelled = false;
+    const id = window.setTimeout(() => {
+      fetch(`/api/search/vessels?q=${encodeURIComponent(q)}&limit=20`, {
+        cache: "no-store",
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (cancelled || !data) return;
+          setGlobalSearchMatches(
+            (data.matches as SearchMatch[]) ?? [],
+          );
+        })
+        .catch(() => {});
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
+  }, [searchQuery]);
+
+  const handleSearchSelect = (m: SearchMatch) => {
+    setSelectedMmsi(m.mmsi);
+    if (worldView) {
+      setPanTo({ lat: m.lat, lon: m.lon, tick: Date.now() });
+    } else if (canAccessPort(m.portId)) {
+      if (m.portId !== portId) setPortId(m.portId);
+      setPanTo({ lat: m.lat, lon: m.lon, tick: Date.now() });
+    } else {
+      setUpgradePort(m.portId);
+    }
+    setSearchQuery("");
+    setSearchOpen(false);
+  };
+
   const [fleetPortMap, setFleetPortMap] = useState<Map<string, number>>(
     new Map(),
   );
@@ -898,8 +957,10 @@ export default function Page() {
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher navire (nom, MMSI, callsign…)"
-              className="w-56 rounded border border-slate-700 bg-slate-950 pl-7 pr-7 py-1 text-xs text-slate-100 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none"
+              onFocus={() => setSearchOpen(true)}
+              onBlur={() => window.setTimeout(() => setSearchOpen(false), 150)}
+              placeholder="Rechercher navire (51 ports)"
+              className="w-64 rounded border border-slate-700 bg-slate-950 pl-7 pr-7 py-1 text-xs text-slate-100 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none"
             />
             {searchQuery ? (
               <button
@@ -909,6 +970,51 @@ export default function Page() {
               >
                 ✕
               </button>
+            ) : null}
+            {searchOpen &&
+            searchQuery.trim().length >= 2 &&
+            globalSearchMatches.length > 0 ? (
+              <div className="scroll-thin absolute right-0 top-8 z-[1500] max-h-80 w-80 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 shadow-2xl">
+                <div className="sticky top-0 border-b border-slate-800 bg-slate-900/95 px-3 py-1.5 text-[10px] uppercase tracking-wider text-slate-500">
+                  {globalSearchMatches.length} match
+                  {globalSearchMatches.length > 1 ? "es" : ""} sur 51 ports
+                </div>
+                {globalSearchMatches.map((m) => (
+                  <button
+                    key={m.mmsi}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSearchSelect(m);
+                    }}
+                    className="flex w-full items-start gap-2 border-t border-slate-800 px-3 py-2 text-left text-xs hover:bg-sky-500/10"
+                  >
+                    <span className="text-base leading-none">{m.flag}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-semibold text-slate-100">
+                        {m.name ?? `MMSI ${m.mmsi}`}
+                      </div>
+                      <div className="text-[10px] text-slate-500">
+                        MMSI {m.mmsi}
+                        {m.callsign ? ` · ${m.callsign}` : ""}
+                        {m.cargoClass ? ` · ${m.cargoClass}` : ""}
+                      </div>
+                      <div className="text-[10px] text-sky-400">
+                        à {m.portName} · {m.state}
+                        {m.sog > 0 ? ` · ${m.sog.toFixed(1)} kn` : ""}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : searchOpen &&
+              searchQuery.trim().length >= 2 &&
+              globalSearchMatches.length === 0 ? (
+              <div className="absolute right-0 top-8 z-[1500] w-80 rounded-lg border border-slate-700 bg-slate-900 px-3 py-3 text-xs text-slate-500 shadow-2xl">
+                Aucun navire trouvé pour &quot;{searchQuery.trim()}&quot;
+                <div className="mt-1 text-[10px] text-slate-600">
+                  Cherche par nom, MMSI ou callsign · min. 2 caractères
+                </div>
+              </div>
             ) : null}
           </div>
           {vesselBookmarksEnabled && bookmarkedMmsis.size > 0 ? (
