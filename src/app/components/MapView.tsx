@@ -29,6 +29,7 @@ interface Props {
 
 export function MapView(props: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [resetTick, setResetTick] = useState(0);
 
   useEffect(() => {
     if (!expanded) return;
@@ -54,14 +55,23 @@ export function MapView(props: Props) {
       <div
         className={`${containerClass} overflow-hidden rounded-lg border border-slate-800 bg-slate-900`}
       >
-        <MapInner {...props} expanded={expanded} />
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className="absolute right-3 top-3 z-[1700] rounded-md border border-slate-700 bg-slate-900/90 px-2 py-1 text-xs text-slate-200 shadow-lg hover:border-sky-500 hover:text-sky-300"
-          title={expanded ? "Réduire (Esc)" : "Agrandir"}
-        >
-          {expanded ? "✕ Réduire" : "⤢ Agrandir"}
-        </button>
+        <MapInner {...props} expanded={expanded} resetTick={resetTick} />
+        <div className="absolute right-3 top-3 z-[1700] flex gap-1.5">
+          <button
+            onClick={() => setResetTick((t) => t + 1)}
+            className="rounded-md border border-slate-700 bg-slate-900/90 px-2 py-1 text-xs text-slate-200 shadow-lg backdrop-blur-sm hover:border-sky-500 hover:text-sky-300"
+            title="Recentrer sur le port"
+          >
+            ⊕ Recentrer
+          </button>
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="rounded-md border border-slate-700 bg-slate-900/90 px-2 py-1 text-xs text-slate-200 shadow-lg backdrop-blur-sm hover:border-sky-500 hover:text-sky-300"
+            title={expanded ? "Réduire (Esc)" : "Agrandir"}
+          >
+            {expanded ? "✕ Réduire" : "⤢ Agrandir"}
+          </button>
+        </div>
       </div>
     </>
   );

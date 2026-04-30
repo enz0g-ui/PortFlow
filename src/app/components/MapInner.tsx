@@ -50,14 +50,17 @@ interface Props {
   selectedTrack?: Array<[number, number]>;
   highlightedMmsis?: Set<number>;
   sarDetections?: SarDetection[];
+  resetTick?: number;
 }
 
 function FlyTo({
   bbox,
   portKey,
+  resetTick,
 }: {
   bbox: [number, number, number, number];
   portKey: string;
+  resetTick?: number;
 }) {
   const map = useMap();
   useEffect(() => {
@@ -68,7 +71,7 @@ function FlyTo({
       ],
       { duration: 0.6, padding: [20, 20] },
     );
-  }, [map, bbox, portKey]);
+  }, [map, bbox, portKey, resetTick]);
   return null;
 }
 
@@ -78,12 +81,16 @@ function PanToSelected({
   vessel: Vessel | undefined;
 }) {
   const map = useMap();
+  // Only fly to a vessel when the *selection* changes (mmsi), not on every
+  // position update. Lets the user keep their manual zoom while a vessel is
+  // selected and moving.
   useEffect(() => {
     if (!vessel) return;
     map.flyTo([vessel.latitude, vessel.longitude], Math.max(map.getZoom(), 13), {
       duration: 0.5,
     });
-  }, [map, vessel?.mmsi, vessel?.latitude, vessel?.longitude]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, vessel?.mmsi]);
   return null;
 }
 
@@ -108,6 +115,7 @@ export default function MapInner({
   selectedTrack,
   highlightedMmsis,
   sarDetections,
+  resetTick,
 }: Props) {
   const selected = vessels.find((v) => v.mmsi === selectedMmsi);
 
@@ -122,7 +130,7 @@ export default function MapInner({
         attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; OSM'
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
       />
-      <FlyTo bbox={bbox} portKey={portKey} />
+      <FlyTo bbox={bbox} portKey={portKey} resetTick={resetTick} />
       <ResizeOnExpand expanded={expanded} />
       <PanToSelected vessel={selected} />
       {zones.map((z) => (

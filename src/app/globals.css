@@ -78,3 +78,49 @@ body {
 .leaflet-tooltip.selected-vessel-tip::before {
   border-top-color: #38bdf8;
 }
+
+/* Restyle leaflet +/− zoom controls */
+.leaflet-bar {
+  border: 1px solid rgba(31, 41, 55, 0.9) !important;
+  background: rgba(15, 23, 42, 0.9) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+}
+.leaflet-bar a,
+.leaflet-bar a:link,
+.leaflet-bar a:visited {
+  background: transparent !important;
+  color: #cbd5e1 !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(31, 41, 55, 0.6) !important;
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 30px !important;
+  font-size: 18px !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.leaflet-bar a:last-child {
+  border-bottom: none !important;
+}
+.leaflet-bar a:hover {
+  background: rgba(56, 189, 248, 0.18) !important;
+  color: #7dd3fc !important;
+}
+.leaflet-bar a.leaflet-disabled {
+  opacity: 0.4;
+  background: transparent !important;
+  color: #64748b !important;
+}
+.leaflet-control-attribution {
+  background: rgba(15, 23, 42, 0.7) !important;
+  color: #94a3b8 !important;
+  font-size: 10px !important;
+  border-radius: 4px;
+}
+.leaflet-control-attribution a {
+  color: #38bdf8 !important;
+}
