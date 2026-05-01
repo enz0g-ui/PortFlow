@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n/context";
 
 interface StatusResp {
   ts: number;
@@ -56,6 +57,7 @@ interface AccuracyResp {
 }
 
 export default function StatusPage() {
+  const { tp } = useI18n();
   const [data, setData] = useState<StatusResp | null>(null);
   const [accuracy, setAccuracy] = useState<AccuracyResp | null>(null);
 
@@ -101,7 +103,7 @@ export default function StatusPage() {
     <main className="mx-auto flex w-full max-w-[900px] flex-1 flex-col gap-6 p-6">
       <header className="flex items-center justify-between">
         <Link href="/" className="text-xs text-slate-400 hover:text-slate-200">
-          ← retour
+          {tp("status.backLink")}
         </Link>
         <span className="text-xs text-slate-500">
           {data ? new Date(data.ts).toLocaleString() : "—"}
@@ -109,18 +111,17 @@ export default function StatusPage() {
       </header>
 
       <section className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">System status</h1>
-        <p className="text-sm text-slate-300">
-          Disponibilité publique des services Port Flow. Mise à jour automatique
-          toutes les 30 s.
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {tp("status.title")}
+        </h1>
+        <p className="text-sm text-slate-300">{tp("status.lead")}</p>
       </section>
 
       {data ? (
         <>
           <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <ServiceCard
-              title="AIS terrestre (aisstream.io)"
+              title={tp("status.ais.title")}
               state={
                 data.services.ais.healthy
                   ? "ok"
@@ -129,22 +130,30 @@ export default function StatusPage() {
                     : "down"
               }
               rows={[
-                ["Connexion", data.services.ais.started ? "active" : "down"],
                 [
-                  "Dernier message",
+                  tp("status.ais.connection"),
+                  data.services.ais.started
+                    ? tp("status.ais.connectionActive")
+                    : tp("status.ais.connectionDown"),
+                ],
+                [
+                  tp("status.ais.lastMessage"),
                   data.services.ais.lastMessageAgeSeconds != null
                     ? `${data.services.ais.lastMessageAgeSeconds} s`
                     : "—",
                 ],
-                ["Navires en cache", String(data.services.ais.vesselCount)],
                 [
-                  "Messages reçus",
+                  tp("status.ais.cached"),
+                  String(data.services.ais.vesselCount),
+                ],
+                [
+                  tp("status.ais.received"),
                   data.services.ais.messageCount.toLocaleString(),
                 ],
               ]}
             />
             <ServiceCard
-              title="Sentinel-1 SAR scanner"
+              title={tp("status.sar.title")}
               state={
                 !data.services.sar.started
                   ? "idle"
@@ -153,17 +162,26 @@ export default function StatusPage() {
                     : "warn"
               }
               rows={[
-                ["Activé", data.services.sar.started ? "yes" : "no"],
                 [
-                  "Auth Copernicus",
-                  data.services.sar.authAvailable ? "configurée" : "absente",
+                  tp("status.sar.enabled"),
+                  data.services.sar.started
+                    ? tp("status.sar.yes")
+                    : tp("status.sar.no"),
                 ],
                 [
-                  "Mode démo",
-                  data.services.sar.demoEnabled ? "actif" : "off",
+                  tp("status.sar.copernicusAuth"),
+                  data.services.sar.authAvailable
+                    ? tp("status.sar.configured")
+                    : tp("status.sar.missing"),
                 ],
                 [
-                  "Dernier scan",
+                  tp("status.sar.demoMode"),
+                  data.services.sar.demoEnabled
+                    ? tp("status.sar.demoOn")
+                    : tp("status.sar.demoOff"),
+                ],
+                [
+                  tp("status.sar.lastScan"),
                   data.services.sar.lastScanAgeSeconds != null
                     ? `${Math.round(data.services.sar.lastScanAgeSeconds / 60)} min`
                     : "—",
@@ -172,23 +190,23 @@ export default function StatusPage() {
               footer={data.services.sar.lastError}
             />
             <ServiceCard
-              title="Listes de sanctions (OFAC + UK OFSI)"
+              title={tp("status.sanctions.title")}
               state={data.services.sanctions.healthy ? "ok" : "warn"}
               rows={[
                 [
-                  "Entrées indexées",
+                  tp("status.sanctions.indexed"),
                   data.services.sanctions.count.toLocaleString(),
                 ],
                 [
-                  "Par IMO",
+                  tp("status.sanctions.byImo"),
                   String(data.services.sanctions.countByImo),
                 ],
                 [
-                  "Par MMSI",
+                  tp("status.sanctions.byMmsi"),
                   String(data.services.sanctions.countByMmsi),
                 ],
                 [
-                  "Dernière maj",
+                  tp("status.sanctions.lastUpdate"),
                   data.services.sanctions.ageSeconds != null
                     ? `${Math.round(data.services.sanctions.ageSeconds / 60)} min`
                     : "—",
@@ -197,56 +215,56 @@ export default function StatusPage() {
               footer={data.services.sanctions.errors.join("; ")}
             />
             <ServiceCard
-              title="Couverture ports"
+              title={tp("status.coverage.title")}
               state="ok"
               rows={[
                 [
-                  "Ports tracés",
+                  tp("status.coverage.tracked"),
                   String(data.coverage.portsTracked),
                 ],
                 [
-                  "Ports actifs (≥1 navire)",
+                  tp("status.coverage.active"),
                   String(data.coverage.portsActive),
                 ],
                 [
-                  "Taux d'activité",
+                  tp("status.coverage.activityRate"),
                   `${Math.round((data.coverage.portsActive / data.coverage.portsTracked) * 100)}%`,
                 ],
               ]}
             />
             {accuracy && accuracy.sampleCount > 0 ? (
               <ServiceCard
-                title="Précision ETA — Rotterdam · 30j"
+                title={tp("status.accuracy.title")}
                 state={accuracyBeats ? "ok" : "warn"}
                 rows={[
                   [
-                    "RMSE Port Flow",
+                    tp("status.accuracy.rmsePF"),
                     accuracy.rmseHours != null
                       ? `${accuracy.rmseHours.toFixed(2)} h`
                       : "—",
                   ],
                   [
-                    "RMSE broadcast",
+                    tp("status.accuracy.rmseBroadcast"),
                     accuracy.baselineRmseHours != null
                       ? `${accuracy.baselineRmseHours.toFixed(2)} h`
                       : "—",
                   ],
                   [
-                    "Avantage",
+                    tp("status.accuracy.advantage"),
                     accuracyDelta !== null
                       ? `${accuracyBeats ? "" : "+"}${accuracyDelta.toFixed(1)}%`
                       : "—",
                   ],
                   [
-                    "Voyages clos",
+                    tp("status.accuracy.closedVoyages"),
                     String(accuracy.sampleCount),
                   ],
                 ]}
                 footer={
                   accuracyBeats
-                    ? "Plus précis que l'ETA déclarée par les armateurs"
+                    ? tp("status.accuracy.beats")
                     : accuracyDelta !== null
-                      ? "Moins précis — modèle en apprentissage"
+                      ? tp("status.accuracy.behind")
                       : undefined
                 }
               />
@@ -254,7 +272,7 @@ export default function StatusPage() {
           </section>
         </>
       ) : (
-        <div className="text-sm text-slate-500">Chargement…</div>
+        <div className="text-sm text-slate-500">{tp("status.loading")}</div>
       )}
     </main>
   );
