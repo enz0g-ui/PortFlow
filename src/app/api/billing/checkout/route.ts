@@ -1,7 +1,8 @@
 import { getCurrentUser, isClerkEnabled } from "@/lib/auth/session";
 import {
-  STRIPE_PRICE_BY_TIER,
+  type BillingCycle,
   getStripe,
+  getStripePriceId,
   isStripeEnabled,
 } from "@/lib/billing/stripe";
 import type { Tier } from "@/lib/auth/tier";
@@ -33,16 +34,25 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json().catch(() => ({}))) as {
     tier?: Tier;
+    cycle?: BillingCycle;
   };
   const tier = body.tier;
-  if (!tier || tier === "free" || !STRIPE_PRICE_BY_TIER[tier]) {
+  const cycle: BillingCycle = body.cycle === "yearly" ? "yearly" : "monthly";
+  if (!tier || tier === "free") {
+    return Response.json({ error: "invalid tier" }, { status: 400 });
+  }
+  const priceId = getStripePriceId(tier, cycle);
+  if (!priceId) {
     return Response.json(
-      { error: "invalid tier or missing STRIPE_PRICE_* env" },
+      {
+        error: `Stripe price missing for ${tier} ${cycle} — set STRIPE_PRICE_${tier.toUpperCase()}${
+          cycle === "yearly" ? "_YEARLY" : ""
+        }`,
+      },
       { status: 400 },
     );
   }
 
-  const priceId = STRIPE_PRICE_BY_TIER[tier]!;
   const stripe = getStripe()!;
   const origin = request.headers.get("origin") ?? "http://localhost:3000";
 
@@ -51,18 +61,21 @@ export async function POST(request: NextRequest) {
     line_items: [{ price: priceId, quantity: 1 }],
     customer_email: user.email,
     client_reference_id: user.id,
-    success_url: `${origin}/account?status=success&tier=${tier}`,
+    success_url: `${origin}/account?status=success&tier=${tier}&cycle=${cycle}`,
     cancel_url: `${origin}/pricing?status=cancelled`,
     metadata: {
       userId: user.id,
       tier,
+      cycle,
     },
     subscription_data: {
       metadata: {
         userId: user.id,
         tier,
+        cycle,
       },
     },
+    allow_promotion_codes: true,
   });
 
   return Response.json({ id: session.id, url: session.url });

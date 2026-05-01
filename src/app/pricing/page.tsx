@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n/context";
 
+type Cycle = "monthly" | "yearly";
+
 const TIER_IDS = [
   "free",
   "starter",
@@ -12,6 +14,7 @@ const TIER_IDS = [
   "enterprise",
 ] as const;
 type TierId = (typeof TIER_IDS)[number];
+const TIERS_WITH_YEARLY: TierId[] = ["starter", "professional", "pro"];
 
 const TIER_HREF: Partial<Record<TierId, string>> = {
   free: "/sign-up",
@@ -29,6 +32,7 @@ const HIGHLIGHT: Record<TierId, boolean> = {
 export default function PricingPage() {
   const { tp, tpList } = useI18n();
   const [pending, setPending] = useState<string | null>(null);
+  const [cycle, setCycle] = useState<Cycle>("yearly");
 
   const checkout = async (tier: string) => {
     setPending(tier);
@@ -36,7 +40,7 @@ export default function PricingPage() {
       const r = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tier }),
+        body: JSON.stringify({ tier, cycle }),
       });
       const json = await r.json();
       if (json.url) window.location.href = json.url;
@@ -47,6 +51,9 @@ export default function PricingPage() {
       setPending(null);
     }
   };
+
+  const supportsYearly = (id: TierId) => TIERS_WITH_YEARLY.includes(id);
+  const showYearly = (id: TierId) => cycle === "yearly" && supportsYearly(id);
 
   return (
     <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 p-6">
@@ -61,6 +68,40 @@ export default function PricingPage() {
           {tp("pricing.title")}
         </h1>
         <p className="text-sm text-slate-400">{tp("pricing.subtitle")}</p>
+      </section>
+
+      <section className="flex justify-center">
+        <div className="inline-flex items-center gap-1 rounded-full border border-slate-800 bg-slate-900/60 p-1 text-sm">
+          <button
+            onClick={() => setCycle("monthly")}
+            className={`rounded-full px-4 py-1.5 transition-colors ${
+              cycle === "monthly"
+                ? "bg-slate-700 text-slate-100"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            {tp("pricing.cycle.monthly")}
+          </button>
+          <button
+            onClick={() => setCycle("yearly")}
+            className={`flex items-center gap-2 rounded-full px-4 py-1.5 transition-colors ${
+              cycle === "yearly"
+                ? "bg-emerald-500/20 text-emerald-300"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            {tp("pricing.cycle.yearly")}
+            <span
+              className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                cycle === "yearly"
+                  ? "bg-emerald-500 text-slate-950"
+                  : "bg-emerald-500/20 text-emerald-300"
+              }`}
+            >
+              {tp("pricing.cycle.save")}
+            </span>
+          </button>
+        </div>
       </section>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
@@ -83,12 +124,24 @@ export default function PricingPage() {
                 </h2>
                 <div className="mt-1 flex items-baseline gap-1">
                   <span className="text-3xl font-bold">
-                    {tp(`pricing.tier.${id}.price`)}
+                    {showYearly(id)
+                      ? tp(`pricing.tier.${id}.priceYearlyEquiv`)
+                      : tp(`pricing.tier.${id}.price`)}
                   </span>
                   <span className="text-xs text-slate-500">
                     {tp(`pricing.tier.${id}.period`)}
                   </span>
                 </div>
+                {showYearly(id) ? (
+                  <div className="mt-1 space-y-0.5">
+                    <div className="text-[11px] text-slate-400">
+                      {tp(`pricing.tier.${id}.priceYearlyTotal`)}
+                    </div>
+                    <div className="inline-block rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-300">
+                      {tp(`pricing.tier.${id}.yearlySavings`)}
+                    </div>
+                  </div>
+                ) : null}
               </header>
               <ul className="mb-4 flex-1 space-y-1 text-xs text-slate-300">
                 {features.map((f) => (
