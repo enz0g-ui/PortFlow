@@ -18,6 +18,24 @@ PROJECT_DIR="${PROJECT_DIR:-/opt/projects/portflow}"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/portflow}"
 RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-7}"
 
+# Load BACKUP_B2_BUCKET / BACKUP_S3_BUCKET (and any other backup-related env)
+# from .env.local if present. Variables already set in the environment (e.g.
+# from cron MAILTO etc.) take precedence — `set -a` would override; we only
+# want to fill in the gaps, so we source then re-export selectively.
+if [[ -f "$PROJECT_DIR/.env.local" ]]; then
+  while IFS= read -r line; do
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ -z "$line" ]] && continue
+    [[ "$line" != *=* ]] && continue
+    key="${line%%=*}"
+    val="${line#*=}"
+    # Only set BACKUP_*-prefixed vars to avoid leaking secrets into this shell.
+    if [[ "$key" == BACKUP_* ]] && [[ -z "${!key:-}" ]]; then
+      export "$key=$val"
+    fi
+  done < "$PROJECT_DIR/.env.local"
+fi
+
 mkdir -p "$BACKUP_DIR"
 chmod 700 "$BACKUP_DIR"
 
