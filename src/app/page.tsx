@@ -290,6 +290,97 @@ export default function Page() {
   const [worldView, setWorldView] = useState(false);
   const [worldVessels, setWorldVessels] = useState<Vessel[]>([]);
   const [showFavoritesPanel, setShowFavoritesPanel] = useState(false);
+  const [byoSources, setByoSources] = useState<string[]>([]);
+  const [byoVessels, setByoVessels] = useState<Vessel[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/user/integrations", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { keys?: Array<{ sourceId: string }>; canByoKey?: boolean } | null) => {
+        if (cancelled || !data || !data.canByoKey) return;
+        const ids = Array.from(
+          new Set((data.keys ?? []).map((k) => k.sourceId)),
+        );
+        setByoSources(ids);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (byoSources.length === 0 || !portId) {
+      setByoVessels([]);
+      return;
+    }
+    let cancelled = false;
+    const fetchAll = async () => {
+      try {
+        const results = await Promise.all(
+          byoSources.map((s) =>
+            fetch(
+              `/api/user/satellite/${s}/fixes?port=${encodeURIComponent(portId)}&sinceHours=6`,
+              { cache: "no-store" },
+            )
+              .then((r) => (r.ok ? r.json() : null))
+              .catch(() => null),
+          ),
+        );
+        if (cancelled) return;
+        const merged: Vessel[] = [];
+        for (const r of results) {
+          if (!r?.fixes) continue;
+          for (const f of r.fixes as Array<{
+            mmsi?: number;
+            name?: string;
+            lat: number;
+            lon: number;
+            sog?: number;
+            cog?: number;
+            ts: number;
+            cargoClass?: string;
+            source?: string;
+          }>) {
+            if (!f.mmsi) continue;
+            const cargo = (f.cargoClass ?? null) as CargoClass | null;
+            const vClass: VesselClass =
+              cargo &&
+              ["crude", "product", "chemical", "lng", "lpg"].includes(cargo)
+                ? "tanker"
+                : cargo &&
+                    ["container", "dry-bulk", "general-cargo", "ro-ro"].includes(
+                      cargo,
+                    )
+                  ? "cargo"
+                  : "other";
+            merged.push({
+              mmsi: f.mmsi,
+              name: f.name,
+              latitude: f.lat,
+              longitude: f.lon,
+              sog: f.sog ?? 0,
+              cog: f.cog ?? 0,
+              state: "underway",
+              vesselClass: vClass,
+              cargoClass: cargo ?? undefined,
+              lastUpdate: f.ts,
+            });
+          }
+        }
+        setByoVessels(merged);
+      } catch {
+        /* ignore */
+      }
+    };
+    fetchAll();
+    const id = window.setInterval(fetchAll, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [byoSources, portId]);
   const [panTo, setPanTo] = useState<{
     lat: number;
     lon: number;
@@ -695,7 +786,23 @@ export default function Page() {
   const toggleState = (s: "anchored" | "underway" | "moored") =>
     setStateFilter((cur) => (cur === s ? null : s));
 
-  const allVessels = vesselsResp?.vessels ?? [];
+  const allVessels = useMemo(() => {
+    const live = vesselsResp?.vessels ?? [];
+    if (byoVessels.length === 0) return live;
+    // Merge BYO vendor fixes — freshest lastUpdate wins per MMSI.
+    const map = new Map<number, Vessel>();
+    for (const v of live) map.set(v.mmsi, v);
+    for (const v of byoVessels) {
+      const existing = map.get(v.mmsi);
+      if (!existing) {
+        map.set(v.mmsi, v);
+      } else if (v.lastUpdate > existing.lastUpdate) {
+        // Vendor has fresher data — overlay but keep static fields from live
+        map.set(v.mmsi, { ...existing, ...v });
+      }
+    }
+    return Array.from(map.values());
+  }, [vesselsResp, byoVessels]);
   const searchMatches = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return null;
@@ -832,6 +939,15 @@ export default function Page() {
             <span className="h-2 w-2 rounded-full bg-current" />
             AIS {aisLabel}
           </span>
+          {byoVessels.length > 0 ? (
+            <span
+              className="inline-flex items-center gap-2 rounded-full border border-indigo-700 px-3 py-1 text-indigo-300"
+              title={`Enrichissement BYO via ${byoSources.join(", ")}`}
+            >
+              <span className="h-2 w-2 rounded-full bg-current" />
+              BYO {byoVessels.length}
+            </span>
+          ) : null}
         </div>
       </header>
 
