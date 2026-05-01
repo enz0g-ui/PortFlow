@@ -28,6 +28,9 @@ const fr: PageMessages = {
   "pricing.cycle.monthly": "Mensuel",
   "pricing.cycle.yearly": "Annuel",
   "pricing.cycle.save": "−25% (3 mois offerts)",
+  "pricing.founder.title": "Tarif Founder — −{percent}% à vie",
+  "pricing.founder.body":
+    "Réservé aux 100 premiers clients. Code {code} — encore {remaining}/{max} places. À coller dans Stripe Checkout (champ « Code promo »).",
   "pricing.tier.starter.name": "Starter",
   "pricing.tier.starter.price": "129 €",
   "pricing.tier.starter.period": "/ mois",
@@ -148,6 +151,9 @@ const en: PageMessages = {
   "pricing.cycle.monthly": "Monthly",
   "pricing.cycle.yearly": "Yearly",
   "pricing.cycle.save": "−25% (3 months free)",
+  "pricing.founder.title": "Founder pricing — −{percent}% lifetime",
+  "pricing.founder.body":
+    "First 100 customers only. Code {code} — {remaining}/{max} slots left. Paste it in Stripe Checkout (\"Promo code\" field).",
   "pricing.tier.starter.name": "Starter",
   "pricing.tier.starter.price": "€129",
   "pricing.tier.starter.period": "/ month",

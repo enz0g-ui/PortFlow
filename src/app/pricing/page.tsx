@@ -1,10 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/context";
 
 type Cycle = "monthly" | "yearly";
+
+interface FounderSlots {
+  enabled: boolean;
+  code?: string;
+  remaining?: number | null;
+  max?: number | null;
+  percentOff?: number | null;
+  duration?: string;
+}
 
 const TIER_IDS = [
   "free",
@@ -33,6 +42,14 @@ export default function PricingPage() {
   const { tp, tpList } = useI18n();
   const [pending, setPending] = useState<string | null>(null);
   const [cycle, setCycle] = useState<Cycle>("yearly");
+  const [founder, setFounder] = useState<FounderSlots | null>(null);
+
+  useEffect(() => {
+    fetch("/api/founder/slots")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: FounderSlots | null) => setFounder(j))
+      .catch(() => setFounder(null));
+  }, []);
 
   const checkout = async (tier: string) => {
     setPending(tier);
@@ -69,6 +86,37 @@ export default function PricingPage() {
         </h1>
         <p className="text-sm text-slate-400">{tp("pricing.subtitle")}</p>
       </section>
+
+      {founder?.enabled && founder.code ? (
+        <section className="mx-auto flex max-w-3xl items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
+          <span className="text-2xl">🚀</span>
+          <div className="flex-1 space-y-1">
+            <div className="font-semibold text-amber-200">
+              {tp("pricing.founder.title").replace(
+                "{percent}",
+                String(founder.percentOff ?? 30),
+              )}
+            </div>
+            <div className="text-xs text-amber-100/80">
+              {tp("pricing.founder.body")
+                .replace("{code}", founder.code)
+                .replace(
+                  "{remaining}",
+                  founder.remaining != null
+                    ? String(founder.remaining)
+                    : "—",
+                )
+                .replace(
+                  "{max}",
+                  founder.max != null ? String(founder.max) : "—",
+                )}
+            </div>
+          </div>
+          <code className="rounded bg-amber-500/20 px-2 py-1 font-mono text-xs text-amber-100">
+            {founder.code}
+          </code>
+        </section>
+      ) : null}
 
       <section className="flex justify-center">
         <div className="inline-flex items-center gap-1 rounded-full border border-slate-800 bg-slate-900/60 p-1 text-sm">
