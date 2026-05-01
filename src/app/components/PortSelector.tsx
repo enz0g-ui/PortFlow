@@ -200,7 +200,7 @@ export function PortSelector({
       </button>
 
       {open ? (
-        <div className="absolute right-0 z-[2000] mt-1 max-h-[600px] w-[460px] overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-xl">
+        <div className="absolute left-0 z-[2000] mt-1 max-h-[600px] w-[460px] overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-xl">
           <div className="border-b border-slate-800 p-3 space-y-2">
             <input
               ref={inputRef}
