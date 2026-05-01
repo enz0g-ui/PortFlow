@@ -130,6 +130,87 @@ const fr: PageMessages = {
   "fleet.action.dashboard": "Voir",
   "fleet.refresh": "Actualisé toutes les 60 s",
   "fleet.signIn": "Connecte-toi pour voir ta flotte",
+
+  // /methodology
+  "methodology.backLink": "← Retour précision",
+  "methodology.title": "Méthodologie & SLA",
+  "methodology.lead":
+    "Cette page documente précisément les sources de données, les modèles, la persistance et les engagements de service de la plateforme. C'est le document que les équipes data des acheteurs B2B (traders, assureurs, freight forwarders) examinent avant de signer.",
+  "methodology.sources.title": "Sources de données",
+  "methodology.sources.aisLive":
+    "Flux temps réel via aisstream.io (réseau communautaire). Couverture excellente Europe / US, plus faible Méditerranée / Golfe Persique.",
+  "methodology.sources.aisStatic":
+    "ShipStaticData (Type, Name, Destination, Draught, ETA broadcast) — émis toutes les ~6 minutes par navire.",
+  "methodology.sources.geo":
+    "bbox + zones (anchorages, berths, channels) définies à la main par port. Catalogue v1 : 51 ports incluant ARA, Hamburg, Algésiras, Fujairah, Singapour, Houston, Sabine Pass, Ras Laffan.",
+  "methodology.sources.proprietary":
+    "Pas de données propriétaires intégrées en v1 — la plateforme s'appuie uniquement sur AIS publique. Des sources premium (Spire, Orbcomm) sont sur la roadmap pour combler les zones de couverture faible.",
+  "methodology.cargoClass.title": "Classification de cargaison",
+  "methodology.cargoClass.body":
+    "Combinaison du shipType AIS (codes 70-89) et d'une heuristique mots-clés (nom, destination) pour assigner une classe parmi : crude, product, chemical, LNG, LPG, container, dry-bulk, general-cargo, ro-ro, passenger, fishing, tug, other. Limitations connues : un navire mal nommé ou avec destination vide tombe sur le shipType générique. Précision attendue ~85 % sur tankers et ~95 % sur containers.",
+  "methodology.voyages.title": "Détection de voyages",
+  "methodology.voyages.open":
+    "Ouverture : un voyage s'ouvre quand un navire (de classe trackable : tanker / container / bulk / general / RoRo) est observé en approche/mouillage avec SOG ≥ 1 kn, après la grace period de 60 s suivant le démarrage du worker.",
+  "methodology.voyages.arrival":
+    "Arrivée : transition vers state = moored dans une zone de quai (NavStatus 5 ou SOG < 0,3 kn dans la zone berth).",
+  "methodology.voyages.departure":
+    "Départ : après l'arrivée, le navire repasse à state = underway et distance > 8 nm du centre du port.",
+  "methodology.voyages.falsePositives":
+    "Faux positifs : tugs, pilotes et fishing exclus du tracking — la classe cargaison sert de filtre.",
+  "methodology.eta.title": "Modèle ETA",
+  "methodology.eta.naive":
+    "Estimation naïve : distance / SOG où distance est le grand cercle entre la position courante et le centre du port. Recalculée toutes les 5 minutes par voyage actif.",
+  "methodology.eta.seasonal":
+    "Correction saisonnière : médiane de l'erreur (predicted − actual) calculée sur les 90 jours glissants, par heure d'arrivée UTC. Fallback sur la médiane globale si le bucket horaire a moins de 3 échantillons. Recompute toutes les 30 min.",
+  "methodology.eta.broadcast":
+    "Référence comparée : champ ETA broadcast extrait des messages ShipStaticData (saisi manuellement par l'équipage du navire — souvent imprécis et tardif).",
+  "methodology.eta.metrics":
+    "Métriques : RMSE et MAE en heures, sur les voyages clos avec ETA prédit ET ETA broadcast disponibles. Mises à jour à chaque voyage clos. Fenêtre par défaut : 30 jours.",
+  "methodology.eta.roadmap":
+    "Roadmap modèle : intégration congestion, marées, météo, vitesse moyenne historique du navire spécifique.",
+  "methodology.anomalies.title": "Détection d'anomalies",
+  "methodology.anomalies.intro":
+    "v1 : seuils absolus de dwell au mouillage, ajustés par classe de cargaison.",
+  "methodology.anomalies.tanker":
+    "Tankers (crude/product/chemical/LNG/LPG) : warn ≥ 12 h, critical ≥ 48 h.",
+  "methodology.anomalies.container":
+    "Containers : warn ≥ 6 h, critical ≥ 24 h.",
+  "methodology.anomalies.other": "Autres : warn ≥ 18 h, critical ≥ 72 h.",
+  "methodology.anomalies.roadmap":
+    "Roadmap : seuils dérivés de la distribution historique par (port, cargo) ; détection de déviation de route filée ; détection de loitering hors zone connue (signal « dark fleet »).",
+  "methodology.persistence.title": "Persistance & lineage",
+  "methodology.persistence.storage":
+    "Stockage SQLite via node:sqlite (built-in Node 22+). Tables : kpi_snapshots, static_ships, positions, voyages, webhook_subscriptions, webhook_deliveries.",
+  "methodology.persistence.timestamps":
+    "Chaque ligne kpi_snapshots et voyages porte le port et le timestamp. Reproductibilité totale d'une métrique à un instant donné.",
+  "methodology.persistence.snapshot":
+    "Snapshot des positions : 1 entrée par minute par navire (rate limited). Permet le backtesting et la rejouabilité du modèle.",
+  "methodology.persistence.export":
+    "Roadmap : export Parquet quotidien vers S3 / GCS pour les data scientists clients.",
+  "methodology.sla.title": "Engagements de service (SLA v1)",
+  "methodology.sla.uptime": "Disponibilité plateforme",
+  "methodology.sla.uptimeValue": "99,5 %/mois (MVP)",
+  "methodology.sla.latencyLive": "Latence positions live",
+  "methodology.sla.latencyLiveValue": "< 30 s (P95)",
+  "methodology.sla.latencyKpi": "Latence KPIs / voyages",
+  "methodology.sla.latencyKpiValue": "< 90 s (P95)",
+  "methodology.sla.webhook": "Webhook delivery",
+  "methodology.sla.webhookValue": "1 retry à 60 s · log 90 j",
+  "methodology.sla.retention": "Rétention historique",
+  "methodology.sla.retentionValue":
+    "7 jours KPIs in-memory · illimité en SQLite (compactage 90 j)",
+  "methodology.sla.backfill": "Backfill",
+  "methodology.sla.backfillValue":
+    "Sur demande contractuelle (rejouage des positions persistées)",
+  "methodology.compliance.title": "Conformité",
+  "methodology.compliance.solas":
+    "Données AIS : ouvertes, transmises par les navires en respect de la convention SOLAS. Aucune donnée personnelle de l'équipage.",
+  "methodology.compliance.gdpr":
+    "RGPD : aucun traitement de données personnelles. Les MMSI sont des identifiants de navire, pas de personne.",
+  "methodology.compliance.sanctions":
+    "Sanctions : la plateforme ne filtre pas activement les navires sous sanctions (US OFAC, UK OFSI, EU). Le client doit appliquer ses propres listes.",
+  "methodology.compliance.legalIntro": "Détails complets sur la page",
+  "methodology.compliance.legalLabel": "Mentions légales",
 };
 
 const en: PageMessages = {
@@ -253,6 +334,87 @@ const en: PageMessages = {
   "fleet.action.dashboard": "View",
   "fleet.refresh": "Refreshed every 60s",
   "fleet.signIn": "Sign in to see your fleet",
+
+  // /methodology
+  "methodology.backLink": "← Back to precision",
+  "methodology.title": "Methodology & SLA",
+  "methodology.lead":
+    "This page documents the platform's data sources, models, persistence and service commitments. It's the document that B2B buyers' data teams (traders, insurers, freight forwarders) review before signing.",
+  "methodology.sources.title": "Data sources",
+  "methodology.sources.aisLive":
+    "Real-time stream via aisstream.io (community network). Excellent coverage in Europe / US, weaker in the Mediterranean / Persian Gulf.",
+  "methodology.sources.aisStatic":
+    "ShipStaticData (Type, Name, Destination, Draught, broadcast ETA) — emitted by each vessel every ~6 minutes.",
+  "methodology.sources.geo":
+    "bbox + zones (anchorages, berths, channels) defined manually per port. v1 catalogue: 51 ports including ARA, Hamburg, Algeciras, Fujairah, Singapore, Houston, Sabine Pass, Ras Laffan.",
+  "methodology.sources.proprietary":
+    "No proprietary data integrated in v1 — the platform relies solely on public AIS. Premium sources (Spire, Orbcomm) are on the roadmap to fill low-coverage zones.",
+  "methodology.cargoClass.title": "Cargo classification",
+  "methodology.cargoClass.body":
+    "Combination of AIS shipType (codes 70-89) and a keyword heuristic (name, destination) to assign a class from: crude, product, chemical, LNG, LPG, container, dry-bulk, general-cargo, ro-ro, passenger, fishing, tug, other. Known limitations: a poorly named vessel or one with empty destination falls back to generic shipType. Expected accuracy ~85% on tankers and ~95% on containers.",
+  "methodology.voyages.title": "Voyage detection",
+  "methodology.voyages.open":
+    "Open: a voyage opens when a vessel (of trackable class: tanker / container / bulk / general / RoRo) is observed approaching or anchoring with SOG ≥ 1 kn, after the 60-second grace period following worker startup.",
+  "methodology.voyages.arrival":
+    "Arrival: transition to state = moored within a berth zone (NavStatus 5 or SOG < 0.3 kn within the berth zone).",
+  "methodology.voyages.departure":
+    "Departure: after arrival, the vessel transitions back to state = underway and distance > 8 nm from the port center.",
+  "methodology.voyages.falsePositives":
+    "False positives: tugs, pilots and fishing vessels excluded from tracking — cargo class acts as a filter.",
+  "methodology.eta.title": "ETA model",
+  "methodology.eta.naive":
+    "Naive estimate: distance / SOG where distance is the great circle between current position and port center. Recomputed every 5 minutes per active voyage.",
+  "methodology.eta.seasonal":
+    "Seasonal correction: median error (predicted − actual) computed over a 90-day rolling window, bucketed by UTC arrival hour. Falls back to the global median if the hour bucket has fewer than 3 samples. Recomputed every 30 min.",
+  "methodology.eta.broadcast":
+    "Comparison reference: ETA broadcast field extracted from ShipStaticData messages (entered manually by the vessel's crew — often imprecise and late).",
+  "methodology.eta.metrics":
+    "Metrics: RMSE and MAE in hours, computed over closed voyages with both predicted ETA AND broadcast ETA available. Updated on each closed voyage. Default window: 30 days.",
+  "methodology.eta.roadmap":
+    "Model roadmap: congestion integration, tides, weather, vessel-specific historical average speed.",
+  "methodology.anomalies.title": "Anomaly detection",
+  "methodology.anomalies.intro":
+    "v1: absolute dwell-at-anchor thresholds, tuned by cargo class.",
+  "methodology.anomalies.tanker":
+    "Tankers (crude/product/chemical/LNG/LPG): warn ≥ 12h, critical ≥ 48h.",
+  "methodology.anomalies.container":
+    "Containers: warn ≥ 6h, critical ≥ 24h.",
+  "methodology.anomalies.other": "Other: warn ≥ 18h, critical ≥ 72h.",
+  "methodology.anomalies.roadmap":
+    "Roadmap: thresholds derived from the historical (port, cargo) distribution; route-deviation detection; out-of-zone loitering detection (\"dark fleet\" signal).",
+  "methodology.persistence.title": "Persistence & lineage",
+  "methodology.persistence.storage":
+    "SQLite storage via node:sqlite (built-in Node 22+). Tables: kpi_snapshots, static_ships, positions, voyages, webhook_subscriptions, webhook_deliveries.",
+  "methodology.persistence.timestamps":
+    "Every kpi_snapshots and voyages row carries the port id and a timestamp. Full reproducibility of any metric at a given instant.",
+  "methodology.persistence.snapshot":
+    "Position snapshots: 1 entry per minute per vessel (rate limited). Enables backtesting and replayability of the model.",
+  "methodology.persistence.export":
+    "Roadmap: daily Parquet export to S3 / GCS for clients' data scientists.",
+  "methodology.sla.title": "Service commitments (SLA v1)",
+  "methodology.sla.uptime": "Platform availability",
+  "methodology.sla.uptimeValue": "99.5% / month (MVP)",
+  "methodology.sla.latencyLive": "Live positions latency",
+  "methodology.sla.latencyLiveValue": "< 30s (P95)",
+  "methodology.sla.latencyKpi": "KPIs / voyages latency",
+  "methodology.sla.latencyKpiValue": "< 90s (P95)",
+  "methodology.sla.webhook": "Webhook delivery",
+  "methodology.sla.webhookValue": "1 retry at 60s · 90-day delivery log",
+  "methodology.sla.retention": "History retention",
+  "methodology.sla.retentionValue":
+    "7 days in-memory KPIs · unlimited in SQLite (90-day compaction)",
+  "methodology.sla.backfill": "Backfill",
+  "methodology.sla.backfillValue":
+    "On contractual request (replay of persisted positions)",
+  "methodology.compliance.title": "Compliance",
+  "methodology.compliance.solas":
+    "AIS data: open, transmitted by vessels per the SOLAS convention. No crew personal data.",
+  "methodology.compliance.gdpr":
+    "GDPR: no personal data processing. MMSIs are vessel identifiers, not personal identifiers.",
+  "methodology.compliance.sanctions":
+    "Sanctions: the platform does not actively filter vessels under sanctions (US OFAC, UK OFSI, EU). Clients must apply their own lists.",
+  "methodology.compliance.legalIntro": "Full details on the",
+  "methodology.compliance.legalLabel": "Legal page",
 };
 
 const nl: PageMessages = {
