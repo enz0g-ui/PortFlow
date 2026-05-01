@@ -49,30 +49,38 @@ export async function GET() {
   }
 
   try {
-    // The Stripe SDK's exported type for promotionCodes.retrieve is finicky
-    // about the expanded `coupon` field, so we read fields via a structural
-    // cast — the underlying API response shape is stable.
-    const promo = (await stripe.promotionCodes.retrieve(promoId, {
-      expand: ["coupon"],
-    })) as unknown as {
+    // Stripe Promotion Code retrieve returns `coupon` as either a string id
+    // or an object depending on expand handling. We fetch the coupon
+    // separately for reliability — two API calls but no ambiguity.
+    const promo = (await stripe.promotionCodes.retrieve(promoId)) as unknown as {
       active: boolean;
       code: string;
       max_redemptions: number | null;
       times_redeemed: number;
-      coupon: {
-        max_redemptions: number | null;
-        times_redeemed: number;
-        percent_off: number | null;
-        amount_off: number | null;
-        duration: string;
-      };
+      coupon: string | { id: string };
     };
     if (!promo.active) {
       const payload = { enabled: false, reason: "promo inactive" };
       cache = { fetchedAt: Date.now(), payload };
       return Response.json(payload);
     }
-    const coupon = promo.coupon;
+    const couponId =
+      typeof promo.coupon === "string" ? promo.coupon : promo.coupon?.id;
+    if (!couponId) {
+      const payload = {
+        enabled: false,
+        reason: "promotion code has no coupon attached",
+      };
+      cache = { fetchedAt: Date.now(), payload };
+      return Response.json(payload);
+    }
+    const coupon = (await stripe.coupons.retrieve(couponId)) as unknown as {
+      max_redemptions: number | null;
+      times_redeemed: number;
+      percent_off: number | null;
+      amount_off: number | null;
+      duration: string;
+    };
     const max = coupon.max_redemptions ?? promo.max_redemptions ?? null;
     const used = coupon.times_redeemed ?? promo.times_redeemed ?? 0;
     const remaining = max != null ? Math.max(0, max - used) : null;
