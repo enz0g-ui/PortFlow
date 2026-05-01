@@ -450,6 +450,69 @@ const fr: PageMessages = {
   "legal.citation.title": "Citation académique",
   "legal.citation.body":
     "Si vous citez Port Flow dans une publication, merci d'inclure :",
+
+  // /sources
+  "sources.backLink": "← retour",
+  "sources.methodologyLink": "Méthodologie →",
+  "sources.title": "Sources de données",
+  "sources.lead":
+    "Mix multi-source : AIS terrestre temps réel + radar SAR (gratuit, ~6 jours de revisite) + connecteurs prêts pour les fournisseurs S-AIS payants.",
+  "sources.howRead.title": "Comment lire cette page :",
+  "sources.howRead.activeBadge": "Actif",
+  "sources.howRead.activeDesc":
+    "= la source est configurée par l'opérateur et alimente le dashboard pour tous les utilisateurs.",
+  "sources.howRead.byoBadge": "votre clé",
+  "sources.howRead.byoDesc": "= vous avez ajouté la vôtre (Pro+).",
+  "sources.howRead.view": "Visualiser les données dans le dashboard",
+  "sources.howRead.viewDesc":
+    "est gratuit (limité aux ports de votre plan).",
+  "sources.howRead.api": "Accéder via API",
+  "sources.howRead.apiDesc": "nécessite le plan Starter+.",
+  "sources.howRead.byoOwn": "Apporter votre propre clé (BYO)",
+  "sources.howRead.byoOwnDesc": "pour Spire / VIIRS / Orbcomm est réservé Pro+.",
+  "sources.tier.aisTerrestrial": "AIS terrestre",
+  "sources.tier.aisSatellite": "AIS satellite",
+  "sources.tier.sar": "Radar SAR",
+  "sources.tier.opticalNight": "Optique nuit",
+  "sources.tariff.free": "Gratuit",
+  "sources.tariff.freeWithKey": "Gratuit + clé",
+  "sources.tariff.paid": "Payant",
+  "sources.integration.live": "Intégration live",
+  "sources.integration.inProgress": "Intégration en cours",
+  "sources.integration.planned": "Intégration planifiée",
+  "sources.integration.etaTitle": "ETA d'activation : {eta}",
+  "sources.status.active": "Actif",
+  "sources.status.configured": "Configuré",
+  "sources.status.inactive": "Inactif",
+  "sources.status.syncPrefix": "sync :",
+  "sources.access.allPorts":
+    "Plan {tier} : visible sur tous les 51 ports{apiNote}.",
+  "sources.access.partial":
+    "Plan {tier} : visible sur {count}/{max} port{plural} favori{plural}{apiNote}.",
+  "sources.access.partialNoMax":
+    "Plan {tier} : visible sur {count} port{plural} favori{plural}{apiNote}.",
+  "sources.access.emptyMax":
+    "Plan {tier} : choisis jusqu'à {max} ports favoris (★ dans le sélecteur de port) pour activer le suivi.",
+  "sources.access.empty":
+    "Plan {tier} : choisis tes ports favoris (★ dans le sélecteur) pour activer le suivi.",
+  "sources.access.apiYes": " · API incluse",
+  "sources.access.apiNo": " · API non incluse",
+  "sources.scenesApi": "scenes API",
+  "sources.fixesApi": "fixes API",
+  "sources.byo.providedByOp": "fournie par l'opérateur",
+  "sources.byo.yourKey": "votre clé",
+  "sources.byo.addKey": "+ Coller ma clé",
+  "sources.byo.placeholder": "Colle ta clé ici",
+  "sources.byo.test": "Tester",
+  "sources.recommendation.title": "Recommandation de mix",
+  "sources.recommendation.demo":
+    "Démo gratuite : aisstream.io (live) + Sentinel-1 (vérité terrain hebdo) — couvre EU/US correctement.",
+  "sources.recommendation.production":
+    "Production trader : ajouter Spire (geofencé sur chokepoints critiques : Hormuz, Singapour, Bab el-Mandeb) pour combler le trou Golfe Persique.",
+  "sources.recommendation.redundancy":
+    "Redondance opérationnelle : MarineTraffic ou Orbcomm en fallback — différentes constellations satellites, bascule automatique si une source tombe.",
+  "sources.recommendation.darkFleet":
+    "Détection dark fleet : VIIRS (lights de nuit) détecte les navires AIS éteints — précieux pour assureurs et sanctions.",
 };
 
 const en: PageMessages = {
@@ -893,6 +956,70 @@ const en: PageMessages = {
   "legal.citation.title": "Academic citation",
   "legal.citation.body":
     "If you cite Port Flow in a publication, please include:",
+
+  // /sources
+  "sources.backLink": "← back",
+  "sources.methodologyLink": "Methodology →",
+  "sources.title": "Data sources",
+  "sources.lead":
+    "Multi-source mix: real-time terrestrial AIS + SAR radar (free, ~6-day revisit) + ready-to-go connectors for paid S-AIS providers.",
+  "sources.howRead.title": "How to read this page:",
+  "sources.howRead.activeBadge": "Active",
+  "sources.howRead.activeDesc":
+    "= the source is configured by the operator and feeds the dashboard for all users.",
+  "sources.howRead.byoBadge": "your key",
+  "sources.howRead.byoDesc": "= you've plugged in your own (Pro+).",
+  "sources.howRead.view": "Viewing data in the dashboard",
+  "sources.howRead.viewDesc":
+    "is free (limited to the ports in your plan).",
+  "sources.howRead.api": "Accessing via API",
+  "sources.howRead.apiDesc": "requires the Starter+ plan.",
+  "sources.howRead.byoOwn": "Bringing your own key (BYO)",
+  "sources.howRead.byoOwnDesc":
+    "for Spire / VIIRS / Orbcomm is Pro+ only.",
+  "sources.tier.aisTerrestrial": "Terrestrial AIS",
+  "sources.tier.aisSatellite": "Satellite AIS",
+  "sources.tier.sar": "SAR radar",
+  "sources.tier.opticalNight": "Night optical",
+  "sources.tariff.free": "Free",
+  "sources.tariff.freeWithKey": "Free + key",
+  "sources.tariff.paid": "Paid",
+  "sources.integration.live": "Live integration",
+  "sources.integration.inProgress": "Integration in progress",
+  "sources.integration.planned": "Integration planned",
+  "sources.integration.etaTitle": "Activation ETA: {eta}",
+  "sources.status.active": "Active",
+  "sources.status.configured": "Configured",
+  "sources.status.inactive": "Inactive",
+  "sources.status.syncPrefix": "sync:",
+  "sources.access.allPorts":
+    "{tier} plan: visible on all 51 ports{apiNote}.",
+  "sources.access.partial":
+    "{tier} plan: visible on {count}/{max} favorite port{plural}{apiNote}.",
+  "sources.access.partialNoMax":
+    "{tier} plan: visible on {count} favorite port{plural}{apiNote}.",
+  "sources.access.emptyMax":
+    "{tier} plan: pick up to {max} favorite ports (★ in the port selector) to activate tracking.",
+  "sources.access.empty":
+    "{tier} plan: pick your favorite ports (★ in the selector) to activate tracking.",
+  "sources.access.apiYes": " · API included",
+  "sources.access.apiNo": " · API not included",
+  "sources.scenesApi": "scenes API",
+  "sources.fixesApi": "fixes API",
+  "sources.byo.providedByOp": "provided by operator",
+  "sources.byo.yourKey": "your key",
+  "sources.byo.addKey": "+ Paste my key",
+  "sources.byo.placeholder": "Paste your key here",
+  "sources.byo.test": "Test",
+  "sources.recommendation.title": "Recommended mix",
+  "sources.recommendation.demo":
+    "Free demo: aisstream.io (live) + Sentinel-1 (weekly ground truth) — covers EU/US well.",
+  "sources.recommendation.production":
+    "Trader production: add Spire (geofenced on critical chokepoints: Hormuz, Singapore, Bab el-Mandeb) to fill the Persian Gulf gap.",
+  "sources.recommendation.redundancy":
+    "Operational redundancy: MarineTraffic or Orbcomm as fallback — different satellite constellations, automatic failover if one source drops.",
+  "sources.recommendation.darkFleet":
+    "Dark-fleet detection: VIIRS (nighttime lights) catches AIS-off vessels — valuable for insurers and sanctions.",
 };
 
 const nl: PageMessages = {

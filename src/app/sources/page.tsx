@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n/context";
 import { Attributions } from "../components/Attributions";
 
 interface SourceInfo {
@@ -25,20 +26,20 @@ interface SourceInfo {
   };
 }
 
-const INTEGRATION_BADGE: Record<
+const INTEGRATION_BADGE_KEYS: Record<
   SourceInfo["integration"],
-  { label: string; cls: string }
+  { keyLabel: string; cls: string }
 > = {
   live: {
-    label: "Intégration live",
+    keyLabel: "sources.integration.live",
     cls: "border-emerald-700 bg-emerald-500/10 text-emerald-300",
   },
   "in-progress": {
-    label: "Intégration en cours",
+    keyLabel: "sources.integration.inProgress",
     cls: "border-amber-700 bg-amber-500/10 text-amber-300",
   },
   planned: {
-    label: "Intégration planifiée",
+    keyLabel: "sources.integration.planned",
     cls: "border-slate-700 bg-slate-800/40 text-slate-400",
   },
 };
@@ -68,7 +69,7 @@ interface MeResp {
   limits?: { apiAccess: boolean; sarFusion: boolean };
 }
 
-const TIER_LABEL_FR: Record<string, string> = {
+const TIER_DISPLAY: Record<string, string> = {
   free: "Free",
   starter: "Starter",
   professional: "Professional",
@@ -76,19 +77,45 @@ const TIER_LABEL_FR: Record<string, string> = {
   enterprise: "Enterprise",
 };
 
+const TIER_KEY: Record<SourceInfo["tier"], string> = {
+  "ais-terrestrial": "sources.tier.aisTerrestrial",
+  "ais-satellite": "sources.tier.aisSatellite",
+  sar: "sources.tier.sar",
+  "optical-night": "sources.tier.opticalNight",
+};
+
+const TARIFF_KEY: Record<
+  SourceInfo["tariff"],
+  { keyLabel: string; cls: string }
+> = {
+  free: {
+    keyLabel: "sources.tariff.free",
+    cls: "bg-emerald-500/10 text-emerald-300 border-emerald-700",
+  },
+  "free-with-key": {
+    keyLabel: "sources.tariff.freeWithKey",
+    cls: "bg-sky-500/10 text-sky-300 border-sky-700",
+  },
+  paid: {
+    keyLabel: "sources.tariff.paid",
+    cls: "bg-amber-500/10 text-amber-300 border-amber-700",
+  },
+};
+
 function userAccessLine(
   src: SourceInfo,
   me: MeResp | null,
+  tp: (k: string, p?: Record<string, string | number>) => string,
 ): string | null {
   if (!me || !me.authenticated) return null;
   if (!src.status.active) return null;
-  const tierLabel = TIER_LABEL_FR[me.tier] ?? me.tier;
+  const tier = TIER_DISPLAY[me.tier] ?? me.tier;
   const apiNote = me.limits?.apiAccess
-    ? " · API incluse"
-    : " · API non incluse";
+    ? tp("sources.access.apiYes")
+    : tp("sources.access.apiNo");
 
   if (me.portsAccessible === "all") {
-    return `Plan ${tierLabel} : visible sur tous les 51 ports${apiNote}.`;
+    return tp("sources.access.allPorts", { tier, apiNote });
   }
 
   const count = me.portsAccessible?.length ?? 0;
@@ -96,42 +123,18 @@ function userAccessLine(
 
   if (count === 0) {
     return max
-      ? `Plan ${tierLabel} : choisis jusqu'à ${max} ports favoris (★ dans le sélecteur de port) pour activer le suivi.`
-      : `Plan ${tierLabel} : choisis tes ports favoris (★ dans le sélecteur) pour activer le suivi.`;
+      ? tp("sources.access.emptyMax", { tier, max })
+      : tp("sources.access.empty", { tier });
   }
 
   const plural = count > 1 ? "s" : "";
   return max
-    ? `Plan ${tierLabel} : visible sur ${count}/${max} port${plural} favori${plural}${apiNote}.`
-    : `Plan ${tierLabel} : visible sur ${count} port${plural} favori${plural}${apiNote}.`;
+    ? tp("sources.access.partial", { tier, count, max, plural, apiNote })
+    : tp("sources.access.partialNoMax", { tier, count, plural, apiNote });
 }
 
-const TIER_LABEL: Record<SourceInfo["tier"], string> = {
-  "ais-terrestrial": "AIS terrestre",
-  "ais-satellite": "AIS satellite",
-  sar: "Radar SAR",
-  "optical-night": "Optique nuit",
-};
-
-const TARIFF_BADGE: Record<
-  SourceInfo["tariff"],
-  { label: string; cls: string }
-> = {
-  free: {
-    label: "Gratuit",
-    cls: "bg-emerald-500/10 text-emerald-300 border-emerald-700",
-  },
-  "free-with-key": {
-    label: "Gratuit + clé",
-    cls: "bg-sky-500/10 text-sky-300 border-sky-700",
-  },
-  paid: {
-    label: "Payant",
-    cls: "bg-amber-500/10 text-amber-300 border-amber-700",
-  },
-};
-
 export default function SourcesPage() {
+  const { tp } = useI18n();
   const [data, setData] = useState<Resp | null>(null);
   const [userInt, setUserInt] = useState<UserIntegrations | null>(null);
   const [userIntUnauth, setUserIntUnauth] = useState(false);
@@ -186,46 +189,45 @@ export default function SourcesPage() {
     <main className="mx-auto flex w-full max-w-[1100px] flex-1 flex-col gap-6 p-6">
       <header className="flex items-center justify-between">
         <Link href="/" className="text-xs text-slate-400 hover:text-slate-200">
-          ← retour
+          {tp("sources.backLink")}
         </Link>
         <Link
           href="/methodology"
           className="text-xs text-slate-400 hover:text-slate-200"
         >
-          Méthodologie →
+          {tp("sources.methodologyLink")}
         </Link>
       </header>
 
       <section className="space-y-3">
-        <h1 className="text-3xl font-bold tracking-tight">Sources de données</h1>
-        <p className="text-sm text-slate-300">
-          Mix multi-source : AIS terrestre temps réel + radar SAR (gratuit, ~6
-          jours de revisite) + connecteurs prêts pour les fournisseurs S-AIS
-          payants.
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {tp("sources.title")}
+        </h1>
+        <p className="text-sm text-slate-300">{tp("sources.lead")}</p>
         <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-xs text-slate-400">
-          <strong className="text-slate-200">Comment lire cette page :</strong>{" "}
+          <strong className="text-slate-200">
+            {tp("sources.howRead.title")}
+          </strong>{" "}
           <span className="rounded border border-emerald-700 bg-emerald-500/10 px-1.5 py-0.5 text-emerald-300">
-            Actif
+            {tp("sources.howRead.activeBadge")}
           </span>{" "}
-          = la source est configurée par l&apos;opérateur et alimente le
-          dashboard pour tous les utilisateurs.{" "}
+          {tp("sources.howRead.activeDesc")}{" "}
           <span className="rounded border border-sky-700 bg-sky-500/10 px-1.5 py-0.5 text-sky-300">
-            votre clé
+            {tp("sources.howRead.byoBadge")}
           </span>{" "}
-          = vous avez ajouté la vôtre (Pro+).{" "}
+          {tp("sources.howRead.byoDesc")}{" "}
           <strong className="text-slate-200">
-            Visualiser les données dans le dashboard
+            {tp("sources.howRead.view")}
           </strong>{" "}
-          est gratuit (limité aux ports de votre plan).{" "}
+          {tp("sources.howRead.viewDesc")}{" "}
           <strong className="text-slate-200">
-            Accéder via API
+            {tp("sources.howRead.api")}
           </strong>{" "}
-          nécessite le plan Starter+.{" "}
+          {tp("sources.howRead.apiDesc")}{" "}
           <strong className="text-slate-200">
-            Apporter votre propre clé (BYO)
+            {tp("sources.howRead.byoOwn")}
           </strong>{" "}
-          pour Spire / VIIRS / Orbcomm est réservé Pro+.
+          {tp("sources.howRead.byoOwnDesc")}
         </div>
       </section>
 
@@ -241,28 +243,30 @@ export default function SourcesPage() {
                   {s.label}
                 </h2>
                 <div className="text-[11px] text-slate-500">
-                  {TIER_LABEL[s.tier]}
+                  {tp(TIER_KEY[s.tier])}
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">
                 <span
                   className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider ${
-                    TARIFF_BADGE[s.tariff].cls
+                    TARIFF_KEY[s.tariff].cls
                   }`}
                 >
-                  {TARIFF_BADGE[s.tariff].label}
+                  {tp(TARIFF_KEY[s.tariff].keyLabel)}
                 </span>
                 <span
                   className={`rounded border px-1.5 py-0.5 text-[9px] uppercase tracking-wider ${
-                    INTEGRATION_BADGE[s.integration].cls
+                    INTEGRATION_BADGE_KEYS[s.integration].cls
                   }`}
                   title={
                     s.integrationEta
-                      ? `ETA d'activation : ${s.integrationEta}`
+                      ? tp("sources.integration.etaTitle", {
+                          eta: s.integrationEta,
+                        })
                       : undefined
                   }
                 >
-                  {INTEGRATION_BADGE[s.integration].label}
+                  {tp(INTEGRATION_BADGE_KEYS[s.integration].keyLabel)}
                   {s.integration !== "live" && s.integrationEta
                     ? ` · ${s.integrationEta}`
                     : ""}
@@ -283,14 +287,14 @@ export default function SourcesPage() {
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-current" />
                 {s.status.active
-                  ? "Actif"
+                  ? tp("sources.status.active")
                   : s.status.configured
-                    ? "Configuré"
-                    : "Inactif"}
+                    ? tp("sources.status.configured")
+                    : tp("sources.status.inactive")}
               </span>
               {s.status.lastSyncAt ? (
                 <span className="text-slate-500">
-                  sync :{" "}
+                  {tp("sources.status.syncPrefix")}{" "}
                   {new Date(s.status.lastSyncAt).toLocaleString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -310,9 +314,9 @@ export default function SourcesPage() {
               </p>
             ) : null}
 
-            {userAccessLine(s, me) ? (
+            {userAccessLine(s, me, tp) ? (
               <p className="mt-2 rounded border border-slate-800 bg-slate-950/60 px-2 py-1.5 text-[11px] text-slate-300">
-                {userAccessLine(s, me)}
+                {userAccessLine(s, me, tp)}
               </p>
             ) : null}
 
@@ -343,10 +347,10 @@ export default function SourcesPage() {
                 {s.homepage.replace(/^https?:\/\//, "")} ↗
               </a>
               {s.hasFetchScenes ? (
-                <span className="text-slate-500">scenes API</span>
+                <span className="text-slate-500">{tp("sources.scenesApi")}</span>
               ) : null}
               {s.hasFetchFixes ? (
-                <span className="text-slate-500">fixes API</span>
+                <span className="text-slate-500">{tp("sources.fixesApi")}</span>
               ) : null}
             </div>
           </article>
@@ -355,28 +359,13 @@ export default function SourcesPage() {
 
       <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-300">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-200">
-          Recommandation de mix
+          {tp("sources.recommendation.title")}
         </h2>
         <ul className="list-disc space-y-1 pl-5 text-slate-400">
-          <li>
-            <strong>Démo gratuite</strong> : aisstream.io (live) + Sentinel-1
-            (vérité terrain hebdo) — couvre EU/US correctement.
-          </li>
-          <li>
-            <strong>Production trader</strong> : ajouter Spire (geofencé sur
-            chokepoints critiques : Hormuz, Singapour, Bab el-Mandeb) pour
-            combler le trou Golfe Persique.
-          </li>
-          <li>
-            <strong>Redondance opérationnelle</strong> : MarineTraffic ou
-            Orbcomm en fallback — différentes constellations satellites,
-            bascule automatique si une source tombe.
-          </li>
-          <li>
-            <strong>Détection dark fleet</strong> : VIIRS (lights de nuit)
-            détecte les navires AIS éteints — précieux pour assureurs et
-            sanctions.
-          </li>
+          <li>{tp("sources.recommendation.demo")}</li>
+          <li>{tp("sources.recommendation.production")}</li>
+          <li>{tp("sources.recommendation.redundancy")}</li>
+          <li>{tp("sources.recommendation.darkFleet")}</li>
         </ul>
       </section>
 
@@ -400,6 +389,7 @@ function UserKeyRow({
   onChanged: () => void;
   sourceLabel: React.ReactNode;
 }) {
+  const { tp } = useI18n();
   const [busy, setBusy] = useState(false);
   const [testResult, setTestResult] = useState<{
     ok: boolean;
@@ -451,13 +441,15 @@ function UserKeyRow({
         <span className="font-mono text-[11px] text-emerald-300">
           {userKey.masked}
         </span>
-        <span className="text-[10px] text-slate-500">votre clé</span>
+        <span className="text-[10px] text-slate-500">
+          {tp("sources.byo.yourKey")}
+        </span>
         <button
           onClick={test}
           disabled={busy}
           className="ml-auto rounded border border-slate-700 px-2 py-0.5 text-[10px] text-slate-300 hover:border-sky-500 disabled:opacity-50"
         >
-          Tester
+          {tp("sources.byo.test")}
         </button>
         <button
           onClick={remove}
@@ -498,6 +490,7 @@ function KeyRowEditor({
   isAuthenticated: boolean;
   onChanged: () => void;
 }) {
+  const { tp } = useI18n();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
@@ -527,19 +520,6 @@ function KeyRowEditor({
     }
   };
 
-  const remove = async () => {
-    setBusy(true);
-    try {
-      await fetch(
-        `/api/user/integrations?sourceId=${encodeURIComponent(sourceId)}&envKeyName=${encodeURIComponent(envKeyName)}`,
-        { method: "DELETE" },
-      );
-      onChanged();
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const sourceLabel = (
     <code className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-300">
       {envKeyName}
@@ -563,15 +543,13 @@ function KeyRowEditor({
       <div className="flex items-center gap-2 rounded border border-slate-800 px-2 py-1.5">
         {sourceLabel}
         <span className="text-[10px] text-slate-500">
-          fournie par l&apos;opérateur
+          {tp("sources.byo.providedByOp")}
         </span>
       </div>
     );
   }
 
   if (!isAuthenticated || !canByoKey) {
-    // Page informative for visitors / Free / Starter / Professional users.
-    // No upgrade pitch here (that lives on /pricing).
     return null;
   }
 
@@ -583,7 +561,7 @@ function KeyRowEditor({
           onClick={() => setEditing(true)}
           className="text-[10px] text-sky-400 hover:underline"
         >
-          + Coller ma clé
+          {tp("sources.byo.addKey")}
         </button>
       </div>
     );
@@ -600,7 +578,7 @@ function KeyRowEditor({
         autoFocus
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Colle ta clé ici"
+        placeholder={tp("sources.byo.placeholder")}
         className="min-w-0 flex-1 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100 placeholder:text-slate-600 focus:border-sky-500 focus:outline-none"
       />
       <button
