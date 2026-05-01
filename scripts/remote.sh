@@ -25,6 +25,8 @@
 #   bash scripts/remote.sh disk                # disk usage breakdown
 #   bash scripts/remote.sh reset-tier <email> [tier=free]
 #                                              # set Clerk publicMetadata.tier
+#   bash scripts/remote.sh db-user <email>     # dump user row + alerts + integrations
+#   bash scripts/remote.sh db-schema           # list all DB tables and column names
 #
 # Quick example:
 #   bash scripts/remote.sh exec "find .next -name '*.css' | head"
@@ -234,6 +236,21 @@ case "$cmd" in
     tier="${2:-free}"
     log "Setting tier=$tier for $email"
     ssh_run "cd '$DEPLOY_PROJECT_DIR' && set -a && . ./.env.local && set +a && node scripts/reset-tier.mjs '$email' '$tier'"
+    ;;
+
+  db-user)
+    if [[ $# -eq 0 ]]; then
+      err "db-user requires <email> (or pass nothing for schema only)"
+      echo "  example: bash scripts/remote.sh db-user contact@example.com"
+      exit 1
+    fi
+    log "Inspecting DB rows for $1"
+    ssh_run "cd '$DEPLOY_PROJECT_DIR' && node scripts/db-inspect.js '$1'"
+    ;;
+
+  db-schema)
+    log "Dumping DB schema overview"
+    ssh_run "cd '$DEPLOY_PROJECT_DIR' && node scripts/db-inspect.js"
     ;;
 
   help|-h|--help|"")
