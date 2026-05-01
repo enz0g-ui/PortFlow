@@ -43,9 +43,23 @@ if (!email) {
   process.exit(0);
 }
 
-const u = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+let u = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
 if (!u) {
-  console.log(`\nNo user with email=${email}`);
+  // Fallback: case-insensitive
+  u = db
+    .prepare("SELECT * FROM users WHERE LOWER(email) = LOWER(?)")
+    .get(email);
+}
+if (!u) {
+  console.log(`\nNo user with email=${email} — dumping all users so you can find the right row:\n`);
+  const all = db
+    .prepare("SELECT id, email, tier, stripe_subscription_id, created_at FROM users ORDER BY created_at DESC")
+    .all();
+  if (all.length === 0) {
+    console.log("  (users table is empty)");
+  } else {
+    for (const r of all) console.log("  " + JSON.stringify(r));
+  }
   process.exit(0);
 }
 
