@@ -49,23 +49,26 @@ export async function GET() {
   }
 
   try {
-    // Stripe Promotion Code retrieve returns `coupon` as either a string id
-    // or an object depending on expand handling. We fetch the coupon
-    // separately for reliability — two API calls but no ambiguity.
+    // The newer Stripe Promotion Code API shape is:
+    //   { id, code, active, max_redemptions, times_redeemed,
+    //     promotion: { type: "coupon", coupon: "<coupon_id>" } }
+    // Older SDKs expose `coupon` at the top level. We accept both.
     const promo = (await stripe.promotionCodes.retrieve(promoId)) as unknown as {
       active: boolean;
       code: string;
       max_redemptions: number | null;
       times_redeemed: number;
-      coupon: string | { id: string };
+      coupon?: string | { id: string };
+      promotion?: { type?: string; coupon?: string | { id: string } };
     };
     if (!promo.active) {
       const payload = { enabled: false, reason: "promo inactive" };
       cache = { fetchedAt: Date.now(), payload };
       return Response.json(payload);
     }
+    const couponField = promo.promotion?.coupon ?? promo.coupon;
     const couponId =
-      typeof promo.coupon === "string" ? promo.coupon : promo.coupon?.id;
+      typeof couponField === "string" ? couponField : couponField?.id;
     if (!couponId) {
       const payload = {
         enabled: false,
