@@ -92,24 +92,21 @@ export default function PricingPage() {
           <span className="text-2xl">🚀</span>
           <div className="flex-1 space-y-1">
             <div className="font-semibold text-amber-200">
-              {tp("pricing.founder.title").replace(
-                "{percent}",
-                String(founder.percentOff ?? 30),
-              )}
+              {tp("pricing.founder.title", {
+                percent: founder.percentOff ?? 30,
+              })}
             </div>
             <div className="text-xs text-amber-100/80">
-              {tp("pricing.founder.body")
-                .replace("{code}", founder.code)
-                .replace(
-                  "{remaining}",
-                  founder.remaining != null
-                    ? String(founder.remaining)
-                    : "—",
-                )
-                .replace(
-                  "{max}",
-                  founder.max != null ? String(founder.max) : "—",
-                )}
+              {founder.max != null
+                ? tp("pricing.founder.body", {
+                    code: founder.code,
+                    remaining: founder.remaining ?? 0,
+                    max: founder.max,
+                  })
+                : tp("pricing.founder.bodyUnlimited", {
+                    code: founder.code,
+                    percent: founder.percentOff ?? 30,
+                  })}
             </div>
           </div>
           <code className="rounded bg-amber-500/20 px-2 py-1 font-mono text-xs text-amber-100">
