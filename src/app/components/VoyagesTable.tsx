@@ -233,8 +233,25 @@ export function VoyagesTable({
                 <td className="py-2 pr-2 text-right tabular-nums text-slate-300">
                   {v.currentSog.toFixed(1)} kn
                 </td>
-                <td className="py-2 pr-2 text-right tabular-nums text-slate-300">
-                  {v.currentDistanceNm?.toFixed(1) ?? "—"} nm
+                <td className="py-2 pr-2 align-middle">
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="tabular-nums text-slate-300">
+                      {v.currentDistanceNm?.toFixed(1) ?? "—"} nm
+                    </span>
+                    {v.startDistanceNm != null &&
+                    v.currentDistanceNm != null &&
+                    v.startDistanceNm > 0 ? (
+                      <ProgressBar
+                        progress={Math.max(
+                          0,
+                          Math.min(
+                            1,
+                            1 - v.currentDistanceNm / v.startDistanceNm,
+                          ),
+                        )}
+                      />
+                    ) : null}
+                  </div>
                 </td>
                 <td className="py-2 pr-2 tabular-nums text-sky-300">
                   {fmtEta(v.predictedEta, locale)}
@@ -257,6 +274,29 @@ export function VoyagesTable({
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function ProgressBar({ progress }: { progress: number }) {
+  const pct = Math.round(progress * 100);
+  // < 33% amber (early), 33-80% sky (in transit), > 80% emerald (almost there).
+  const color =
+    pct >= 80
+      ? "bg-emerald-400"
+      : pct >= 33
+        ? "bg-sky-400"
+        : "bg-amber-400";
+  return (
+    <div
+      className="relative h-1 w-20 overflow-hidden rounded-full bg-slate-800"
+      title={`${pct}% du voyage`}
+      aria-label={`${pct}% complete`}
+    >
+      <div
+        className={`absolute left-0 top-0 h-full ${color} transition-[width]`}
+        style={{ width: `${pct}%` }}
+      />
     </div>
   );
 }
