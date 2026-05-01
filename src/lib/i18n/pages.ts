@@ -324,6 +324,132 @@ const fr: PageMessages = {
     "Attendre 60 s + quelques minutes pour voir les voyages s'ouvrir (selon le trafic).",
   "guide.checklist.s6":
     "La page /precision affichera des chiffres après les premiers voyages clos (ETA prédite + arrivée constatée).",
+
+  // /legal
+  "legal.backLink": "← retour",
+  "legal.methodologyLink": "Méthodologie →",
+  "legal.title": "Mentions légales",
+  "legal.lead":
+    "Cette page consolide attributions de données, conditions d'utilisation, vie privée, conformité et limites. Elle est référencée depuis le pied de chaque page.",
+  "legal.maritime.title": "Avis maritime",
+  "legal.maritime.notForNav": "Not for navigation.",
+  "legal.maritime.body":
+    "Les positions, ETA, anomalies et indicateurs publiés par Port Flow sont dérivés de signaux AIS publics et de données météo et imagerie satellite. Ils peuvent contenir des erreurs, des retards et des omissions. Cette plateforme ne remplace en aucun cas un système de navigation certifié, ni une cellule opérationnelle de pilotage. L'usage à des fins de sécurité maritime, de pilotage ou de décision opérationnelle critique est explicitement exclu.",
+  "legal.tos.title": "Conditions d'utilisation",
+  "legal.tos.b1":
+    "Plateforme fournie « en l'état », sans garantie de disponibilité, d'exactitude ou d'adéquation à un usage particulier.",
+  "legal.tos.b2.intro": "Engagements de service détaillés dans la",
+  "legal.tos.b2.linkLabel": "page méthodologie",
+  "legal.tos.b2.outro": " (SLA v1).",
+  "legal.tos.b3":
+    "Les données affichées peuvent être dérivées et transformées. La plateforme n'est pas un revendeur de données AIS brutes.",
+  "legal.tos.b4":
+    "Tout usage commercial nécessite respect des termes des fournisseurs sources (notamment paiement Spire / MarineTraffic / Orbcomm si activés).",
+  "legal.privacy.title": "Politique de confidentialité (RGPD)",
+  "legal.privacy.controller": "Responsable de traitement :",
+  "legal.privacy.contactPrefix": "Port Flow — contact :",
+  "legal.privacy.intro":
+    "Cette section décrit les données personnelles collectées, leurs finalités et les droits de l'utilisateur conformément au RGPD (UE) 2016/679. Pour les clients EU, un DPA signable est disponible sur demande à privacy@portflow.uk.",
+  "legal.privacy.dpaBold": "DPA signable",
+  "legal.privacy.dataTitle": "Données collectées et finalités",
+  "legal.privacy.col.data": "Donnée",
+  "legal.privacy.col.purpose": "Finalité",
+  "legal.privacy.col.basis": "Base légale",
+  "legal.privacy.col.retention": "Conservation",
+  "legal.privacy.row1.data": "Email + identifiant Clerk",
+  "legal.privacy.row1.purpose": "Authentification, support",
+  "legal.privacy.row1.basis": "Exécution contractuelle",
+  "legal.privacy.row1.retention": "Tant que compte actif + 12 mois",
+  "legal.privacy.row2.data": "ID client Stripe + historique paiement",
+  "legal.privacy.row2.purpose": "Facturation, abonnement",
+  "legal.privacy.row2.basis": "Exécution contractuelle",
+  "legal.privacy.row2.retention": "10 ans (obligation comptable)",
+  "legal.privacy.row3.data":
+    "URLs webhook Slack/Discord/Telegram, email alertes",
+  "legal.privacy.row3.purpose": "Envoi d'alertes que vous configurez",
+  "legal.privacy.row3.basis": "Consentement explicite (saisie UI)",
+  "legal.privacy.row3.retention": "Jusqu'à suppression par l'utilisateur",
+  "legal.privacy.row4.data":
+    "Clés API tierces (Spire/VIIRS/Orbcomm) chiffrées AES-256-GCM",
+  "legal.privacy.row4.purpose": "Intégration BYO key",
+  "legal.privacy.row4.basis": "Consentement explicite (saisie UI)",
+  "legal.privacy.row4.retention": "Jusqu'à suppression par l'utilisateur",
+  "legal.privacy.row5.data": "Watchlist (MMSI navires, IDs ports)",
+  "legal.privacy.row5.purpose": "Personnalisation dashboard",
+  "legal.privacy.row5.basis": "Exécution contractuelle",
+  "legal.privacy.row5.retention": "Tant que compte actif",
+  "legal.privacy.row6.data": "Logs API (timestamp, key prefix, endpoint)",
+  "legal.privacy.row6.purpose": "Audit, sécurité, anti-abus",
+  "legal.privacy.row6.basis": "Intérêt légitime",
+  "legal.privacy.row6.retention": "90 jours rolling",
+  "legal.privacy.subTitle": "Sous-traitants (sub-processors)",
+  "legal.privacy.sub.clerk":
+    "Clerk Inc. (US) — authentification utilisateur · clerk.com (DPA disponible)",
+  "legal.privacy.sub.stripe":
+    "Stripe Inc. (US) — facturation · stripe.com (DPA + SCCs disponibles)",
+  "legal.privacy.sub.do":
+    "DigitalOcean LLC (Frankfurt EU region) — hébergement · digitalocean.com (DPA)",
+  "legal.privacy.sub.cloudflare":
+    "Cloudflare Inc. (US) — DNS + DDoS · cloudflare.com (DPA + SCCs)",
+  "legal.privacy.sub.resend":
+    "Resend Inc. (US) — envoi emails d'alertes (si activé) · resend.com (DPA)",
+  "legal.privacy.sub.aisstream":
+    "aisstream.io — flux AIS public (pas de donnée personnelle utilisateur transmise)",
+  "legal.privacy.sub.copernicus":
+    "Copernicus Data Space (ESA) — imagerie satellite Sentinel-1 (publique)",
+  "legal.privacy.transfersTitle": "Transferts hors UE",
+  "legal.privacy.transfersBody":
+    "Clerk, Stripe, Cloudflare et Resend opèrent depuis les US. Tous disposent de Standard Contractual Clauses (SCCs) UE-US. Les données AIS et de port (publiques par nature) ne constituent pas des données personnelles transférées.",
+  "legal.privacy.rightsTitle": "Vos droits",
+  "legal.privacy.rights.access":
+    "Accès, rectification — tout est visible dans /account, modifiable directement",
+  "legal.privacy.rights.delete":
+    "Effacement — supprime ton compte via Clerk (les clés API + watchlist + alertes en cascade)",
+  "legal.privacy.rights.portability":
+    "Portabilité — export CSV de ta watchlist/flotte disponible depuis /fleet (Starter+)",
+  "legal.privacy.rights.opt":
+    "Opposition, retrait du consentement — désactivation des alertes ou retrait des clés à tout moment dans /account et /sources",
+  "legal.privacy.rights.complaint":
+    "Réclamation — auprès de la CNIL (France) ou de toute autorité de contrôle européenne",
+  "legal.privacy.securityTitle": "Sécurité technique",
+  "legal.privacy.security.tls":
+    "HTTPS TLS 1.3 obligatoire (Let's Encrypt). HTTP redirigé.",
+  "legal.privacy.security.encryption":
+    "Chiffrement at-rest des secrets utilisateur (clés API tierces) : AES-256-GCM avec master key serveur",
+  "legal.privacy.security.passwords":
+    "Mots de passe gérés par Clerk (PBKDF2/Argon2id, jamais en clair)",
+  "legal.privacy.security.audit":
+    "Logs auditables (table audit_log) sur changements d'abonnement et accès API",
+  "legal.privacy.security.mmsi":
+    "MMSI affichés = identifiants de navire, attribués par l'UIT au pavillon — pas des identifiants de personnes",
+  "legal.privacy.security.cookies":
+    "Aucun cookie d'analytics tiers. Le seul stockage local est le cache navigateur de résilience d'onglet, purgeable.",
+  "legal.dpa.title": "Data Processing Agreement (DPA) — résumé",
+  "legal.dpa.intro":
+    "Pour tout client EU professionnel utilisant Port Flow pour traiter des données dans le cadre d'une activité B2B, un DPA conforme à l'article 28 RGPD est mis à disposition.",
+  "legal.dpa.role":
+    "Port Flow agit comme sous-traitant pour les données traitées dans le cadre du service (watchlist, alertes, clés API)",
+  "legal.dpa.noSecondary":
+    "Aucun traitement secondaire : pas de publicité, de revente, de profilage commercial",
+  "legal.dpa.breach": "Notification de toute violation de données dans les 72 h",
+  "legal.dpa.audits":
+    "Coopération aux audits annuels du client (sur préavis 30 jours)",
+  "legal.dpa.endOfContract":
+    "Suppression ou retour des données à la fin du contrat (export CSV + purge DB sur demande)",
+  "legal.dpa.subList":
+    "Liste des sous-traitants ci-dessus, modifiable avec préavis 30 jours",
+  "legal.dpa.outro": "DPA signé sur demande à",
+  "legal.dpa.outroSuffix": " — délai indicatif 48 h ouvrées.",
+  "legal.sanctions.title": "Sanctions & conformité",
+  "legal.sanctions.b1":
+    "La plateforme n'applique pas de filtre OFAC, OFSI, EU ou ONU sur les navires affichés. Les opérateurs sous sanctions peuvent apparaître comme tout autre navire.",
+  "legal.sanctions.b2":
+    "Il appartient au client utilisateur (trader, assureur, freight forwarder) d'appliquer ses propres listes et procédures de screening.",
+  "legal.sanctions.b3":
+    "La plateforme est neutre : aucun navire n'est masqué ou marqué sur des critères politiques ou commerciaux.",
+  "legal.citation.title": "Citation académique",
+  "legal.citation.body":
+    "Si vous citez Port Flow dans une publication, merci d'inclure :",
 };
 
 const en: PageMessages = {
@@ -641,6 +767,132 @@ const en: PageMessages = {
     "Wait 60s + a few minutes for voyages to start opening (depending on traffic).",
   "guide.checklist.s6":
     "The /precision page will show numbers after the first closed voyages (predicted ETA + actual arrival).",
+
+  // /legal
+  "legal.backLink": "← back",
+  "legal.methodologyLink": "Methodology →",
+  "legal.title": "Legal notices",
+  "legal.lead":
+    "This page consolidates data attributions, terms of use, privacy, compliance and limitations. It is linked from the footer of every page.",
+  "legal.maritime.title": "Maritime notice",
+  "legal.maritime.notForNav": "Not for navigation.",
+  "legal.maritime.body":
+    "The positions, ETAs, anomalies and indicators published by Port Flow are derived from public AIS signals and from weather and satellite imagery data. They may contain errors, delays and omissions. This platform does not replace any certified navigation system or operational pilot station. Use for maritime safety, pilotage or critical operational decisions is explicitly excluded.",
+  "legal.tos.title": "Terms of use",
+  "legal.tos.b1":
+    "Platform provided \"as is\", without warranty of availability, accuracy or fitness for any particular purpose.",
+  "legal.tos.b2.intro": "Service commitments detailed on the",
+  "legal.tos.b2.linkLabel": "methodology page",
+  "legal.tos.b2.outro": " (SLA v1).",
+  "legal.tos.b3":
+    "Displayed data may be derived and transformed. The platform is not a reseller of raw AIS data.",
+  "legal.tos.b4":
+    "Any commercial use requires compliance with the source providers' terms (in particular Spire / MarineTraffic / Orbcomm subscriptions if enabled).",
+  "legal.privacy.title": "Privacy policy (GDPR)",
+  "legal.privacy.controller": "Data controller:",
+  "legal.privacy.contactPrefix": "Port Flow — contact:",
+  "legal.privacy.intro":
+    "This section describes the personal data collected, its purposes and the user's rights pursuant to GDPR (EU) 2016/679. For EU customers, a signable DPA is available on request at privacy@portflow.uk.",
+  "legal.privacy.dpaBold": "signable DPA",
+  "legal.privacy.dataTitle": "Data collected and purposes",
+  "legal.privacy.col.data": "Data",
+  "legal.privacy.col.purpose": "Purpose",
+  "legal.privacy.col.basis": "Legal basis",
+  "legal.privacy.col.retention": "Retention",
+  "legal.privacy.row1.data": "Email + Clerk identifier",
+  "legal.privacy.row1.purpose": "Authentication, support",
+  "legal.privacy.row1.basis": "Contract performance",
+  "legal.privacy.row1.retention": "While account active + 12 months",
+  "legal.privacy.row2.data": "Stripe customer ID + payment history",
+  "legal.privacy.row2.purpose": "Billing, subscription",
+  "legal.privacy.row2.basis": "Contract performance",
+  "legal.privacy.row2.retention": "10 years (accounting requirement)",
+  "legal.privacy.row3.data":
+    "Slack/Discord/Telegram webhook URLs, alert emails",
+  "legal.privacy.row3.purpose": "Sending alerts you configure",
+  "legal.privacy.row3.basis": "Explicit consent (UI input)",
+  "legal.privacy.row3.retention": "Until removed by user",
+  "legal.privacy.row4.data":
+    "Third-party API keys (Spire/VIIRS/Orbcomm) encrypted AES-256-GCM",
+  "legal.privacy.row4.purpose": "BYO key integration",
+  "legal.privacy.row4.basis": "Explicit consent (UI input)",
+  "legal.privacy.row4.retention": "Until removed by user",
+  "legal.privacy.row5.data": "Watchlist (vessel MMSIs, port IDs)",
+  "legal.privacy.row5.purpose": "Dashboard personalization",
+  "legal.privacy.row5.basis": "Contract performance",
+  "legal.privacy.row5.retention": "While account active",
+  "legal.privacy.row6.data": "API logs (timestamp, key prefix, endpoint)",
+  "legal.privacy.row6.purpose": "Audit, security, anti-abuse",
+  "legal.privacy.row6.basis": "Legitimate interest",
+  "legal.privacy.row6.retention": "90 days rolling",
+  "legal.privacy.subTitle": "Sub-processors",
+  "legal.privacy.sub.clerk":
+    "Clerk Inc. (US) — user authentication · clerk.com (DPA available)",
+  "legal.privacy.sub.stripe":
+    "Stripe Inc. (US) — billing · stripe.com (DPA + SCCs available)",
+  "legal.privacy.sub.do":
+    "DigitalOcean LLC (Frankfurt EU region) — hosting · digitalocean.com (DPA)",
+  "legal.privacy.sub.cloudflare":
+    "Cloudflare Inc. (US) — DNS + DDoS · cloudflare.com (DPA + SCCs)",
+  "legal.privacy.sub.resend":
+    "Resend Inc. (US) — alert email delivery (when enabled) · resend.com (DPA)",
+  "legal.privacy.sub.aisstream":
+    "aisstream.io — public AIS feed (no user personal data transmitted)",
+  "legal.privacy.sub.copernicus":
+    "Copernicus Data Space (ESA) — Sentinel-1 satellite imagery (public)",
+  "legal.privacy.transfersTitle": "Non-EU transfers",
+  "legal.privacy.transfersBody":
+    "Clerk, Stripe, Cloudflare and Resend operate from the US. All have EU-US Standard Contractual Clauses (SCCs) in place. AIS and port data (public by nature) do not constitute transferred personal data.",
+  "legal.privacy.rightsTitle": "Your rights",
+  "legal.privacy.rights.access":
+    "Access, rectification — everything is visible in /account, editable directly",
+  "legal.privacy.rights.delete":
+    "Erasure — delete your account via Clerk (cascade to API keys + watchlist + alerts)",
+  "legal.privacy.rights.portability":
+    "Portability — CSV export of your watchlist/fleet from /fleet (Starter+)",
+  "legal.privacy.rights.opt":
+    "Objection, withdrawal of consent — disable alerts or remove keys at any time in /account and /sources",
+  "legal.privacy.rights.complaint":
+    "Complaint — to the CNIL (France) or any European supervisory authority",
+  "legal.privacy.securityTitle": "Technical security",
+  "legal.privacy.security.tls":
+    "HTTPS TLS 1.3 mandatory (Let's Encrypt). HTTP redirected.",
+  "legal.privacy.security.encryption":
+    "At-rest encryption of user secrets (third-party API keys): AES-256-GCM with server master key",
+  "legal.privacy.security.passwords":
+    "Passwords managed by Clerk (PBKDF2/Argon2id, never plaintext)",
+  "legal.privacy.security.audit":
+    "Auditable logs (audit_log table) on subscription changes and API access",
+  "legal.privacy.security.mmsi":
+    "Displayed MMSIs = vessel identifiers, assigned by ITU to the flag — not personal identifiers",
+  "legal.privacy.security.cookies":
+    "No third-party analytics cookies. The only local storage is the browser tab-resilience cache, purgeable.",
+  "legal.dpa.title": "Data Processing Agreement (DPA) — summary",
+  "legal.dpa.intro":
+    "For any EU professional customer using Port Flow to process data as part of a B2B activity, a DPA compliant with GDPR Article 28 is provided.",
+  "legal.dpa.role":
+    "Port Flow acts as a processor for data processed as part of the service (watchlist, alerts, API keys)",
+  "legal.dpa.noSecondary":
+    "No secondary processing: no advertising, no resale, no commercial profiling",
+  "legal.dpa.breach": "Notification of any data breach within 72 hours",
+  "legal.dpa.audits":
+    "Cooperation with the customer's annual audits (with 30-day notice)",
+  "legal.dpa.endOfContract":
+    "Deletion or return of data at end of contract (CSV export + DB purge on request)",
+  "legal.dpa.subList":
+    "Sub-processor list above, modifiable with 30-day notice",
+  "legal.dpa.outro": "DPA signed on request at",
+  "legal.dpa.outroSuffix": " — typical lead time 48 business hours.",
+  "legal.sanctions.title": "Sanctions & compliance",
+  "legal.sanctions.b1":
+    "The platform does not apply OFAC, OFSI, EU or UN filters on displayed vessels. Sanctioned operators may appear like any other vessel.",
+  "legal.sanctions.b2":
+    "It is the customer's responsibility (trader, insurer, freight forwarder) to apply their own lists and screening procedures.",
+  "legal.sanctions.b3":
+    "The platform is neutral: no vessel is hidden or flagged on political or commercial criteria.",
+  "legal.citation.title": "Academic citation",
+  "legal.citation.body":
+    "If you cite Port Flow in a publication, please include:",
 };
 
 const nl: PageMessages = {
