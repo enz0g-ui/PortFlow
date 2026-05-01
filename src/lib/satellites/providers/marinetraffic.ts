@@ -1,7 +1,8 @@
-import type {
-  SatelliteFix,
-  SatelliteSource,
-  SourceStatus,
+import {
+  readEnv,
+  type SatelliteFix,
+  type SatelliteSource,
+  type SourceStatus,
 } from "../types";
 
 const MT_REST =
@@ -32,15 +33,15 @@ export const marineTrafficSource: SatelliteSource = {
       lastError: last?.error,
     };
   },
-  async fetchFixes(port) {
-    const key = process.env.MARINETRAFFIC_API_KEY;
+  async fetchFixes(port, _sinceMs, opts) {
+    const key = readEnv("MARINETRAFFIC_API_KEY", opts);
     if (!key) return [];
     const [s, w, n, e] = port.bbox;
     const url = `${MT_REST}/${key}/protocol:jsono/MINLAT:${s}/MAXLAT:${n}/MINLON:${w}/MAXLON:${e}`;
     try {
       const r = await fetch(url, {
         cache: "no-store",
-        signal: AbortSignal.timeout(10_000),
+        signal: opts?.signal ?? AbortSignal.timeout(10_000),
       });
       if (!r.ok) {
         lastSync.set("global", { ts: Date.now(), error: `HTTP ${r.status}` });

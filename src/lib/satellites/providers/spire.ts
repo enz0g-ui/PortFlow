@@ -1,7 +1,8 @@
-import type {
-  SatelliteFix,
-  SatelliteSource,
-  SourceStatus,
+import {
+  readEnv,
+  type SatelliteFix,
+  type SatelliteSource,
+  type SourceStatus,
 } from "../types";
 
 const SPIRE_REST = "https://api.spire.com/v2/messages";
@@ -31,8 +32,8 @@ export const spireSource: SatelliteSource = {
       lastError: last?.error,
     };
   },
-  async fetchFixes(port, sinceMs) {
-    const token = process.env.SPIRE_API_TOKEN;
+  async fetchFixes(port, sinceMs, opts) {
+    const token = readEnv("SPIRE_API_TOKEN", opts);
     if (!token) return [];
     const sinceISO = new Date(sinceMs).toISOString();
     const [s, w, n, e] = port.bbox;
@@ -46,7 +47,7 @@ export const spireSource: SatelliteSource = {
       const r = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
-        signal: AbortSignal.timeout(10_000),
+        signal: opts?.signal ?? AbortSignal.timeout(10_000),
       });
       if (!r.ok) {
         lastSync.set("global", { ts: Date.now(), error: `HTTP ${r.status}` });

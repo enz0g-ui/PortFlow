@@ -41,6 +41,17 @@ export type IntegrationStatus =
   | "in-progress"   // partial implementation, validation in progress
   | "planned";      // BYO key infrastructure ready, vendor integration still to code
 
+/**
+ * Per-fetch options passed to a provider. `env` overrides process.env for
+ * BYO-key tenant fetches: callers (api/user/satellite/...) inject the
+ * decrypted user's key here so the same fetcher works for operator polls
+ * AND per-tenant calls.
+ */
+export interface FetchOpts {
+  env?: Record<string, string>;
+  signal?: AbortSignal;
+}
+
 export interface SatelliteSource {
   id: string;
   label: string;
@@ -49,22 +60,26 @@ export interface SatelliteSource {
   description: string;
   homepage: string;
   envKeys: string[];
-  /**
-   * Honest status of the data integration with the vendor:
-   * - "live": fetchScenes/fetchFixes hit the real vendor API and return data
-   * - "in-progress": code path exists but coverage / formats not yet validated
-   * - "planned": BYO key UI works, but pasting a key DOES NOT fetch any data yet
-   */
   integration: IntegrationStatus;
-  /** Optional ETA for going from planned → live, e.g. "Q2 2026" */
   integrationEta?: string;
   status(): SourceStatus;
   fetchScenes?: (
     port: { id: string; bbox: [number, number, number, number] },
     sinceMs: number,
+    opts?: FetchOpts,
   ) => Promise<SatelliteScene[]>;
   fetchFixes?: (
     port: { id: string; bbox: [number, number, number, number] },
     sinceMs: number,
+    opts?: FetchOpts,
   ) => Promise<SatelliteFix[]>;
+}
+
+/** Resolves the value of an env key, preferring per-tenant override if present. */
+export function readEnv(
+  name: string,
+  opts?: FetchOpts,
+): string | undefined {
+  if (opts?.env && opts.env[name]) return opts.env[name];
+  return process.env[name];
 }
