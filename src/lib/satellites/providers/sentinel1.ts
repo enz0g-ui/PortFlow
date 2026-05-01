@@ -39,6 +39,7 @@ export const sentinel1Source: SatelliteSource = {
     "ESA Copernicus Sentinel-1 synthetic aperture radar. Detects vessels through clouds and at night, ~6-day revisit. Catalog browsing is free; product downloads need a Copernicus account.",
   homepage: "https://browser.dataspace.copernicus.eu/",
   envKeys: [],
+  integration: "live",
   status(): SourceStatus {
     const last = lastSync.get("global");
     return {

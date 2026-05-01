@@ -9,6 +9,7 @@ export const aisstreamSource: SatelliteSource = {
     "Community-fed terrestrial AIS websocket feed. Excellent coverage Europe / US, weak in Persian Gulf and parts of the Mediterranean.",
   homepage: "https://aisstream.io",
   envKeys: ["AISSTREAM_API_KEY"],
+  integration: "live",
   status() {
     const ok = !!process.env.AISSTREAM_API_KEY;
     return {

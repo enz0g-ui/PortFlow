@@ -18,15 +18,16 @@ export const marineTrafficSource: SatelliteSource = {
     "Mainstream commercial AIS provider — terrestrial + satellite combined. Easier entry pricing than Spire. Good fallback for Mediterranean and Asia.",
   homepage: "https://www.marinetraffic.com/en/p/api-services",
   envKeys: ["MARINETRAFFIC_API_KEY"],
+  integration: "in-progress",
+  integrationEta: "Q3 2026",
   status(): SourceStatus {
     const configured = !!process.env.MARINETRAFFIC_API_KEY;
     const last = lastSync.get("global");
     return {
-      active: configured,
+      active: false,
       configured,
-      reason: configured
-        ? "ready — fetchFixes will hit exportvessels endpoint"
-        : "set MARINETRAFFIC_API_KEY (subscription needed)",
+      reason:
+        "Connecteur exportvessels codé mais pas encore mergé au flux dashboard — intégration finale Q3 2026.",
       lastSyncAt: last?.ts,
       lastError: last?.error,
     };

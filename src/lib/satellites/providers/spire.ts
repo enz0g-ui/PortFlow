@@ -17,15 +17,16 @@ export const spireSource: SatelliteSource = {
     "Premium S-AIS provider with global coverage, 1-3 min latency. Recommended for Persian Gulf, Strait of Hormuz, Mediterranean dead zones. Geofenced subscriptions available.",
   homepage: "https://spire.com/maritime/",
   envKeys: ["SPIRE_API_TOKEN"],
+  integration: "in-progress",
+  integrationEta: "Q2 2026",
   status(): SourceStatus {
     const configured = !!process.env.SPIRE_API_TOKEN;
     const last = lastSync.get("global");
     return {
-      active: configured,
+      active: false,
       configured,
-      reason: configured
-        ? "ready — fetchFixes will hit Spire REST"
-        : "set SPIRE_API_TOKEN to activate (contact Spire sales for trial)",
+      reason:
+        "Connecteur REST codé mais pas encore branché au worker — la donnée Spire n'est pas encore mergée dans le dashboard. Tracking : intégration finale Q2 2026.",
       lastSyncAt: last?.ts,
       lastError: last?.error,
     };

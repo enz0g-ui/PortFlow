@@ -14,6 +14,8 @@ interface SourceInfo {
   envKeys: string[];
   hasFetchScenes: boolean;
   hasFetchFixes: boolean;
+  integration: "live" | "in-progress" | "planned";
+  integrationEta?: string;
   status: {
     active: boolean;
     configured: boolean;
@@ -22,6 +24,24 @@ interface SourceInfo {
     lastError?: string;
   };
 }
+
+const INTEGRATION_BADGE: Record<
+  SourceInfo["integration"],
+  { label: string; cls: string }
+> = {
+  live: {
+    label: "Intégration live",
+    cls: "border-emerald-700 bg-emerald-500/10 text-emerald-300",
+  },
+  "in-progress": {
+    label: "Intégration en cours",
+    cls: "border-amber-700 bg-amber-500/10 text-amber-300",
+  },
+  planned: {
+    label: "Intégration planifiée",
+    cls: "border-slate-700 bg-slate-800/40 text-slate-400",
+  },
+};
 
 interface Resp {
   sources: SourceInfo[];
@@ -224,13 +244,30 @@ export default function SourcesPage() {
                   {TIER_LABEL[s.tier]}
                 </div>
               </div>
-              <span
-                className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider ${
-                  TARIFF_BADGE[s.tariff].cls
-                }`}
-              >
-                {TARIFF_BADGE[s.tariff].label}
-              </span>
+              <div className="flex flex-col items-end gap-1">
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider ${
+                    TARIFF_BADGE[s.tariff].cls
+                  }`}
+                >
+                  {TARIFF_BADGE[s.tariff].label}
+                </span>
+                <span
+                  className={`rounded border px-1.5 py-0.5 text-[9px] uppercase tracking-wider ${
+                    INTEGRATION_BADGE[s.integration].cls
+                  }`}
+                  title={
+                    s.integrationEta
+                      ? `ETA d'activation : ${s.integrationEta}`
+                      : undefined
+                  }
+                >
+                  {INTEGRATION_BADGE[s.integration].label}
+                  {s.integration !== "live" && s.integrationEta
+                    ? ` · ${s.integrationEta}`
+                    : ""}
+                </span>
+              </div>
             </div>
             <p className="text-xs text-slate-400">{s.description}</p>
 

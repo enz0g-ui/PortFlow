@@ -9,14 +9,15 @@ export const orbcommSource: SatelliteSource = {
     "Historic S-AIS leader, complementary to Spire. Useful as a redundancy feed for critical zones (Hormuz, Bab el-Mandeb, Gulf of Mexico).",
   homepage: "https://www.orbcomm.com/en/networks/satellite-ais",
   envKeys: ["ORBCOMM_API_TOKEN"],
+  integration: "planned",
+  integrationEta: "sur demande client",
   status(): SourceStatus {
     const configured = !!process.env.ORBCOMM_API_TOKEN;
     return {
-      active: configured,
+      active: false,
       configured,
-      reason: configured
-        ? "configured — connector implementation pending vendor docs"
-        : "set ORBCOMM_API_TOKEN once contract is signed",
+      reason:
+        "Aucune intégration vendor codée à ce jour. Documentation vendor en cours d'analyse — implémentation sur demande client signataire.",
     };
   },
 };

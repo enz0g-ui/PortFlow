@@ -14,6 +14,8 @@ export async function GET() {
       envKeys: s.envKeys,
       hasFetchScenes: typeof s.fetchScenes === "function",
       hasFetchFixes: typeof s.fetchFixes === "function",
+      integration: s.integration,
+      integrationEta: s.integrationEta,
       status: s.status(),
     })),
   });

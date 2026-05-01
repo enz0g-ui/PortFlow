@@ -36,6 +36,11 @@ export interface SatelliteFix {
   meta?: Record<string, unknown>;
 }
 
+export type IntegrationStatus =
+  | "live"          // vendor calls coded + tested, data flows in production
+  | "in-progress"   // partial implementation, validation in progress
+  | "planned";      // BYO key infrastructure ready, vendor integration still to code
+
 export interface SatelliteSource {
   id: string;
   label: string;
@@ -44,19 +49,20 @@ export interface SatelliteSource {
   description: string;
   homepage: string;
   envKeys: string[];
-  status(): SourceStatus;
   /**
-   * Fetches recent scene metadata for the given port bbox.
-   * Returns [] if not implemented or fails. Must not throw.
+   * Honest status of the data integration with the vendor:
+   * - "live": fetchScenes/fetchFixes hit the real vendor API and return data
+   * - "in-progress": code path exists but coverage / formats not yet validated
+   * - "planned": BYO key UI works, but pasting a key DOES NOT fetch any data yet
    */
+  integration: IntegrationStatus;
+  /** Optional ETA for going from planned → live, e.g. "Q2 2026" */
+  integrationEta?: string;
+  status(): SourceStatus;
   fetchScenes?: (
     port: { id: string; bbox: [number, number, number, number] },
     sinceMs: number,
   ) => Promise<SatelliteScene[]>;
-  /**
-   * Fetches recent vessel fixes (positions) for the given port bbox.
-   * Must not throw — return [] on failure.
-   */
   fetchFixes?: (
     port: { id: string; bbox: [number, number, number, number] },
     sinceMs: number,
