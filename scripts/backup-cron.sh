@@ -64,21 +64,34 @@ find "$BACKUP_DIR" -name 'portflow-*.tar.gz' -mtime "+$RETENTION_DAYS" -delete
 
 echo "[backup] $(date -u +%FT%TZ) wrote $(du -sh "$out" | cut -f1) to $out"
 
-# Optional offsite ship
-if [[ -n "${BACKUP_S3_BUCKET:-}" ]] && command -v aws >/dev/null; then
-  s3_path="s3://${BACKUP_S3_BUCKET}/portflow/portflow-$stamp.tar.gz"
-  if aws s3 cp "$out" "$s3_path" --quiet; then
-    echo "[backup] shipped to $s3_path"
+# Optional offsite ship — verbose diagnostics so silent skips become visible.
+if [[ -n "${BACKUP_S3_BUCKET:-}" ]]; then
+  if command -v aws >/dev/null; then
+    s3_path="s3://${BACKUP_S3_BUCKET}/portflow/portflow-$stamp.tar.gz"
+    if aws s3 cp "$out" "$s3_path" --quiet; then
+      echo "[backup] shipped to $s3_path"
+    else
+      echo "[backup] ! S3 ship failed for $s3_path"
+    fi
   else
-    echo "[backup] ! S3 ship failed for $s3_path"
+    echo "[backup] ! BACKUP_S3_BUCKET is set ($BACKUP_S3_BUCKET) but 'aws' CLI not in PATH — skipping S3 ship"
   fi
+else
+  echo "[backup]   no BACKUP_S3_BUCKET — S3 offsite ship disabled"
 fi
 
 # Optional Backblaze B2 ship via b2 CLI
-if [[ -n "${BACKUP_B2_BUCKET:-}" ]] && command -v b2 >/dev/null; then
-  if b2 file upload "$BACKUP_B2_BUCKET" "$out" "portflow-$stamp.tar.gz" >/dev/null; then
-    echo "[backup] shipped to b2://$BACKUP_B2_BUCKET/portflow-$stamp.tar.gz"
+if [[ -n "${BACKUP_B2_BUCKET:-}" ]]; then
+  if command -v b2 >/dev/null; then
+    # Capture stderr so we know WHY upload fails (auth, network, etc.).
+    if b2_err=$(b2 file upload "$BACKUP_B2_BUCKET" "$out" "portflow-$stamp.tar.gz" 2>&1 >/dev/null); then
+      echo "[backup] shipped to b2://$BACKUP_B2_BUCKET/portflow-$stamp.tar.gz"
+    else
+      echo "[backup] ! B2 ship failed: $b2_err"
+    fi
   else
-    echo "[backup] ! B2 ship failed"
+    echo "[backup] ! BACKUP_B2_BUCKET is set ($BACKUP_B2_BUCKET) but 'b2' CLI not in PATH — skipping B2 ship"
   fi
+else
+  echo "[backup]   no BACKUP_B2_BUCKET — B2 offsite ship disabled"
 fi
