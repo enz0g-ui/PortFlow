@@ -19,14 +19,17 @@ BACKUP_DIR="${BACKUP_DIR:-/var/backups/portflow}"
 RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-7}"
 
 # Load BACKUP_B2_BUCKET / BACKUP_S3_BUCKET (and any other backup-related env)
-# from .env.local if present. Variables already set in the environment (e.g.
-# from cron MAILTO etc.) take precedence — `set -a` would override; we only
-# want to fill in the gaps, so we source then re-export selectively.
+# from .env.local if present. Use explicit `if/then/continue` rather than the
+# `[[ ... ]] && continue` shorthand — under `set -e`, the latter can cause a
+# silent exit when the test returns non-zero (subtle bash gotcha).
 if [[ -f "$PROJECT_DIR/.env.local" ]]; then
+  # Disable set -e for the loop body specifically — line-format edge cases
+  # in user-edited env files shouldn't kill the entire backup.
+  set +e
   while IFS= read -r line; do
-    [[ "$line" =~ ^[[:space:]]*# ]] && continue
-    [[ -z "$line" ]] && continue
-    [[ "$line" != *=* ]] && continue
+    if [[ "$line" =~ ^[[:space:]]*# ]]; then continue; fi
+    if [[ -z "$line" ]]; then continue; fi
+    if [[ "$line" != *=* ]]; then continue; fi
     key="${line%%=*}"
     val="${line#*=}"
     # Only set BACKUP_*-prefixed vars to avoid leaking secrets into this shell.
@@ -34,6 +37,7 @@ if [[ -f "$PROJECT_DIR/.env.local" ]]; then
       export "$key=$val"
     fi
   done < "$PROJECT_DIR/.env.local"
+  set -e
 fi
 
 mkdir -p "$BACKUP_DIR"
