@@ -53,9 +53,22 @@ if command -v sqlite3 >/dev/null && [[ -f data/port.db ]]; then
   sqlite3 data/port.db ".backup data/port.db.bak"
 fi
 
+# tar exits with code 1 when files change while being read (the AIS worker
+# constantly rewrites vessels-*.json). That's a warning, not a fatal error —
+# the tar.gz is still valid for the snapshot. We treat exit 0 and 1 as success
+# and only abort on exit >= 2 (real I/O errors). Suppress the specific noise
+# warnings to keep the output clean.
+tar_status=0
 tar czf "$out" \
   --exclude='data/*.bak-tmp' \
-  data/ .env.local 2>/dev/null
+  --warning=no-file-changed \
+  --warning=no-file-removed \
+  data/ .env.local || tar_status=$?
+if [[ $tar_status -gt 1 ]]; then
+  echo "[backup] ! tar failed with exit $tar_status"
+  rm -f data/port.db.bak "$out"
+  exit $tar_status
+fi
 
 # Cleanup the on-disk .backup helper if any
 rm -f data/port.db.bak
