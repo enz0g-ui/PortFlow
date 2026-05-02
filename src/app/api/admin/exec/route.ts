@@ -38,7 +38,7 @@ export const dynamic = "force-dynamic";
  */
 
 const PROJECT_DIR = process.env.PORTFLOW_PROJECT_DIR ?? "/opt/projects/portflow";
-const TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_OUTPUT = 1_000_000;
 
 interface AllowedCommand {
@@ -47,6 +47,8 @@ interface AllowedCommand {
   validateArgs?: (args: string[]) => string | null; // returns error string if invalid
   // Default cwd
   cwd?: string;
+  // Per-command timeout override (ms). Defaults to DEFAULT_TIMEOUT_MS.
+  timeoutMs?: number;
 }
 
 const EMAIL_RE = /^[A-Za-z0-9._+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
@@ -79,8 +81,12 @@ const ALLOWED: Record<string, AllowedCommand> = {
   // --- Backup operations ---
   "backup-run": {
     argv: ["bash", `${PROJECT_DIR}/scripts/backup-cron.sh`],
+    timeoutMs: 300_000, // 5 min — tar + 300 MB B2 upload can take a while
   },
-  "b2-ls": { argv: ["b2", "ls", "b2://portflow-backups"] },
+  "b2-ls": {
+    argv: ["b2", "ls", "b2://portflow-backups"],
+    timeoutMs: 60_000,
+  },
 
   // --- DB inspection (takes one email arg) ---
   "db-inspect": {
@@ -180,6 +186,7 @@ export async function POST(request: NextRequest) {
   }
 
   const cwd = cmd.cwd ?? PROJECT_DIR;
+  const timeoutMs = cmd.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const start = Date.now();
   try {
     const out = await new Promise<{
@@ -197,7 +204,7 @@ export async function POST(request: NextRequest) {
       const timer = setTimeout(() => {
         killed = true;
         child.kill("SIGKILL");
-      }, TIMEOUT_MS);
+      }, timeoutMs);
       child.stdout.on("data", (d: Buffer) => {
         if (stdout.length < MAX_OUTPUT) stdout += d.toString();
       });
@@ -211,7 +218,7 @@ export async function POST(request: NextRequest) {
       child.on("close", (code) => {
         clearTimeout(timer);
         if (killed) {
-          stderr += `\n[admin-exec] killed after ${TIMEOUT_MS}ms timeout`;
+          stderr += `\n[admin-exec] killed after ${timeoutMs}ms timeout`;
         }
         res({
           stdout: stdout.slice(0, MAX_OUTPUT),
