@@ -83,9 +83,28 @@ const ALLOWED: Record<string, AllowedCommand> = {
     argv: ["bash", `${PROJECT_DIR}/scripts/backup-cron.sh`],
     timeoutMs: 300_000, // 5 min — tar + 300 MB B2 upload can take a while
   },
+  "backup-debug": {
+    // Same script, but with bash -x to trace every command (stderr).
+    argv: ["bash", "-x", `${PROJECT_DIR}/scripts/backup-cron.sh`],
+    timeoutMs: 300_000,
+  },
   "b2-ls": {
     argv: ["b2", "ls", "b2://portflow-backups"],
     timeoutMs: 60_000,
+  },
+  "b2-upload-latest": {
+    // Upload the newest local backup to B2 (manual ship, bypassing the script).
+    argv: [
+      "bash",
+      "-c",
+      'set -e; cd /var/backups/portflow && latest=$(ls -t portflow-*.tar.gz | head -1) && b2 file upload portflow-backups "$latest" "$latest" && echo "uploaded $latest"',
+    ],
+    timeoutMs: 600_000, // 10 min — 350 MB upload over residential link can be slow
+  },
+
+  // --- Code reading (read-only, sanitized) ---
+  "cat-backup-script": {
+    argv: ["cat", `${PROJECT_DIR}/scripts/backup-cron.sh`],
   },
 
   // --- DB inspection (takes one email arg) ---
@@ -103,6 +122,15 @@ const ALLOWED: Record<string, AllowedCommand> = {
   "pm2-reload": {
     argv: ["pm2", "reload", "ecosystem.config.js", "--update-env"],
     cwd: PROJECT_DIR,
+  },
+  "git-pull": {
+    argv: ["git", "pull", "--ff-only"],
+    cwd: PROJECT_DIR,
+  },
+  "next-build": {
+    argv: ["npm", "run", "build"],
+    cwd: PROJECT_DIR,
+    timeoutMs: 300_000,
   },
 
   // --- Read a specific .env.local key (redacted unless very short) ---
