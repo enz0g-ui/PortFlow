@@ -1332,7 +1332,11 @@ export default function Page() {
 
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <AccuracyPanel data={accuracyResp ?? null} />
-        <AnomalyPanel anomalies={anomaliesResp?.anomalies ?? []} />
+        <AnomalyPanel
+          anomalies={anomaliesResp?.anomalies ?? []}
+          selectedMmsi={selectedMmsi}
+          onSelect={handleVoyageSelect}
+        />
         <FlowChart history={histResp?.history ?? []} />
       </section>
 

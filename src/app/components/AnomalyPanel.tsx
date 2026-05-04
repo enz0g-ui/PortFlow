@@ -18,6 +18,8 @@ interface Anomaly {
 
 interface Props {
   anomalies: Anomaly[];
+  selectedMmsi?: number | null;
+  onSelect?: (mmsi: number) => void;
 }
 
 const sevColor: Record<Anomaly["severity"], string> = {
@@ -26,7 +28,7 @@ const sevColor: Record<Anomaly["severity"], string> = {
   critical: "text-rose-400 border-rose-700",
 };
 
-export function AnomalyPanel({ anomalies }: Props) {
+export function AnomalyPanel({ anomalies, selectedMmsi, onSelect }: Props) {
   const { t } = useI18n();
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
@@ -44,28 +46,48 @@ export function AnomalyPanel({ anomalies }: Props) {
         </p>
       ) : (
         <ul className="space-y-2">
-          {anomalies.slice(0, 12).map((a) => (
-            <li
-              key={a.id}
-              className={`rounded border-l-2 bg-slate-950/50 px-2 py-1 text-xs ${sevColor[a.severity]}`}
-            >
-              <div className="flex items-baseline justify-between">
-                <span className="font-medium text-slate-100">
-                  {a.name ?? `MMSI ${a.mmsi}`}
-                </span>
-                <span className="text-[10px] tabular-nums text-slate-400">
-                  {a.metricHours.toFixed(1)} h
-                </span>
-              </div>
-              <div className="text-[11px] text-slate-400">
-                {a.cargoClass
-                  ? (CARGO_LABELS[a.cargoClass as CargoClass] ?? a.cargoClass)
-                  : "—"}
-                {a.zone ? ` · ${a.zone}` : ""}
-              </div>
-              <div className="text-[11px] text-slate-300">{a.detail}</div>
-            </li>
-          ))}
+          {anomalies.slice(0, 12).map((a) => {
+            const isSelected = a.mmsi === selectedMmsi;
+            const clickable = !!onSelect;
+            return (
+              <li
+                key={a.id}
+                onClick={clickable ? () => onSelect?.(a.mmsi) : undefined}
+                className={`rounded border-l-2 px-2 py-1 text-xs transition-colors ${
+                  sevColor[a.severity]
+                } ${
+                  isSelected
+                    ? "bg-sky-500/15 ring-1 ring-inset ring-sky-600/40"
+                    : "bg-slate-950/50"
+                } ${
+                  clickable
+                    ? "cursor-pointer hover:bg-slate-800/60"
+                    : ""
+                }`}
+                title={
+                  clickable
+                    ? `MMSI ${a.mmsi} — clic pour centrer la carte`
+                    : undefined
+                }
+              >
+                <div className="flex items-baseline justify-between">
+                  <span className="font-medium text-slate-100">
+                    {a.name ?? `MMSI ${a.mmsi}`}
+                  </span>
+                  <span className="text-[10px] tabular-nums text-slate-400">
+                    {a.metricHours.toFixed(1)} h
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  {a.cargoClass
+                    ? (CARGO_LABELS[a.cargoClass as CargoClass] ?? a.cargoClass)
+                    : "—"}
+                  {a.zone ? ` · ${a.zone}` : ""}
+                </div>
+                <div className="text-[11px] text-slate-300">{a.detail}</div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
