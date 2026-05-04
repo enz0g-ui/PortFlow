@@ -70,6 +70,13 @@ function FlyTo({
   resetTick?: number;
 }) {
   const map = useMap();
+  // Only fly to bounds when the port actually changes (portKey) or the user
+  // clicks "Recentrer" (resetTick). The `bbox` array reference can churn on
+  // every parent re-render (e.g. /api/ports re-poll), but its value is stable
+  // for a given portKey — depending on it would dezoom the user every 30s,
+  // which is the opposite of what every maritime tracker (MarineTraffic,
+  // VesselFinder, Spire) does. eslint-disable to acknowledge the closure
+  // reads bbox at call time.
   useEffect(() => {
     map.flyToBounds(
       [
@@ -78,7 +85,8 @@ function FlyTo({
       ],
       { duration: 0.6, padding: [20, 20] },
     );
-  }, [map, bbox, portKey, resetTick]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, portKey, resetTick]);
   return null;
 }
 
