@@ -157,14 +157,17 @@ const TrailsLayer = memo(function TrailsLayer({
   trails,
   vesselClassByMmsi,
   selectedMmsi,
+  highlightedMmsis,
   visible,
 }: {
   trails: Record<string, Array<[number, number, number]>>;
   vesselClassByMmsi: Map<number, VesselClass>;
   selectedMmsi: number | null | undefined;
+  highlightedMmsis?: Set<number>;
   visible: boolean;
 }) {
   if (!visible) return null;
+  const hasHighlight = highlightedMmsis && highlightedMmsis.size > 0;
   return (
     <>
       {Object.entries(trails).map(([mmsiStr, points]) => {
@@ -173,6 +176,11 @@ const TrailsLayer = memo(function TrailsLayer({
         if (mmsi === selectedMmsi) return null; // brighter trail drawn separately
         const cls = vesselClassByMmsi.get(mmsi) ?? "other";
         const color = CLASS_COLOR[cls];
+        // When a state filter / search is active, dim trails of vessels that
+        // don't match — keeps the eye on the relevant subset without hiding
+        // context entirely.
+        const isMatch = !hasHighlight || highlightedMmsis!.has(mmsi);
+        const opacity = isMatch ? 0.35 : 0.08;
         const positions = points.map(
           ([lat, lon]) => [lat, lon] as [number, number],
         );
@@ -183,7 +191,7 @@ const TrailsLayer = memo(function TrailsLayer({
             pathOptions={{
               color,
               weight: 1.5,
-              opacity: 0.35,
+              opacity,
               interactive: false,
             }}
           />
@@ -210,6 +218,7 @@ function TrailsForCurrentZoom(props: {
   trails?: Record<string, Array<[number, number, number]>>;
   vessels: Vessel[];
   selectedMmsi: number | null | undefined;
+  highlightedMmsis?: Set<number>;
 }) {
   const zoom = useMapZoom(11);
   const visible = zoom >= MIN_TRAIL_ZOOM;
@@ -224,6 +233,7 @@ function TrailsForCurrentZoom(props: {
       trails={props.trails}
       vesselClassByMmsi={vesselClassByMmsi}
       selectedMmsi={props.selectedMmsi}
+      highlightedMmsis={props.highlightedMmsis}
       visible={visible}
     />
   );
@@ -296,6 +306,7 @@ export default function MapInner({
         trails={trails}
         vessels={vessels}
         selectedMmsi={selectedMmsi}
+        highlightedMmsis={highlightedMmsis}
       />
       {selectedTrack && selectedTrack.length > 1 ? (
         <Polyline
@@ -336,29 +347,17 @@ export default function MapInner({
           </Tooltip>
         </CircleMarker>
       ))}
-      {highlightedMmsis && highlightedMmsis.size > 0
-        ? vessels
-            .filter((v) => highlightedMmsis.has(v.mmsi))
-            .map((v) => (
-              <CircleMarker
-                key={`halo-${v.mmsi}`}
-                center={[v.latitude, v.longitude]}
-                radius={12}
-                pathOptions={{
-                  color: "#fbbf24",
-                  weight: 2,
-                  fill: false,
-                  opacity: 0.85,
-                  dashArray: "3 3",
-                }}
-                interactive={false}
-              />
-            ))
-        : null}
       {vessels.map((v) => {
         const isSelected = v.mmsi === selectedMmsi;
+        const hasHighlight =
+          highlightedMmsis !== undefined && highlightedMmsis.size > 0;
         const isHighlighted = highlightedMmsis?.has(v.mmsi) ?? false;
         const baseColor = CLASS_COLOR[v.vesselClass];
+        // When a filter is active (state filter, search match…) we dim
+        // non-matching vessels rather than draw extra halos around the
+        // matches — keeps the eye on the relevant subset, less visual
+        // noise. The selected vessel always stays bright.
+        const isFocused = isSelected || !hasHighlight || isHighlighted;
         return (
           <CircleMarker
             key={v.mmsi}
@@ -366,37 +365,32 @@ export default function MapInner({
             radius={
               isSelected
                 ? 8
-                : isHighlighted
-                  ? 6
-                  : v.state === "underway"
+                : isFocused
+                  ? v.state === "underway"
                     ? 4
                     : 3
+                  : 2
             }
             pathOptions={{
-              color: isSelected
-                ? "#38bdf8"
-                : isHighlighted
-                  ? "#fbbf24"
-                  : baseColor,
+              color: isSelected ? "#38bdf8" : baseColor,
               fillColor: baseColor,
               fillOpacity: isSelected
                 ? 1
-                : isHighlighted
-                  ? 0.95
-                  : v.state === "underway"
+                : isFocused
+                  ? v.state === "underway"
                     ? 0.85
-                    : 0.5,
-              weight: isSelected ? 3 : isHighlighted ? 2 : 1,
+                    : 0.5
+                  : 0.15,
+              opacity: isSelected ? 1 : isFocused ? 0.9 : 0.25,
+              weight: isSelected ? 3 : 1,
             }}
             eventHandlers={
               onSelect ? { click: () => onSelect(v.mmsi) } : undefined
             }
           >
             <Tooltip
-              key={isSelected ? `sel-${v.mmsi}` : `def-${v.mmsi}`}
-              permanent={isSelected}
-              opacity={isSelected ? 1 : 0.9}
-              className={isSelected ? "selected-vessel-tip" : undefined}
+              key={`tip-${v.mmsi}`}
+              opacity={0.9}
             >
               <div className="text-xs leading-snug">
                 <div className="font-semibold">
