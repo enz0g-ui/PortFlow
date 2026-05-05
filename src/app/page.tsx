@@ -782,6 +782,15 @@ export default function Page() {
         : [],
     [detailResp],
   );
+  // Recent trails for all vessels in the current port — used by the map to
+  // draw fading lines behind each marker (à la VesselFinder / Spire).
+  // Skipped in world view (too many vessels, too zoomed-out to be useful).
+  // Polled every 60s — the worker writes to `positions` ~once per minute,
+  // and a 30s server-side cache absorbs the read load.
+  const trailsResp = usePolling<{
+    trails: Record<string, Array<[number, number, number]>>;
+  }>(worldView ? null : `/api/trails${q}&minutes=30`, 60_000);
+  const trails = trailsResp?.trails;
 
   const toggleState = (s: "anchored" | "underway" | "moored") =>
     setStateFilter((cur) => (cur === s ? null : s));
@@ -1298,6 +1307,7 @@ export default function Page() {
                 intensity: d.intensity,
                 sizePx: d.size_px,
               }))}
+              trails={trails}
               panTo={panTo ?? undefined}
             />
           ) : (

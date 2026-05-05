@@ -25,6 +25,7 @@ interface Props {
   selectedTrack?: Array<[number, number]>;
   highlightedMmsis?: Set<number>;
   sarDetections?: SarDetection[];
+  trails?: Record<string, Array<[number, number, number]>>;
   panTo?: { lat: number; lon: number; tick: number };
 }
 

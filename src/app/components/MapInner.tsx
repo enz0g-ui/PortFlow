@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import {
   CircleMarker,
   MapContainer,
@@ -9,6 +9,7 @@ import {
   TileLayer,
   Tooltip,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import type { Vessel, VesselClass, Zone } from "@/lib/types";
 
@@ -52,6 +53,12 @@ interface Props {
   sarDetections?: SarDetection[];
   resetTick?: number;
   /**
+   * Recent position trails for visible vessels, keyed by MMSI (string).
+   * Each entry is an array of [lat, lon, ts] in chronological order.
+   * Refreshed every ~60 s by the dashboard. Hidden at low zoom levels.
+   */
+  trails?: Record<string, Array<[number, number, number]>>;
+  /**
    * Forced pan target — increments panTick triggers a flyTo on the
    * supplied lat/lon regardless of the auto-pan policy. Used by the
    * favorites list to recenter on a vessel that's hard to find on a
@@ -59,6 +66,10 @@ interface Props {
    */
   panTo?: { lat: number; lon: number; tick: number };
 }
+
+// Below this zoom, trails are visual mush (segments collapse to dots) — skip
+// rendering entirely. Port-level zoom is ~10-11; world-level is ~2-4.
+const MIN_TRAIL_ZOOM = 8;
 
 function FlyTo({
   bbox,
@@ -127,6 +138,97 @@ function ForcePanTo({
   return null;
 }
 
+/**
+ * Renders fading position trails behind each vessel, in the style of
+ * VesselFinder / Spire. Memoized so it doesn't re-create polylines on every
+ * 5 s vessel-position poll — only when the trails dataset itself changes
+ * (~60 s) or zoom crosses the visibility threshold.
+ *
+ * Implementation notes:
+ * - `<MapContainer preferCanvas>` is set in the parent, so each Polyline
+ *   here renders to a single shared canvas (cheap for ~700 lines).
+ * - Color matches the vessel class (looked up from the live vessels array).
+ * - Selected vessel's trail is suppressed here — it's drawn separately,
+ *   brighter, by the parent component's `selectedTrack` polyline.
+ * - We listen to `zoomend` to hide trails below MIN_TRAIL_ZOOM, where
+ *   they'd just look like noise on top of the markers.
+ */
+const TrailsLayer = memo(function TrailsLayer({
+  trails,
+  vesselClassByMmsi,
+  selectedMmsi,
+  visible,
+}: {
+  trails: Record<string, Array<[number, number, number]>>;
+  vesselClassByMmsi: Map<number, VesselClass>;
+  selectedMmsi: number | null | undefined;
+  visible: boolean;
+}) {
+  if (!visible) return null;
+  return (
+    <>
+      {Object.entries(trails).map(([mmsiStr, points]) => {
+        if (points.length < 2) return null;
+        const mmsi = Number(mmsiStr);
+        if (mmsi === selectedMmsi) return null; // brighter trail drawn separately
+        const cls = vesselClassByMmsi.get(mmsi) ?? "other";
+        const color = CLASS_COLOR[cls];
+        const positions = points.map(
+          ([lat, lon]) => [lat, lon] as [number, number],
+        );
+        return (
+          <Polyline
+            key={`trail-${mmsi}`}
+            positions={positions}
+            pathOptions={{
+              color,
+              weight: 1.5,
+              opacity: 0.35,
+              interactive: false,
+            }}
+          />
+        );
+      })}
+    </>
+  );
+});
+
+/**
+ * Tracks the map's current zoom level via leaflet events. Cheap re-render
+ * trigger for components that need to react to zoom changes (e.g. show or
+ * hide trails below a threshold).
+ */
+function useMapZoom(initial = 11): number {
+  const [zoom, setZoom] = useState(initial);
+  useMapEvents({
+    zoomend: (e) => setZoom(e.target.getZoom()),
+  });
+  return zoom;
+}
+
+function TrailsForCurrentZoom(props: {
+  trails?: Record<string, Array<[number, number, number]>>;
+  vessels: Vessel[];
+  selectedMmsi: number | null | undefined;
+}) {
+  const zoom = useMapZoom(11);
+  const visible = zoom >= MIN_TRAIL_ZOOM;
+  const vesselClassByMmsi = useMemo(() => {
+    const m = new Map<number, VesselClass>();
+    for (const v of props.vessels) m.set(v.mmsi, v.vesselClass);
+    return m;
+  }, [props.vessels]);
+  if (!props.trails) return null;
+  return (
+    <TrailsLayer
+      trails={props.trails}
+      vesselClassByMmsi={vesselClassByMmsi}
+      selectedMmsi={props.selectedMmsi}
+      visible={visible}
+    />
+  );
+}
+
 function ResizeOnExpand({ expanded }: { expanded?: boolean }) {
   const map = useMap();
   useEffect(() => {
@@ -149,6 +251,7 @@ export default function MapInner({
   highlightedMmsis,
   sarDetections,
   resetTick,
+  trails,
   panTo,
 }: Props) {
   const selected = vessels.find((v) => v.mmsi === selectedMmsi);
@@ -189,6 +292,11 @@ export default function MapInner({
           </Tooltip>
         </Rectangle>
       ))}
+      <TrailsForCurrentZoom
+        trails={trails}
+        vessels={vessels}
+        selectedMmsi={selectedMmsi}
+      />
       {selectedTrack && selectedTrack.length > 1 ? (
         <Polyline
           positions={selectedTrack}
