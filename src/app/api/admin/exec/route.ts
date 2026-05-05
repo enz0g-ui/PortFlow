@@ -128,9 +128,28 @@ const ALLOWED: Record<string, AllowedCommand> = {
     cwd: PROJECT_DIR,
   },
   "next-build": {
+    // Turbopack builds on a small VPS can hit 6-8 min — give it 12 min
+    // to avoid SIGKILL'ing mid-build (which corrupts .next and leaves the
+    // worker in a "no production build" crash loop).
     argv: ["npm", "run", "build"],
     cwd: PROJECT_DIR,
-    timeoutMs: 300_000,
+    timeoutMs: 720_000,
+  },
+  "build-status": {
+    // Returns whether `.next/BUILD_ID` exists and how recently it was
+    // written. Useful to poll after a long build to know it's actually
+    // finished before triggering pm2-reload.
+    argv: [
+      "bash",
+      "-c",
+      `if [ -f "${PROJECT_DIR}/.next/BUILD_ID" ]; then \
+         echo "BUILD_ID=$(cat "${PROJECT_DIR}/.next/BUILD_ID")"; \
+         echo "AGE_SEC=$(( $(date +%s) - $(stat -c %Y "${PROJECT_DIR}/.next/BUILD_ID") ))"; \
+       else \
+         echo "BUILD_ID=MISSING"; \
+         exit 1; \
+       fi`,
+    ],
   },
 
   // --- Read a specific .env.local key (redacted unless very short) ---
