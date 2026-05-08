@@ -111,4 +111,10 @@ export async function register() {
     "./lib/eta-approaching-scanner"
   );
   startEtaApproachingScanner();
+
+  // NGA ASAM ingestor — daily fetch of public-domain piracy / armed-robbery
+  // incidents. Free, US Gov public data. Defers initial fetch 60s after boot
+  // and runs every 24h after that. Skips silently if upstream URL changes.
+  const { startPiracyAsamScanner } = await import("./lib/piracy-asam");
+  startPiracyAsamScanner();
 }
