@@ -37,6 +37,24 @@ interface TrailRow {
   lon: number;
 }
 
+function haversineNm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 3440.065; // nautical miles
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
 interface CachedResponse {
   fetchedAt: number;
   payload: unknown;
@@ -99,12 +117,28 @@ export async function GET(request: NextRequest) {
     if (allRows.length >= MAX_TOTAL_POINTS) break;
   }
 
-  // Group by MMSI. Drop trails of length < 2 (a single point is not a trail).
+  // Group by MMSI, dropping AIS outliers as we go. Same heuristic as the
+  // single-vessel track endpoint: skip a point whose implied speed from the
+  // previous point exceeds 60 kn AND the time gap is < 6 h. Tankers peak
+  // ~25 kn, container ships ~30 kn, so 60 kn is impossibly fast unless the
+  // gap is huge enough that the vessel could have moved between two real
+  // positions. Without this filter, glitched GPS positions draw long
+  // straight lines across the map (the user-visible "spikes" on vessel
+  // trails). Rows already arrive ordered by (mmsi, ts).
   const trails: Record<string, Array<[number, number, number]>> = {};
   for (const row of allRows) {
     const key = String(row.mmsi);
     if (!trails[key]) trails[key] = [];
-    trails[key].push([row.lat, row.lon, row.ts]);
+    const arr = trails[key];
+    const prev = arr[arr.length - 1];
+    if (prev) {
+      const dtH = (row.ts - prev[2]) / 3_600_000;
+      if (dtH > 0 && dtH < 6) {
+        const dnm = haversineNm(prev[0], prev[1], row.lat, row.lon);
+        if (dnm / dtH > 60) continue; // glitched position — skip
+      }
+    }
+    arr.push([row.lat, row.lon, row.ts]);
   }
   for (const key of Object.keys(trails)) {
     if (trails[key].length < 2) delete trails[key];
