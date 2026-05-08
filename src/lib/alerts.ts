@@ -11,7 +11,8 @@ export type AlertKind =
 export type AlertEvent =
   | "vessel.arrived"
   | "vessel.departed"
-  | "vessel.anomaly";
+  | "vessel.anomaly"
+  | "vessel.eta_approaching";
 
 export interface UserAlert {
   id: number;
@@ -26,7 +27,15 @@ export interface UserAlert {
   last_fired_at: number | null;
   last_status: number | null;
   label: string | null;
+  /**
+   * Only used by event='vessel.eta_approaching'. Fire when predicted ETA
+   * minus current time crosses this threshold (e.g. 60 = fire when there's
+   * 60 minutes left before the vessel arrives). Default 60 if NULL.
+   */
+  lead_time_minutes: number | null;
 }
+
+const ETA_APPROACHING_DEFAULT_LEAD_MIN = 60;
 
 export function listAlerts(userId: string): UserAlert[] {
   return db()
@@ -60,12 +69,21 @@ export function createAlert(input: {
   watchlistOnly: boolean;
   portFilter?: string;
   label?: string;
+  /** Required for event='vessel.eta_approaching', default 60 min. */
+  leadTimeMinutes?: number;
 }): UserAlert {
+  const lead =
+    input.event === "vessel.eta_approaching"
+      ? Math.max(
+          5,
+          Math.min(720, input.leadTimeMinutes ?? ETA_APPROACHING_DEFAULT_LEAD_MIN),
+        )
+      : null;
   const r = db()
     .raw.prepare(
       `INSERT INTO user_alerts
-       (user_id, kind, target_url, event, watchlist_only, port_filter, active, created_at, label)
-       VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+       (user_id, kind, target_url, event, watchlist_only, port_filter, active, created_at, label, lead_time_minutes)
+       VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
     )
     .run(
       input.userId,
@@ -76,6 +94,7 @@ export function createAlert(input: {
       input.portFilter ?? null,
       Date.now(),
       input.label ?? null,
+      lead,
     );
   return db()
     .raw.prepare(`SELECT * FROM user_alerts WHERE id = ?`)
@@ -112,6 +131,10 @@ interface VesselEventPayload {
   predictedEta?: number | null;
   broadcastEta?: number | null;
   detail?: string;
+  /** For eta_approaching: minutes remaining until predicted ETA. */
+  minutesUntilEta?: number | null;
+  /** For eta_approaching: the voyage id used for dedup. */
+  voyageId?: string;
 }
 
 function formatHumanLine(
@@ -127,6 +150,13 @@ function formatHumanLine(
       return `⛴️  ${payload.vesselName}${cargo} departed ${payload.portName} at ${t} (MMSI ${payload.mmsi})`;
     case "vessel.anomaly":
       return `⚠️  ${payload.vesselName}${cargo} anomaly at ${payload.portName}: ${payload.detail ?? "—"} (MMSI ${payload.mmsi})`;
+    case "vessel.eta_approaching": {
+      const eta = payload.predictedEta
+        ? new Date(payload.predictedEta).toUTCString()
+        : "—";
+      const min = payload.minutesUntilEta ?? "?";
+      return `⏱️  ${payload.vesselName}${cargo} arriving ${payload.portName} in ~${min} min (ETA ${eta} UTC, MMSI ${payload.mmsi})`;
+    }
   }
 }
 
@@ -141,7 +171,11 @@ function formatEmailHtml(
       ? "arrived at"
       : event === "vessel.departed"
         ? "departed"
-        : "anomaly at";
+        : event === "vessel.anomaly"
+          ? "anomaly at"
+          : event === "vessel.eta_approaching"
+            ? `arriving in ~${payload.minutesUntilEta ?? "?"} min at`
+            : "event at";
   return `
 <!doctype html>
 <html><body style="font-family: system-ui, sans-serif; background: #0b0f17; color: #e6edf3; padding: 24px;">
@@ -275,7 +309,34 @@ export async function fireVesselEvent(
       ) {
         return;
       }
+      // For eta_approaching: respect the per-alert lead_time_minutes —
+      // alerts with a small lead (e.g. 30 min) shouldn't fire when the
+      // vessel is still 2 h out, while alerts with a 120 min lead should.
+      // Plus dedup against the voyage id so we fire once per voyage
+      // instead of every scanner tick while ETA stays close.
+      if (event === "vessel.eta_approaching") {
+        const lead = alert.lead_time_minutes ?? ETA_APPROACHING_DEFAULT_LEAD_MIN;
+        const minsUntil = payload.minutesUntilEta;
+        if (typeof minsUntil !== "number" || minsUntil > lead) return;
+        if (payload.voyageId) {
+          const existing = db()
+            .raw.prepare(
+              `SELECT 1 FROM alert_eta_fired
+               WHERE alert_id = ? AND voyage_id = ?`,
+            )
+            .get(alert.id, payload.voyageId);
+          if (existing) return;
+        }
+      }
       await deliver(alert, payload);
+      if (event === "vessel.eta_approaching" && payload.voyageId) {
+        db()
+          .raw.prepare(
+            `INSERT OR IGNORE INTO alert_eta_fired
+             (alert_id, voyage_id, fired_at) VALUES (?, ?, ?)`,
+          )
+          .run(alert.id, payload.voyageId, Date.now());
+      }
       fired++;
     }),
   );

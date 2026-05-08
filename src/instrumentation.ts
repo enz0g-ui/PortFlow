@@ -103,4 +103,12 @@ export async function register() {
   // is fully redistributable under our license. Reference: Welch et al. 2022.
   const { startDarkEventsScanner } = await import("./lib/dark-events");
   startDarkEventsScanner();
+
+  // ETA-approaching alerts — fires `vessel.eta_approaching` when a voyage's
+  // predicted ETA crosses the per-user lead time (default 60 min). 5-min
+  // cadence; only touches the small `voyages` table.
+  const { startEtaApproachingScanner } = await import(
+    "./lib/eta-approaching-scanner"
+  );
+  startEtaApproachingScanner();
 }

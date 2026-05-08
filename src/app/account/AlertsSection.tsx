@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 
 type Kind = "slack" | "discord" | "telegram" | "email" | "webhook";
-type EventName = "vessel.arrived" | "vessel.departed" | "vessel.anomaly";
+type EventName =
+  | "vessel.arrived"
+  | "vessel.departed"
+  | "vessel.anomaly"
+  | "vessel.eta_approaching";
 
 interface Alert {
   id: number;
@@ -16,6 +20,7 @@ interface Alert {
   last_fired_at: number | null;
   last_status: number | null;
   label: string | null;
+  lead_time_minutes: number | null;
 }
 
 interface ListResp {
@@ -35,6 +40,7 @@ export function AlertsSection() {
     event: "vessel.arrived" as EventName,
     watchlistOnly: true,
     label: "",
+    leadTimeMinutes: 60,
   });
 
   const load = async () => {
@@ -66,7 +72,7 @@ export function AlertsSection() {
         setError(j.error ?? `error ${r.status}`);
         return;
       }
-      setForm({ ...form, targetUrl: "", label: "" });
+      setForm({ ...form, targetUrl: "", label: "", leadTimeMinutes: 60 });
       await load();
     } finally {
       setBusy(false);
@@ -143,6 +149,12 @@ export function AlertsSection() {
                     {a.kind}
                   </span>
                   <span className="text-slate-300">{a.event}</span>
+                  {a.event === "vessel.eta_approaching" &&
+                  a.lead_time_minutes ? (
+                    <span className="text-[10px] text-sky-300">
+                      · {a.lead_time_minutes} min avant
+                    </span>
+                  ) : null}
                   {a.watchlist_only ? (
                     <span className="text-[10px] text-slate-500">
                       · ma flotte
@@ -216,11 +228,40 @@ export function AlertsSection() {
               }
               className="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-slate-100"
             >
-              <option value="vessel.arrived">vessel.arrived</option>
+              <option value="vessel.arrived">vessel.arrived (à l&apos;arrivée)</option>
+              <option value="vessel.eta_approaching">
+                vessel.eta_approaching (avant l&apos;arrivée)
+              </option>
               <option value="vessel.departed">vessel.departed</option>
               <option value="vessel.anomaly">vessel.anomaly</option>
             </select>
           </div>
+          {form.event === "vessel.eta_approaching" ? (
+            <label className="flex items-center gap-2 text-[11px] text-slate-400">
+              Délai avant l&apos;arrivée :
+              <select
+                value={form.leadTimeMinutes}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    leadTimeMinutes: Number(e.target.value),
+                  })
+                }
+                className="rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
+              >
+                <option value={15}>15 min</option>
+                <option value={30}>30 min</option>
+                <option value={60}>1 h</option>
+                <option value={120}>2 h</option>
+                <option value={240}>4 h</option>
+                <option value={360}>6 h</option>
+                <option value={720}>12 h</option>
+              </select>
+              <span className="text-[10px] text-slate-500">
+                — alerte tirée X minutes avant l&apos;ETA prédite
+              </span>
+            </label>
+          ) : null}
           <input
             type={form.kind === "email" ? "email" : "url"}
             required

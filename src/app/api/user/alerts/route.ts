@@ -25,6 +25,7 @@ const VALID_EVENTS = new Set<AlertEvent>([
   "vessel.arrived",
   "vessel.departed",
   "vessel.anomaly",
+  "vessel.eta_approaching",
 ]);
 
 function isHttpsUrl(url: string): boolean {
@@ -79,6 +80,7 @@ export async function POST(request: NextRequest) {
     watchlistOnly?: boolean;
     portFilter?: string;
     label?: string;
+    leadTimeMinutes?: number;
   };
   const kind = body.kind as AlertKind;
   const event = body.event as AlertEvent;
@@ -109,6 +111,10 @@ export async function POST(request: NextRequest) {
     watchlistOnly: body.watchlistOnly !== false,
     portFilter: body.portFilter,
     label: body.label,
+    leadTimeMinutes:
+      typeof body.leadTimeMinutes === "number"
+        ? body.leadTimeMinutes
+        : undefined,
   });
   return Response.json({ alert: created });
 }
