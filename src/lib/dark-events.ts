@@ -251,33 +251,26 @@ let _lastRunResult: { opened: number; closed: number; scanned: number } | null =
 
 export function startDarkEventsScanner(opts?: {
   intervalMs?: number;
-  initialBackfillDays?: number;
 }): void {
   if (_intervalId) return; // already started
   const intervalMs = opts?.intervalMs ?? 3_600_000; // 1h default
-  const backfillDays = opts?.initialBackfillDays ?? 1; // 24h default — keep boot fast
 
-  // Defer the backfill so the HTTP server starts responding immediately.
-  // The detector is synchronous and blocks the event loop while iterating
-  // millions of positions; running it 30 s after boot lets the worker pass
-  // health checks first. The hourly tick will catch up over time.
-  setTimeout(() => {
-    try {
-      const r = detectDarkEvents({ sinceMs: backfillDays * 86_400_000 });
-      _lastRunAt = Date.now();
-      _lastRunResult = r;
-      console.log(
-        `[dark-events] backfill (${backfillDays}d): opened=${r.opened} closed=${r.closed} scanned=${r.scanned}`,
-      );
-    } catch (err) {
-      console.error("[dark-events] backfill failed", err);
-    }
-  }, 30_000);
+  // No boot-time backfill: the synchronous SQLite scan over millions of
+  // positions blocks the event loop long enough for PM2 / Cloudflare to
+  // mark the worker as unhealthy. The first tick fires `intervalMs` after
+  // boot — by then the worker is warm and the AIS feed is steady.
+  //
+  // To populate historical events on demand (e.g. after a fresh deploy),
+  // the operator can hit a future /api/admin/exec command or temporarily
+  // call `detectDarkEvents({ sinceMs: 7 * 86_400_000 })` from a one-off
+  // node script.
 
   _intervalId = setInterval(() => {
     try {
       // Tick scans only the last 24h — enough to catch newly-closed gaps
-      // without re-scanning the entire window every hour.
+      // without re-scanning the entire window every hour. With sub-second
+      // SQL latency on a 24h window (~50k-100k rows), this fits in one
+      // event-loop tick without HTTP starvation.
       const r = detectDarkEvents({ sinceMs: 86_400_000 });
       _lastRunAt = Date.now();
       _lastRunResult = r;
