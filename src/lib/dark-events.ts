@@ -255,23 +255,30 @@ export function startDarkEventsScanner(opts?: {
 }): void {
   if (_intervalId) return; // already started
   const intervalMs = opts?.intervalMs ?? 3_600_000; // 1h default
-  const backfillDays = opts?.initialBackfillDays ?? 30;
+  const backfillDays = opts?.initialBackfillDays ?? 1; // 24h default — keep boot fast
 
-  // One-shot backfill at boot.
-  try {
-    const r = detectDarkEvents({ sinceMs: backfillDays * 86_400_000 });
-    _lastRunAt = Date.now();
-    _lastRunResult = r;
-    console.log(
-      `[dark-events] backfill: opened=${r.opened} closed=${r.closed} scanned=${r.scanned}`,
-    );
-  } catch (err) {
-    console.error("[dark-events] backfill failed", err);
-  }
+  // Defer the backfill so the HTTP server starts responding immediately.
+  // The detector is synchronous and blocks the event loop while iterating
+  // millions of positions; running it 30 s after boot lets the worker pass
+  // health checks first. The hourly tick will catch up over time.
+  setTimeout(() => {
+    try {
+      const r = detectDarkEvents({ sinceMs: backfillDays * 86_400_000 });
+      _lastRunAt = Date.now();
+      _lastRunResult = r;
+      console.log(
+        `[dark-events] backfill (${backfillDays}d): opened=${r.opened} closed=${r.closed} scanned=${r.scanned}`,
+      );
+    } catch (err) {
+      console.error("[dark-events] backfill failed", err);
+    }
+  }, 30_000);
 
   _intervalId = setInterval(() => {
     try {
-      const r = detectDarkEvents({ sinceMs: 7 * 86_400_000 });
+      // Tick scans only the last 24h — enough to catch newly-closed gaps
+      // without re-scanning the entire window every hour.
+      const r = detectDarkEvents({ sinceMs: 86_400_000 });
       _lastRunAt = Date.now();
       _lastRunResult = r;
       if (r.opened > 0 || r.closed > 0) {
