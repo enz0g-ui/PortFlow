@@ -90,17 +90,20 @@ export function detectDarkEvents(opts: {
   const sinceMs = opts.sinceMs ?? 7 * 24 * 3_600_000;
   const cutoff = Date.now() - sinceMs;
 
-  // Step 1: pull all positions for the window, ordered (mmsi, ts).
-  // For Rotterdam-scale (~1 GB positions table, 12M rows) this is acceptable
-  // for a 7-day window — we filter by ts which has an index.
-  const rows = db()
-    .raw.prepare(
-      `SELECT mmsi, ts, lat, lon, state, zone
-       FROM positions
-       WHERE ts >= ?
-       ORDER BY mmsi ASC, ts ASC`,
-    )
-    .all(cutoff) as unknown as PositionRow[];
+  // We stream the positions row-by-row via SQLite's iterator API instead of
+  // .all() — a 24h window can be ~6 M rows for a busy port, and loading
+  // them all into JS heap pushes node:sqlite past its 1 GB limit (OOM
+  // crash, worker restart loop). With .iterate(), heap stays flat.
+  //
+  // Rows arrive ordered by (mmsi, ts), so we maintain a small per-MMSI
+  // sliding window of the last PRIOR_WINDOW_HOURS positions to evaluate
+  // each candidate gap as it appears.
+  const stmt = db().raw.prepare(
+    `SELECT mmsi, ts, lat, lon, state, zone
+     FROM positions
+     WHERE ts >= ?
+     ORDER BY mmsi ASC, ts ASC`,
+  );
 
   const insertEvent = db().raw.prepare(
     `INSERT OR IGNORE INTO dark_events
@@ -116,55 +119,72 @@ export function detectDarkEvents(opts: {
 
   let opened = 0;
   let closed = 0;
+  let scanned = 0;
   const now = Date.now();
 
-  // Sliding-window scan per MMSI. The data is already ordered.
-  let i = 0;
-  while (i < rows.length) {
-    const mmsiStart = i;
-    const mmsi = rows[i].mmsi;
-    while (i + 1 < rows.length && rows[i + 1].mmsi === mmsi) i++;
-    const mmsiEnd = i;
-    i++;
+  // Per-MMSI sliding window of recent positions. Reset whenever the MMSI
+  // changes (rows are ordered by mmsi). We only keep PRIOR_WINDOW_HOURS-h
+  // worth, so memory is bounded to the busiest vessel's recent reports
+  // (typically <100 entries).
+  let currentMmsi: number | null = null;
+  let prior: PositionRow[] = [];
+  let prev: PositionRow | null = null;
 
-    // Walk consecutive pairs within this MMSI's window.
-    for (let j = mmsiStart + 1; j <= mmsiEnd; j++) {
-      const prev = rows[j - 1];
-      const curr = rows[j];
-      const gapH = (curr.ts - prev.ts) / 3_600_000;
-      if (gapH < MIN_GAP_HOURS) continue;
-      // State at gap_start must be 'underway' — exclude moored/anchored.
-      if (prev.state !== "underway") continue;
-      // Count positions in the 12h window before the gap.
-      const priorCutoff = prev.ts - PRIOR_WINDOW_HOURS * 3_600_000;
-      let priorCount = 0;
-      for (let k = j - 1; k >= mmsiStart && rows[k].ts >= priorCutoff; k--) {
-        priorCount++;
-      }
-      if (priorCount < MIN_PRIOR_POSITIONS) continue;
-
-      // This is a dark event candidate. Insert (or ignore if dup).
-      const portId = nearestPort(prev.lat, prev.lon);
-      const r = insertEvent.run(
-        mmsi,
-        prev.ts,
-        prev.lat,
-        prev.lon,
-        priorCount,
-        prev.state,
-        prev.zone,
-        portId,
-        now,
-      );
-      if (r.changes > 0) opened++;
-      // Close it immediately since we have curr (the reappearance position).
-      const durH = gapH;
-      const c = closeEvent.run(curr.ts, curr.lat, curr.lon, durH, mmsi, prev.ts);
-      if (c.changes > 0) closed++;
+  for (const r of stmt.iterate(cutoff) as IterableIterator<PositionRow>) {
+    scanned++;
+    if (r.mmsi !== currentMmsi) {
+      currentMmsi = r.mmsi;
+      prior = [];
+      prev = null;
     }
+
+    if (prev) {
+      const gapH = (r.ts - prev.ts) / 3_600_000;
+      if (gapH >= MIN_GAP_HOURS && prev.state === "underway") {
+        // Count how many positions in `prior` fall within the 12h window
+        // before the gap (`prev.ts` is the last position before silence).
+        const priorCutoff = prev.ts - PRIOR_WINDOW_HOURS * 3_600_000;
+        let priorCount = 0;
+        for (let k = prior.length - 1; k >= 0; k--) {
+          if (prior[k].ts < priorCutoff) break;
+          priorCount++;
+        }
+        if (priorCount >= MIN_PRIOR_POSITIONS) {
+          const portId = nearestPort(prev.lat, prev.lon);
+          const ins = insertEvent.run(
+            r.mmsi,
+            prev.ts,
+            prev.lat,
+            prev.lon,
+            priorCount,
+            prev.state,
+            prev.zone,
+            portId,
+            now,
+          );
+          if (ins.changes > 0) opened++;
+          const cls = closeEvent.run(
+            r.ts,
+            r.lat,
+            r.lon,
+            gapH,
+            r.mmsi,
+            prev.ts,
+          );
+          if (cls.changes > 0) closed++;
+        }
+      }
+    }
+
+    // Maintain sliding window: append, then trim from the head anything
+    // older than PRIOR_WINDOW_HOURS relative to the current row.
+    prior.push(r);
+    const windowFloor = r.ts - PRIOR_WINDOW_HOURS * 3_600_000;
+    while (prior.length > 0 && prior[0].ts < windowFloor) prior.shift();
+    prev = r;
   }
 
-  return { opened, closed, scanned: rows.length };
+  return { opened, closed, scanned };
 }
 
 /**
