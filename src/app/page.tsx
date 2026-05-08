@@ -9,6 +9,7 @@ import { VoyagesTable, type ActiveVoyage } from "./components/VoyagesTable";
 import { FavoritesPanel } from "./components/FavoritesPanel";
 import { AccuracyPanel } from "./components/AccuracyPanel";
 import { AnomalyPanel } from "./components/AnomalyPanel";
+import { DarkEventsPanel, type DarkEventEntry } from "./components/DarkEventsPanel";
 import { CongestionGauge } from "./components/CongestionGauge";
 import { WeatherWidget } from "./components/WeatherWidget";
 import { VesselDetailPanel } from "./components/VesselDetailPanel";
@@ -792,6 +793,23 @@ export default function Page() {
   }>(worldView ? null : `/api/trails${q}&minutes=30`, 60_000);
   const trails = trailsResp?.trails;
 
+  // Dark fleet detection — AIS-off gap events from our in-house detector.
+  // Cadence: every 5 min is enough since the server-side scanner runs hourly.
+  const darkEventsResp = usePolling<{
+    summary: { total: number; open: number; closed: number };
+    events: DarkEventEntry[];
+  }>(worldView ? null : `/api/dark-events${q}&days=30`, 5 * 60_000);
+  const darkEvents = darkEventsResp?.events ?? [];
+
+  const handleDarkEventSelect = (
+    mmsi: number,
+    lat: number,
+    lon: number,
+  ) => {
+    setSelectedMmsi(mmsi);
+    setPanTo({ lat, lon, tick: Date.now() });
+  };
+
   const toggleState = (s: "anchored" | "underway" | "moored") =>
     setStateFilter((cur) => (cur === s ? null : s));
 
@@ -1349,6 +1367,16 @@ export default function Page() {
         />
         <FlowChart history={histResp?.history ?? []} />
       </section>
+
+      {!worldView ? (
+        <section>
+          <DarkEventsPanel
+            events={darkEvents}
+            selectedMmsi={selectedMmsi}
+            onSelect={handleDarkEventSelect}
+          />
+        </section>
+      ) : null}
 
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">

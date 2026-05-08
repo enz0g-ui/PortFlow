@@ -133,6 +133,16 @@ const fr: PageMessages = {
   "fleet.refresh": "Actualisé toutes les 60 s",
   "fleet.signIn": "Connecte-toi pour voir ta flotte",
 
+  // Dark fleet events panel
+  "darkEvents.title": "Dark fleet — coupures AIS suspectes",
+  "darkEvents.count": "événement(s)",
+  "darkEvents.open": "ouvert(s)",
+  "darkEvents.empty":
+    "Aucun événement dark fleet sur la fenêtre. Algorithme : silence AIS ≥ 12 h en mer (dérivé de Welch et al. 2022).",
+  "darkEvents.statusOpen": "ouvert",
+  "darkEvents.silenceFrom": "Silence AIS depuis {age}",
+  "darkEvents.tooltipClick": "clic pour centrer la carte",
+
   // /methodology
   "methodology.backLink": "← Retour précision",
   "methodology.title": "Méthodologie & SLA",
@@ -640,6 +650,16 @@ const en: PageMessages = {
   "fleet.action.dashboard": "View",
   "fleet.refresh": "Refreshed every 60s",
   "fleet.signIn": "Sign in to see your fleet",
+
+  // Dark fleet events panel
+  "darkEvents.title": "Dark fleet — suspicious AIS gaps",
+  "darkEvents.count": "event(s)",
+  "darkEvents.open": "open",
+  "darkEvents.empty":
+    "No dark-fleet events in window. Algorithm: AIS silence ≥ 12h while underway (derived from Welch et al. 2022).",
+  "darkEvents.statusOpen": "open",
+  "darkEvents.silenceFrom": "AIS silent for {age}",
+  "darkEvents.tooltipClick": "click to recenter map",
 
   // /methodology
   "methodology.backLink": "← Back to precision",

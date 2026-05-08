@@ -96,4 +96,11 @@ export async function register() {
 
   const { startWebhookQueueProcessor } = await import("./lib/webhooks");
   startWebhookQueueProcessor();
+
+  // Dark-fleet detection — scans the positions table on a 1-hour cadence.
+  // First run does a 30-day backfill so the UI has data immediately.
+  // No external dependency: the algorithm runs on our own AIS feed, output
+  // is fully redistributable under our license. Reference: Welch et al. 2022.
+  const { startDarkEventsScanner } = await import("./lib/dark-events");
+  startDarkEventsScanner();
 }
