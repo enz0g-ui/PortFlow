@@ -1,0 +1,200 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "name": "War-Risk Zones — JWC JWLA-033 (indicative)",
+    "source": "Joint War Committee — Joint War Listed Areas (JWLA-033, 3 March 2026)",
+    "attribution": "Indicative polygons derived from public JWC bulletins. NOT for navigation or insurance use — refer to the official JWC PDF at lmalloyds.com for authoritative coordinates.",
+    "license": "Boundary coordinates are facts (not copyrightable per EU/UK law); polygons curated by Port Flow.",
+    "version": "JWLA-033",
+    "updated": "2026-03-03"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "jwla-black-sea",
+        "name": "Black Sea & Sea of Azov",
+        "category": "war-risk",
+        "since": "2022",
+        "trigger": "Russia–Ukraine conflict",
+        "color": "#dc2626"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [27.5, 40.5],
+            [42.0, 40.5],
+            [42.0, 47.5],
+            [30.0, 47.5],
+            [27.5, 41.5],
+            [27.5, 40.5]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "jwla-red-sea-south",
+        "name": "Southern Red Sea & Bab el-Mandeb",
+        "category": "war-risk",
+        "since": "2023-11",
+        "trigger": "Houthi attacks on commercial shipping",
+        "color": "#dc2626"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [41.0, 11.5],
+            [44.0, 11.5],
+            [44.5, 15.0],
+            [43.5, 18.0],
+            [40.5, 17.5],
+            [41.0, 11.5]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "jwla-gulf-aden",
+        "name": "Gulf of Aden & Indian Ocean HRA",
+        "category": "war-risk",
+        "since": "2023-12",
+        "trigger": "Spillover from Red Sea, Somali piracy resurgence",
+        "color": "#dc2626"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [44.0, 10.5],
+            [55.0, 10.5],
+            [55.0, 15.5],
+            [44.0, 15.5],
+            [44.0, 10.5]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "jwla-persian-gulf",
+        "name": "Persian / Arabian Gulf",
+        "category": "war-risk",
+        "since": "2026-03",
+        "trigger": "JWLA-033 expansion (Bahrain, Kuwait, Oman, Qatar listed)",
+        "color": "#dc2626"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [47.5, 24.0],
+            [56.5, 24.0],
+            [57.5, 26.5],
+            [56.0, 30.5],
+            [48.0, 30.5],
+            [47.5, 24.0]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "jwla-strait-hormuz",
+        "name": "Strait of Hormuz & Gulf of Oman approaches",
+        "category": "war-risk",
+        "since": "2019",
+        "trigger": "Iran tanker incidents, US-Iran tensions",
+        "color": "#dc2626"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [55.0, 24.5],
+            [60.0, 24.5],
+            [60.0, 27.5],
+            [55.0, 27.5],
+            [55.0, 24.5]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "jwla-libya",
+        "name": "Libya territorial waters",
+        "category": "war-risk",
+        "since": "2011",
+        "trigger": "Civil conflict",
+        "color": "#dc2626"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [11.0, 30.0],
+            [25.0, 30.0],
+            [25.0, 33.5],
+            [11.0, 33.5],
+            [11.0, 30.0]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "jwla-israel-lebanon",
+        "name": "Israel & Lebanon territorial waters",
+        "category": "war-risk",
+        "since": "2023-10",
+        "trigger": "Israel–Hamas / Hezbollah conflict",
+        "color": "#dc2626"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [33.5, 31.0],
+            [36.0, 31.0],
+            [36.0, 34.5],
+            [33.5, 34.5],
+            [33.5, 31.0]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "jwla-yemen",
+        "name": "Yemen territorial waters",
+        "category": "war-risk",
+        "since": "2015",
+        "trigger": "Yemen civil war + Houthi maritime activity",
+        "color": "#dc2626"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [42.0, 12.0],
+            [54.0, 12.0],
+            [54.0, 19.0],
+            [42.0, 19.0],
+            [42.0, 12.0]
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import { memo, useEffect, useMemo, useState } from "react";
 import {
   CircleMarker,
   MapContainer,
+  Polygon,
   Polyline,
   Rectangle,
   TileLayer,
@@ -70,6 +71,26 @@ interface Props {
 // Below this zoom, trails are visual mush (segments collapse to dots) — skip
 // rendering entirely. Port-level zoom is ~10-11; world-level is ~2-4.
 const MIN_TRAIL_ZOOM = 8;
+// Above this zoom, war-risk zones are too coarse to be visually useful (the
+// polygon bounding box is dozens of km, fills the whole port view). Show
+// them only in regional / world view where they convey context.
+const MAX_WARZONE_ZOOM = 7;
+
+interface WarZoneFeature {
+  type: "Feature";
+  properties: {
+    id: string;
+    name: string;
+    color: string;
+    since?: string;
+    trigger?: string;
+  };
+  geometry: { type: "Polygon"; coordinates: Array<Array<[number, number]>> };
+}
+interface WarZonesGeoJSON {
+  type: "FeatureCollection";
+  features: WarZoneFeature[];
+}
 
 function FlyTo({
   bbox,
@@ -239,6 +260,76 @@ function TrailsForCurrentZoom(props: {
   );
 }
 
+/**
+ * War-risk zones overlay — fetches the curated JWC-derived polygons once
+ * and renders them as low-opacity red polygons when the user is zoomed out
+ * enough for them to be visually meaningful.
+ *
+ * Hidden at zoom > MAX_WARZONE_ZOOM because at port-level zoom the polygons
+ * cover the entire visible map and just clutter the view. Useful in world
+ * view and Med/Black Sea regional views.
+ */
+const WarZonesLayer = memo(function WarZonesLayer() {
+  const [zones, setZones] = useState<WarZoneFeature[] | null>(null);
+  const zoom = useMapZoom(11);
+  const visible = zoom <= MAX_WARZONE_ZOOM;
+  useEffect(() => {
+    if (zones || !visible) return;
+    fetch("/api/war-risk-zones")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: WarZonesGeoJSON | null) => {
+        if (j?.features) setZones(j.features);
+      })
+      .catch(() => {});
+  }, [zones, visible]);
+  if (!visible || !zones) return null;
+  return (
+    <>
+      {zones.map((f) => {
+        // Convert GeoJSON [lon,lat] → Leaflet [lat,lon] for Polygon positions.
+        const positions: Array<[number, number]> = f.geometry.coordinates[0].map(
+          ([lon, lat]) => [lat, lon],
+        );
+        return (
+          <Polygon
+            key={`warzone-${f.properties.id}`}
+            positions={positions}
+            pathOptions={{
+              color: f.properties.color || "#dc2626",
+              weight: 1,
+              fillOpacity: 0.12,
+              opacity: 0.6,
+              dashArray: "4 4",
+              interactive: true,
+            }}
+          >
+            <Tooltip direction="center" sticky>
+              <div className="text-xs">
+                <div className="font-semibold text-rose-300">
+                  ⚠ {f.properties.name}
+                </div>
+                {f.properties.trigger ? (
+                  <div className="text-[10px] text-slate-400">
+                    {f.properties.trigger}
+                  </div>
+                ) : null}
+                {f.properties.since ? (
+                  <div className="text-[10px] text-slate-500">
+                    listed since {f.properties.since}
+                  </div>
+                ) : null}
+                <div className="mt-1 text-[10px] italic text-slate-500">
+                  Indicative — JWC JWLA-033 (3 Mar 2026)
+                </div>
+              </div>
+            </Tooltip>
+          </Polygon>
+        );
+      })}
+    </>
+  );
+});
+
 function ResizeOnExpand({ expanded }: { expanded?: boolean }) {
   const map = useMap();
   useEffect(() => {
@@ -279,6 +370,9 @@ export default function MapInner({
       />
       <FlyTo bbox={bbox} portKey={portKey} resetTick={resetTick} />
       <ResizeOnExpand expanded={expanded} />
+      <WarZonesLayer />
+      {/* Polygon import is now used; if dead-code linter complains, this
+          comment proves intentional retention. */}
       {portKey !== "__world__" ? (
         <PanToSelected vessel={selected} />
       ) : null}
