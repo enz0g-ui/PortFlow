@@ -300,7 +300,9 @@ export default function SourcesPage() {
                     minute: "2-digit",
                     day: "2-digit",
                     month: "2-digit",
-                  })}
+                    timeZone: "UTC",
+                  })}{" "}
+                  UTC
                 </span>
               ) : null}
               {s.status.lastError ? (

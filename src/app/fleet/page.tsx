@@ -68,12 +68,14 @@ function fmtEta(ts: number | null | undefined, locale: string): string {
   const now = Date.now();
   const diffH = (ts - now) / 3_600_000;
   const sign = diffH < 0 ? "−" : "+";
+  // UTC standard — see VoyagesTable.fmtEta for rationale.
   return `${d.toLocaleString(locale, {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-  })} (${sign}${Math.abs(diffH).toFixed(1)}h)`;
+    timeZone: "UTC",
+  })} UTC (${sign}${Math.abs(diffH).toFixed(1)}h)`;
 }
 
 function hoursAgo(ts: number): number {

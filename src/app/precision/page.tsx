@@ -46,12 +46,16 @@ function fmtH(v: number | null | undefined, digits = 2): string {
 
 function fmtTs(ts?: number | null): string {
   if (!ts) return "—";
-  return new Date(ts).toLocaleString([], {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  // UTC across the platform (see VoyagesTable.fmtEta).
+  return (
+    new Date(ts).toLocaleString([], {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "UTC",
+    }) + " UTC"
+  );
 }
 
 function PrecisionInner() {

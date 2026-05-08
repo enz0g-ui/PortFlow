@@ -340,7 +340,9 @@ export default function MapInner({
                   month: "2-digit",
                   hour: "2-digit",
                   minute: "2-digit",
-                })}
+                  timeZone: "UTC",
+                })}{" "}
+                UTC
                 {d.sizePx ? ` · ${d.sizePx} px` : ""}
               </div>
             </div>

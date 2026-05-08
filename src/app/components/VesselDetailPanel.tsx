@@ -53,12 +53,16 @@ interface Props {
 
 function fmtTs(ts: number | null | undefined, locale: string): string {
   if (!ts) return "—";
-  return new Date(ts).toLocaleString(locale, {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  // UTC across the platform — see VoyagesTable.fmtEta for rationale.
+  return (
+    new Date(ts).toLocaleString(locale, {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "UTC",
+    }) + " UTC"
+  );
 }
 
 function fmtEtaDelta(ts: number | null | undefined): string {
