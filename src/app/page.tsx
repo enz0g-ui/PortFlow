@@ -893,6 +893,25 @@ export default function Page() {
     () => (stateFilter ? vessels.filter((v) => v.state === stateFilter) : []),
     [vessels, stateFilter],
   );
+
+  /**
+   * State breakdown of the filtered subset (after FleetMix / CargoMix
+   * click-to-filter). Drives the contextual strip that appears below the
+   * KPI tiles when a class/cargo filter is active. Returns null when no
+   * filter is active so we don't render the strip.
+   */
+  const classFilterBreakdown = useMemo(() => {
+    if (!selectedVesselClassFilter && !selectedCargoFilter) return null;
+    let anchored = 0,
+      underway = 0,
+      moored = 0;
+    for (const v of vessels) {
+      if (v.state === "anchored") anchored++;
+      else if (v.state === "underway") underway++;
+      else if (v.state === "moored") moored++;
+    }
+    return { anchored, underway, moored, total: vessels.length };
+  }, [vessels, selectedVesselClassFilter, selectedCargoFilter]);
   const highlightedMmsis = useMemo(
     () => new Set(filteredVessels.map((v) => v.mmsi)),
     [filteredVessels],
@@ -1268,6 +1287,71 @@ export default function Page() {
           hint={tankersOnly ? t("kpi.tankersHint") : t("kpi.allHint")}
         />
       </section>
+
+      {classFilterBreakdown ? (
+        <section className="rounded-lg border border-sky-700/50 bg-sky-500/5 p-3">
+          <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-xs">
+            <span className="uppercase tracking-wider text-sky-300">
+              Filtre actif :{" "}
+              <span className="font-semibold text-sky-100">
+                {selectedVesselClassFilter
+                  ? `classe ${classLabel(selectedVesselClassFilter)}`
+                  : selectedCargoFilter
+                    ? `cargaison ${CARGO_LABELS[selectedCargoFilter]}`
+                    : ""}
+              </span>{" "}
+              · {classFilterBreakdown.total} navire
+              {classFilterBreakdown.total > 1 ? "s" : ""}
+            </span>
+            <button
+              onClick={() => {
+                setSelectedVesselClassFilter(null);
+                setSelectedCargoFilter(null);
+              }}
+              className="rounded border border-slate-700 px-2 py-0.5 text-xs text-slate-300 hover:border-sky-500"
+            >
+              ✕ effacer le filtre
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {(
+              [
+                ["anchored", classFilterBreakdown.anchored, t("kpi.anchored")],
+                ["underway", classFilterBreakdown.underway, t("kpi.underway")],
+                ["moored", classFilterBreakdown.moored, t("kpi.moored")],
+              ] as const
+            ).map(([state, count, label]) => {
+              const active = stateFilter === state;
+              return (
+                <button
+                  key={state}
+                  onClick={() => toggleState(state)}
+                  disabled={count === 0}
+                  className={`rounded border px-2 py-1.5 text-left transition-colors ${
+                    active
+                      ? "border-amber-600 bg-amber-500/10"
+                      : count > 0
+                        ? "border-slate-700 bg-slate-900/40 hover:border-sky-500"
+                        : "border-slate-800 bg-slate-900/20 opacity-40 cursor-not-allowed"
+                  }`}
+                  title={
+                    count > 0
+                      ? `Cliquer pour ${active ? "effacer" : "appliquer"} le filtre d'état`
+                      : "Aucun navire dans cet état"
+                  }
+                >
+                  <div className="text-[10px] uppercase tracking-wider text-slate-500">
+                    {label}
+                  </div>
+                  <div className="text-xl font-semibold tabular-nums text-slate-100">
+                    {count}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       {stateFilter ? (
         <section className="rounded-lg border border-amber-700/50 bg-amber-500/5 p-3">
