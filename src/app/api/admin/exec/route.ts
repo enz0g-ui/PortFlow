@@ -135,6 +135,15 @@ const ALLOWED: Record<string, AllowedCommand> = {
     cwd: PROJECT_DIR,
     timeoutMs: 720_000,
   },
+  "deploy": {
+    // Full one-shot deploy via scripts/deploy.sh: handles safe.directory,
+    // .next ownership reset, git pull as deploy user, npm ci, build,
+    // pm2 startOrReload <ecosystem>, and prints status + healthcheck.
+    // Usable from anywhere with the admin token, no SSH needed.
+    argv: ["bash", `${PROJECT_DIR}/scripts/deploy.sh`],
+    cwd: PROJECT_DIR,
+    timeoutMs: 900_000, // 15 min — pull + build + reload + ingestor warmup
+  },
   "build-status": {
     // Returns whether `.next/BUILD_ID` exists and how recently it was
     // written. Useful to poll after a long build to know it's actually
