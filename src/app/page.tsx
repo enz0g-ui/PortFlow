@@ -219,6 +219,14 @@ export default function Page() {
   );
   const [vesselBookmarksEnabled, setVesselBookmarksEnabled] = useState(false);
   const [fleetOnly, setFleetOnly] = useState(false);
+  // Click-to-filter from FleetMix / CargoMix lists below the map. Toggling
+  // either filters the map vessels + voyages table by class/cargo. Mutually
+  // exclusive in practice (vessel class and cargo class describe the same
+  // vessel from different angles) but both kept independent for clarity.
+  const [selectedVesselClassFilter, setSelectedVesselClassFilter] =
+    useState<VesselClass | null>(null);
+  const [selectedCargoFilter, setSelectedCargoFilter] =
+    useState<CargoClass | null>(null);
   const [me, setMe] = useState<{
     tier: string;
     portsAccessible: "all" | string[];
@@ -848,18 +856,38 @@ export default function Page() {
       list = list.filter(
         (v) => v.cargoClass && TANKER_CARGO.has(v.cargoClass),
       );
+    if (selectedVesselClassFilter)
+      list = list.filter((v) => v.vesselClass === selectedVesselClassFilter);
+    if (selectedCargoFilter)
+      list = list.filter((v) => v.cargoClass === selectedCargoFilter);
     if (searchMatches)
       list = list.filter((v) => searchMatches(v.mmsi, v.name, v.callsign));
     return list;
-  }, [allVessels, tankersOnly, fleetOnly, bookmarkedMmsis, searchMatches]);
+  }, [
+    allVessels,
+    tankersOnly,
+    fleetOnly,
+    bookmarkedMmsis,
+    searchMatches,
+    selectedVesselClassFilter,
+    selectedCargoFilter,
+  ]);
 
   const filteredVoyages = useMemo(() => {
     let list = voyagesResp?.voyages ?? [];
     if (fleetOnly) list = list.filter((v) => bookmarkedMmsis.has(v.mmsi));
+    if (selectedCargoFilter)
+      list = list.filter((v) => v.cargoClass === selectedCargoFilter);
     if (searchMatches)
       list = list.filter((v) => searchMatches(v.mmsi, v.name));
     return list;
-  }, [voyagesResp, fleetOnly, bookmarkedMmsis, searchMatches]);
+  }, [
+    voyagesResp,
+    fleetOnly,
+    bookmarkedMmsis,
+    searchMatches,
+    selectedCargoFilter,
+  ]);
 
   const filteredVessels = useMemo(
     () => (stateFilter ? vessels.filter((v) => v.state === stateFilter) : []),
@@ -999,12 +1027,18 @@ export default function Page() {
         </div>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <CongestionGauge
-          anchored={k?.anchored ?? 0}
-          total={k?.totalVessels ?? 0}
-        />
-        <WeatherWidget data={weatherResp ?? null} />
+      <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <CongestionGauge
+            anchored={k?.anchored ?? 0}
+            total={k?.totalVessels ?? 0}
+          />
+          <FlowChart history={histResp?.history ?? []} />
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <WeatherWidget data={weatherResp ?? null} />
+          <AccuracyPanel data={accuracyResp ?? null} />
+        </div>
       </section>
 
       <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs">
@@ -1358,15 +1392,6 @@ export default function Page() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <AccuracyPanel data={accuracyResp ?? null} />
-        <AnomalyPanel
-          anomalies={anomaliesResp?.anomalies ?? []}
-          selectedMmsi={selectedMmsi}
-          onSelect={handleVoyageSelect}
-        />
-        <FlowChart history={histResp?.history ?? []} />
-      </section>
 
       {!worldView ? (
         <section>
@@ -1378,10 +1403,21 @@ export default function Page() {
         </section>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
-          <div className="mb-2 text-xs uppercase tracking-wider text-slate-400">
-            {t("section.fleetMix")}
+          <div className="mb-2 flex items-baseline justify-between text-xs">
+            <span className="uppercase tracking-wider text-slate-400">
+              {t("section.fleetMix")}
+            </span>
+            {selectedVesselClassFilter ? (
+              <button
+                onClick={() => setSelectedVesselClassFilter(null)}
+                className="text-[10px] text-sky-400 hover:text-sky-300"
+                title="Effacer le filtre"
+              >
+                ✕ effacer
+              </button>
+            ) : null}
           </div>
           <div className="space-y-1">
             {(
@@ -1391,21 +1427,40 @@ export default function Page() {
               const pct = k?.totalVessels
                 ? Math.round((n / k.totalVessels) * 100)
                 : 0;
+              const active = selectedVesselClassFilter === cls;
               return (
-                <div key={cls} className="flex items-center gap-2 text-sm">
+                <button
+                  key={cls}
+                  onClick={() =>
+                    setSelectedVesselClassFilter(active ? null : cls)
+                  }
+                  disabled={n === 0}
+                  className={`flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left text-sm transition-colors ${
+                    active
+                      ? "bg-sky-500/15 ring-1 ring-inset ring-sky-600/40"
+                      : n > 0
+                        ? "hover:bg-slate-800/60 cursor-pointer"
+                        : "opacity-40 cursor-not-allowed"
+                  }`}
+                  title={
+                    n > 0
+                      ? `Filtrer la carte sur ${classLabel(cls)} (${n})`
+                      : "Aucun navire de cette classe"
+                  }
+                >
                   <span className="w-24 text-slate-400 capitalize">
                     {classLabel(cls)}
                   </span>
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-800">
                     <div
-                      className="h-full bg-sky-400"
+                      className={`h-full ${active ? "bg-sky-300" : "bg-sky-400"}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
                   <span className="w-10 text-right tabular-nums text-slate-300">
                     {n}
                   </span>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -1418,8 +1473,19 @@ export default function Page() {
         </div>
 
         <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
-          <div className="mb-2 text-xs uppercase tracking-wider text-slate-400">
-            {t("section.cargoMix")}
+          <div className="mb-2 flex items-baseline justify-between text-xs">
+            <span className="uppercase tracking-wider text-slate-400">
+              {t("section.cargoMix")}
+            </span>
+            {selectedCargoFilter ? (
+              <button
+                onClick={() => setSelectedCargoFilter(null)}
+                className="text-[10px] text-amber-400 hover:text-amber-300"
+                title="Effacer le filtre"
+              >
+                ✕ effacer
+              </button>
+            ) : null}
           </div>
           <div className="space-y-1">
             {(["crude", "product", "chemical", "lng", "lpg"] as CargoClass[]).map(
@@ -1428,26 +1494,49 @@ export default function Page() {
                 const pct = tankerCount
                   ? Math.round((n / tankerCount) * 100)
                   : 0;
+                const active = selectedCargoFilter === c;
                 return (
-                  <div key={c} className="flex items-center gap-2 text-sm">
+                  <button
+                    key={c}
+                    onClick={() => setSelectedCargoFilter(active ? null : c)}
+                    disabled={n === 0}
+                    className={`flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left text-sm transition-colors ${
+                      active
+                        ? "bg-amber-500/15 ring-1 ring-inset ring-amber-600/40"
+                        : n > 0
+                          ? "hover:bg-slate-800/60 cursor-pointer"
+                          : "opacity-40 cursor-not-allowed"
+                    }`}
+                    title={
+                      n > 0
+                        ? `Filtrer la carte sur ${CARGO_LABELS[c]} (${n})`
+                        : "Aucun navire de cette cargaison"
+                    }
+                  >
                     <span className="w-24 text-slate-400">
                       {CARGO_LABELS[c]}
                     </span>
                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-800">
                       <div
-                        className="h-full bg-amber-400"
+                        className={`h-full ${active ? "bg-amber-300" : "bg-amber-400"}`}
                         style={{ width: `${pct}%` }}
                       />
                     </div>
                     <span className="w-10 text-right tabular-nums text-slate-300">
                       {n}
                     </span>
-                  </div>
+                  </button>
                 );
               },
             )}
           </div>
         </div>
+
+        <AnomalyPanel
+          anomalies={anomaliesResp?.anomalies ?? []}
+          selectedMmsi={selectedMmsi}
+          onSelect={handleVoyageSelect}
+        />
       </section>
 
       <footer className="space-y-2 border-t border-slate-800 pt-3 text-xs text-slate-500">

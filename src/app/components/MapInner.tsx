@@ -319,7 +319,7 @@ const WarZonesLayer = memo(function WarZonesLayer() {
               interactive: true,
             }}
           >
-            <Tooltip direction="center" sticky>
+            <Tooltip direction="center" permanent={false}>
               <div className="text-xs">
                 <div className="font-semibold text-rose-300">
                   ⚠ {f.properties.name}
@@ -386,7 +386,7 @@ const ChokepointsLayer = memo(function ChokepointsLayer() {
               interactive: true,
             }}
           >
-            <Tooltip direction="center" sticky>
+            <Tooltip direction="center" permanent={false}>
               <div className="text-xs">
                 <div className="font-semibold text-amber-300">
                   ⚓ {f.properties.name}
