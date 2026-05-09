@@ -12,7 +12,8 @@ export type AlertEvent =
   | "vessel.arrived"
   | "vessel.departed"
   | "vessel.anomaly"
-  | "vessel.eta_approaching";
+  | "vessel.eta_approaching"
+  | "vessel.sanctioned_chokepoint_transit";
 
 export interface UserAlert {
   id: number;
@@ -135,6 +136,16 @@ interface VesselEventPayload {
   minutesUntilEta?: number | null;
   /** For eta_approaching: the voyage id used for dedup. */
   voyageId?: string;
+  /**
+   * For sanctioned_chokepoint_transit. The chokepoint identifier doubles as
+   * `port` for filter compatibility (e.g. "cp_hormuz"), while these fields
+   * give the human-readable name and the matched sanctions sources/regimes.
+   */
+  chokepointId?: string;
+  chokepointName?: string;
+  sanctionsSources?: string[];
+  sanctionsRegimes?: string[];
+  imo?: number | null;
 }
 
 function formatHumanLine(
@@ -157,6 +168,13 @@ function formatHumanLine(
       const min = payload.minutesUntilEta ?? "?";
       return `⏱️  ${payload.vesselName}${cargo} arriving ${payload.portName} in ~${min} min (ETA ${eta} UTC, MMSI ${payload.mmsi})`;
     }
+    case "vessel.sanctioned_chokepoint_transit": {
+      const cp = payload.chokepointName ?? payload.portName;
+      const srcs = (payload.sanctionsSources ?? []).join("/").toUpperCase();
+      const reg = (payload.sanctionsRegimes ?? []).filter(Boolean).join(", ");
+      const imoStr = payload.imo ? ` IMO ${payload.imo}` : "";
+      return `🚫  SANCTIONED vessel ${payload.vesselName}${cargo}${imoStr} entering ${cp} at ${t} — listed by ${srcs || "—"}${reg ? ` (${reg})` : ""} (MMSI ${payload.mmsi})`;
+    }
   }
 }
 
@@ -175,7 +193,9 @@ function formatEmailHtml(
           ? "anomaly at"
           : event === "vessel.eta_approaching"
             ? `arriving in ~${payload.minutesUntilEta ?? "?"} min at`
-            : "event at";
+            : event === "vessel.sanctioned_chokepoint_transit"
+              ? "🚫 SANCTIONED vessel entering"
+              : "event at";
   return `
 <!doctype html>
 <html><body style="font-family: system-ui, sans-serif; background: #0b0f17; color: #e6edf3; padding: 24px;">

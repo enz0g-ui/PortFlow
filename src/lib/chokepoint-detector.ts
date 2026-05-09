@@ -3,7 +3,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { db } from "./db";
 import { getStatic } from "./store";
-import { isVesselSanctioned } from "./uk-sanctions";
+import { isVesselSanctioned, findSanctionsForVessel } from "./uk-sanctions";
+import { fireVesselEvent } from "./alerts";
 
 /**
  * Vessel-transit detector for known maritime chokepoints.
@@ -204,7 +205,17 @@ export async function scanChokepointTransits(): Promise<{
   let inside = 0;
   let newEntries = 0;
   let updates = 0;
+  let alertsFired = 0;
   const now = Date.now();
+  // Buffer the (mmsi, chokepoint, lookups) we need to fire alerts for after
+  // the SQL loop — calling async fireVesselEvent inside the iterate() loop
+  // would interleave with SQLite reads. Collect, then fire.
+  const pendingAlerts: Array<{
+    mmsi: number;
+    cp: Chokepoint;
+    ts: number;
+    imo: number | null;
+  }> = [];
 
   for (const r of stmt.iterate(cutoff) as IterableIterator<PositionRow>) {
     const cp = chokepointFor(r.lat, r.lon);
@@ -221,10 +232,8 @@ export async function scanChokepointTransits(): Promise<{
       updates++;
     } else {
       const stat = getStatic(r.mmsi);
-      const sanctioned = isVesselSanctioned({
-        mmsi: r.mmsi,
-        imo: (stat as { imo?: number } | undefined)?.imo ?? null,
-      });
+      const imo = (stat as { imo?: number } | undefined)?.imo ?? null;
+      const sanctioned = isVesselSanctioned({ mmsi: r.mmsi, imo });
       insertEntry.run(
         r.mmsi,
         cp.id,
@@ -236,7 +245,47 @@ export async function scanChokepointTransits(): Promise<{
         now,
       );
       newEntries++;
+      if (sanctioned) {
+        pendingAlerts.push({ mmsi: r.mmsi, cp, ts: r.ts, imo });
+      }
     }
+  }
+
+  // Fire pending alerts — sequentially (small N) and outside the SQL loop.
+  for (const a of pendingAlerts) {
+    try {
+      const stat = getStatic(a.mmsi);
+      const matches = findSanctionsForVessel({ mmsi: a.mmsi, imo: a.imo });
+      const sources = Array.from(new Set(matches.map((m) => m.source)));
+      const regimes = Array.from(
+        new Set(matches.map((m) => m.regime).filter((r): r is string => Boolean(r))),
+      );
+      await fireVesselEvent("vessel.sanctioned_chokepoint_transit", {
+        mmsi: a.mmsi,
+        vesselName: stat?.name ?? `MMSI ${a.mmsi}`,
+        port: a.cp.id,
+        portName: a.cp.name,
+        cargoClass: stat?.cargoClass ?? null,
+        ts: a.ts,
+        chokepointId: a.cp.id,
+        chokepointName: a.cp.name,
+        sanctionsSources: sources,
+        sanctionsRegimes: regimes,
+        imo: a.imo,
+      });
+      alertsFired++;
+    } catch (err) {
+      console.error(
+        `[chokepoint-detector] alert fire failed for mmsi=${a.mmsi} cp=${a.cp.id}`,
+        err,
+      );
+    }
+  }
+
+  if (alertsFired > 0) {
+    console.log(
+      `[chokepoint-detector] fired ${alertsFired} sanctioned-chokepoint alert(s)`,
+    );
   }
 
   return { inside, newEntries, updates };

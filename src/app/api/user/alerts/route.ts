@@ -26,6 +26,7 @@ const VALID_EVENTS = new Set<AlertEvent>([
   "vessel.departed",
   "vessel.anomaly",
   "vessel.eta_approaching",
+  "vessel.sanctioned_chokepoint_transit",
 ]);
 
 function isHttpsUrl(url: string): boolean {
