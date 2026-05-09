@@ -117,4 +117,10 @@ export async function register() {
   // and runs every 24h after that. Skips silently if upstream URL changes.
   const { startPiracyAsamScanner } = await import("./lib/piracy-asam");
   startPiracyAsamScanner();
+
+  // IMF PortWatch ingestor — daily port-call counts and weekly chokepoint
+  // transit data. CC-BY-style. Defers 2 min, runs every 24h. Failures log
+  // but never block the worker.
+  const { startPortwatchScanner } = await import("./lib/portwatch");
+  startPortwatchScanner();
 }
