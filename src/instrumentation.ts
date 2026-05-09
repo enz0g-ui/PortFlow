@@ -123,4 +123,10 @@ export async function register() {
   // but never block the worker.
   const { startPortwatchScanner } = await import("./lib/portwatch");
   startPortwatchScanner();
+
+  // UK Sanctions List (UKSL) ingestor — vessel-only filter. Replaced the
+  // OFSI Consolidated List which was discontinued 28 Jan 2026. OGL v3.0
+  // commercial reuse with attribution. Defers 90 s after boot.
+  const { startUkslScanner } = await import("./lib/uk-sanctions");
+  startUkslScanner();
 }
