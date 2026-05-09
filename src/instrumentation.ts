@@ -164,6 +164,16 @@ export async function register() {
   const { startPortwatchScanner } = await import("./lib/portwatch");
   startPortwatchScanner();
 
+  // Kill-switch — set DISABLE_NEW_INGESTORS=1 in .env.local to skip all
+  // sanctions/chokepoint scanners added in this session. Used to isolate
+  // a crash-loop suspect; remove once stability is confirmed.
+  if (process.env.DISABLE_NEW_INGESTORS === "1") {
+    console.log(
+      "[boot] DISABLE_NEW_INGESTORS=1 — UKSL/OFAC/UN/EU/chokepoint scanners NOT started",
+    );
+    return;
+  }
+
   // UK Sanctions List (UKSL) ingestor — vessel-only filter. Replaced the
   // OFSI Consolidated List which was discontinued 28 Jan 2026. OGL v3.0
   // commercial reuse with attribution. Defers 90 s after boot.
