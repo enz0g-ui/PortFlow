@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { db } from "./db";
 import { getStatic } from "./store";
@@ -85,6 +86,54 @@ async function loadChokepoints(): Promise<Chokepoint[]> {
     console.error("[chokepoint-detector] failed to load chokepoints", err);
     return [];
   }
+}
+
+/**
+ * Synchronous chokepoint loader for boot-time consumers (e.g. AIS worker
+ * subscription which is set up before the async scanner has run). Reads
+ * the GeoJSON once and caches; safe to call repeatedly.
+ */
+export function loadChokepointsSync(): Chokepoint[] {
+  if (_chokepoints.length > 0) return _chokepoints;
+  try {
+    const path = resolve(process.cwd(), "public/data/chokepoints.geojson");
+    const json = JSON.parse(readFileSync(path, "utf-8")) as ChokepointGeoJSON;
+    _chokepoints = json.features.map((f) => {
+      const ring = f.geometry.coordinates[0];
+      let minLon = Infinity,
+        maxLon = -Infinity,
+        minLat = Infinity,
+        maxLat = -Infinity;
+      for (const [lon, lat] of ring) {
+        if (lon < minLon) minLon = lon;
+        if (lon > maxLon) maxLon = lon;
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+      }
+      return { id: f.properties.id, name: f.properties.name, minLon, maxLon, minLat, maxLat };
+    });
+    return _chokepoints;
+  } catch (err) {
+    console.error("[chokepoint-detector] sync load failed", err);
+    return [];
+  }
+}
+
+/**
+ * Returns chokepoint bboxes in aisstream subscription format
+ * `[[minLat, minLon], [maxLat, maxLon]]`. Used by the AIS worker to
+ * extend the live subscription beyond the 51-port footprint so we
+ * actually receive vessel positions inside chokepoints (Hormuz,
+ * Bab el-Mandeb, Malacca, Magellan, Cape of Good Hope are all far
+ * from any subscribed port).
+ */
+export function getChokepointSubscriptionBboxes(): Array<
+  [[number, number], [number, number]]
+> {
+  return loadChokepointsSync().map((c) => [
+    [c.minLat, c.minLon],
+    [c.maxLat, c.maxLon],
+  ]);
 }
 
 function chokepointFor(lat: number, lon: number): Chokepoint | null {

@@ -1,6 +1,7 @@
 import WebSocket from "ws";
 import { classifyCargo, classifyShip, inferState } from "./rotterdam";
 import { findPortByPosition, findZone, PORTS } from "./ports";
+import { getChokepointSubscriptionBboxes } from "./chokepoint-detector";
 import {
   getPreviousZone,
   getStatic,
@@ -239,17 +240,21 @@ export function startAisWorker(apiKey: string) {
     ws.on("open", () => {
       meta.recordConnection();
       reconnectMs = MIN_RECONNECT_MS;
-      const sub = {
-        APIKey: apiKey,
-        BoundingBoxes: PORTS.map((p) => [
+      const portBboxes: Array<[[number, number], [number, number]]> = PORTS.map(
+        (p) => [
           [p.bbox[0], p.bbox[1]],
           [p.bbox[2], p.bbox[3]],
-        ]),
+        ],
+      );
+      const chokepointBboxes = getChokepointSubscriptionBboxes();
+      const sub = {
+        APIKey: apiKey,
+        BoundingBoxes: [...portBboxes, ...chokepointBboxes],
         FilterMessageTypes: ["PositionReport", "ShipStaticData"],
       };
       ws.send(JSON.stringify(sub));
       console.log(
-        `[ais] connected, subscribed to ${PORTS.length} bboxes (${PORTS.map((p) => p.id).join(", ")})`,
+        `[ais] connected, subscribed to ${portBboxes.length} ports + ${chokepointBboxes.length} chokepoints`,
       );
     });
 
