@@ -194,6 +194,13 @@ export async function POST(request: NextRequest) {
   const m = /^Bearer\s+(.+)$/.exec(auth);
   const provided = m?.[1] ?? "";
   if (!provided || !timingSafeEqual(provided, expected)) {
+    // TEMPORARY DEBUG (remove once auth works) — shows the runtime view
+    // of expected vs provided so we can see what's actually being compared.
+    const fp = (s: string) =>
+      s ? `${s.slice(0, 4)}...${s.slice(-4)} (len=${s.length})` : "(empty)";
+    console.error(
+      `[admin-exec] 401 — expected=${fp(expected)} provided=${fp(provided)} match_len=${expected.length === provided.length}`,
+    );
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 
