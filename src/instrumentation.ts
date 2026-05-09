@@ -48,6 +48,27 @@ export async function register() {
         JSON.stringify(reason),
     );
   });
+  // Heartbeat — logs uptime + RSS + heap every 15 s. If the process dies
+  // silently, the last heartbeat tells us (a) how long it lived and (b)
+  // memory trajectory at death. Cheap (~50 bytes / 15 s).
+  process.on("exit", (code) => {
+    console.error(
+      `[FATAL] process.exit code=${code} after ${process.uptime().toFixed(1)}s`,
+    );
+  });
+  for (const sig of ["SIGTERM", "SIGINT", "SIGHUP", "SIGUSR1", "SIGUSR2"]) {
+    process.on(sig as NodeJS.Signals, () => {
+      console.error(
+        `[FATAL] received ${sig} after ${process.uptime().toFixed(1)}s`,
+      );
+    });
+  }
+  setInterval(() => {
+    const m = process.memoryUsage();
+    console.log(
+      `[heartbeat] up=${process.uptime().toFixed(0)}s rss=${(m.rss / 1048576).toFixed(0)}MB heap=${(m.heapUsed / 1048576).toFixed(0)}/${(m.heapTotal / 1048576).toFixed(0)}MB`,
+    );
+  }, 15_000).unref();
 
   const { bulkLoadKpis, bulkLoadStatic } = await import("./lib/store");
   const { loadAllStatic, loadKpisSince } = await import("./lib/db");
