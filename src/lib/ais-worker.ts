@@ -1,7 +1,7 @@
 import WebSocket from "ws";
 import { classifyCargo, classifyShip, inferState } from "./rotterdam";
 import { findPortByPosition, findZone, PORTS } from "./ports";
-import { getChokepointSubscriptionBboxes } from "./chokepoint-detector";
+// import { getChokepointSubscriptionBboxes } from "./chokepoint-detector";
 import {
   getPreviousZone,
   getStatic,
@@ -246,15 +246,19 @@ export function startAisWorker(apiKey: string) {
           [p.bbox[2], p.bbox[3]],
         ],
       );
-      const chokepointBboxes = getChokepointSubscriptionBboxes();
+      // Chokepoint bboxes (Hormuz, Malacca, Suez, Singapore, etc.) are
+      // disabled here — combined message rate exceeded what we can ingest
+      // and likely caused process termination. Re-enable progressively
+      // once we have backpressure / message-rate metrics in place.
+      // const chokepointBboxes = getChokepointSubscriptionBboxes();
       const sub = {
         APIKey: apiKey,
-        BoundingBoxes: [...portBboxes, ...chokepointBboxes],
+        BoundingBoxes: portBboxes,
         FilterMessageTypes: ["PositionReport", "ShipStaticData"],
       };
       ws.send(JSON.stringify(sub));
       console.log(
-        `[ais] connected, subscribed to ${portBboxes.length} ports + ${chokepointBboxes.length} chokepoints`,
+        `[ais] connected, subscribed to ${portBboxes.length} ports (chokepoint bboxes disabled pending backpressure work)`,
       );
     });
 
