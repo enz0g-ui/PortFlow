@@ -1,0 +1,275 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "name": "Maritime chokepoints — bounding-box polygons",
+    "source": "Port Flow curated; coordinates derived from public maritime sources (NGA charts, Wikipedia, IHO)",
+    "license": "Boundary coordinates are facts (not copyrightable per EU/UK law); geometry curated by Port Flow.",
+    "description": "Bounding-box polygons used for vessel-transit detection. Coarser than the actual narrow channel but adequate for AIS membership checks at port-level zoom."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cp_suez",
+        "name": "Suez Canal",
+        "category": "chokepoint",
+        "color": "#fbbf24",
+        "narrative": "Egypt — major artery for EU ↔ Asia trade; Bab-Suez complex"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [32.3, 29.8],
+            [32.7, 29.8],
+            [32.7, 31.5],
+            [32.3, 31.5],
+            [32.3, 29.8]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cp_hormuz",
+        "name": "Strait of Hormuz",
+        "category": "chokepoint",
+        "color": "#fbbf24",
+        "narrative": "Iran/Oman — ~20% of global oil & 30% of LNG"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [55.5, 25.5],
+            [57.5, 25.5],
+            [57.5, 27.0],
+            [55.5, 27.0],
+            [55.5, 25.5]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cp_bab_el_mandeb",
+        "name": "Bab el-Mandeb",
+        "category": "chokepoint",
+        "color": "#fbbf24",
+        "narrative": "Yemen/Djibouti — Red Sea / Gulf of Aden bridge"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [43.0, 12.0],
+            [44.0, 12.0],
+            [44.0, 13.5],
+            [43.0, 13.5],
+            [43.0, 12.0]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cp_malacca",
+        "name": "Strait of Malacca",
+        "category": "chokepoint",
+        "color": "#fbbf24",
+        "narrative": "Indonesia/Malaysia/Singapore — busiest worldwide"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [99.0, 1.0],
+            [104.0, 1.0],
+            [104.0, 6.0],
+            [99.0, 6.0],
+            [99.0, 1.0]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cp_singapore",
+        "name": "Singapore Strait",
+        "category": "chokepoint",
+        "color": "#fbbf24",
+        "narrative": "Eastern entry to Malacca; bunkering hub"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [103.5, 1.1],
+            [104.4, 1.1],
+            [104.4, 1.4],
+            [103.5, 1.4],
+            [103.5, 1.1]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cp_bosphorus",
+        "name": "Bosphorus & Dardanelles",
+        "category": "chokepoint",
+        "color": "#fbbf24",
+        "narrative": "Türkiye — only Black Sea access; Russia oil/grain corridor"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [26.0, 40.0],
+            [29.5, 40.0],
+            [29.5, 41.5],
+            [26.0, 41.5],
+            [26.0, 40.0]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cp_gibraltar",
+        "name": "Strait of Gibraltar",
+        "category": "chokepoint",
+        "color": "#fbbf24",
+        "narrative": "Spain/Morocco — Atlantic ↔ Mediterranean gateway"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-5.8, 35.7],
+            [-5.0, 35.7],
+            [-5.0, 36.3],
+            [-5.8, 36.3],
+            [-5.8, 35.7]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cp_skagerrak",
+        "name": "Skagerrak & Kattegat",
+        "category": "chokepoint",
+        "color": "#fbbf24",
+        "narrative": "Norway/Denmark/Sweden — Baltic ↔ North Sea"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [8.0, 56.5],
+            [12.0, 56.5],
+            [12.0, 58.5],
+            [8.0, 58.5],
+            [8.0, 56.5]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cp_dover",
+        "name": "Dover Strait",
+        "category": "chokepoint",
+        "color": "#fbbf24",
+        "narrative": "UK/France — busiest international shipping lane"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [1.0, 50.5],
+            [2.5, 50.5],
+            [2.5, 51.3],
+            [1.0, 51.3],
+            [1.0, 50.5]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cp_panama",
+        "name": "Panama Canal",
+        "category": "chokepoint",
+        "color": "#fbbf24",
+        "narrative": "Panama — Atlantic ↔ Pacific shortcut"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-80.0, 8.5],
+            [-79.5, 8.5],
+            [-79.5, 9.5],
+            [-80.0, 9.5],
+            [-80.0, 8.5]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cp_good_hope",
+        "name": "Cape of Good Hope",
+        "category": "chokepoint",
+        "color": "#fbbf24",
+        "narrative": "South Africa — alt route to Suez when Red Sea is unsafe"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [18.0, -35.5],
+            [20.5, -35.5],
+            [20.5, -34.0],
+            [18.0, -34.0],
+            [18.0, -35.5]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cp_magellan",
+        "name": "Strait of Magellan",
+        "category": "chokepoint",
+        "color": "#fbbf24",
+        "narrative": "Chile — historical Atlantic ↔ Pacific route, alt to Panama"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.0, -54.0],
+            [-68.0, -54.0],
+            [-68.0, -52.5],
+            [-71.0, -52.5],
+            [-71.0, -54.0]
+          ]
+        ]
+      }
+    }
+  ]
+}

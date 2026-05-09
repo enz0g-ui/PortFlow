@@ -92,6 +92,22 @@ interface WarZonesGeoJSON {
   features: WarZoneFeature[];
 }
 
+const MAX_CHOKEPOINT_ZOOM = 7;
+interface ChokepointFeature {
+  type: "Feature";
+  properties: {
+    id: string;
+    name: string;
+    color?: string;
+    narrative?: string;
+  };
+  geometry: { type: "Polygon"; coordinates: Array<Array<[number, number]>> };
+}
+interface ChokepointsGeoJSON {
+  type: "FeatureCollection";
+  features: ChokepointFeature[];
+}
+
 function FlyTo({
   bbox,
   portKey,
@@ -330,6 +346,68 @@ const WarZonesLayer = memo(function WarZonesLayer() {
   );
 });
 
+/**
+ * Maritime chokepoint overlay (Suez, Hormuz, Bab el-Mandeb, Malacca,
+ * Bosphorus, Gibraltar, Skagerrak, Dover, Panama, Cape of Good Hope,
+ * Magellan, Singapore Strait). Same zoom-aware visibility as JWC war
+ * zones — these are wide bbox rectangles, useful at world / regional
+ * view, clutter at port level.
+ */
+const ChokepointsLayer = memo(function ChokepointsLayer() {
+  const [zones, setZones] = useState<ChokepointFeature[] | null>(null);
+  const zoom = useMapZoom(11);
+  const visible = zoom <= MAX_CHOKEPOINT_ZOOM;
+  useEffect(() => {
+    if (zones || !visible) return;
+    fetch("/api/chokepoints")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: ChokepointsGeoJSON | null) => {
+        if (j?.features) setZones(j.features);
+      })
+      .catch(() => {});
+  }, [zones, visible]);
+  if (!visible || !zones) return null;
+  return (
+    <>
+      {zones.map((f) => {
+        const positions: Array<[number, number]> = f.geometry.coordinates[0].map(
+          ([lon, lat]) => [lat, lon],
+        );
+        return (
+          <Polygon
+            key={`chokepoint-${f.properties.id}`}
+            positions={positions}
+            pathOptions={{
+              color: f.properties.color || "#fbbf24",
+              weight: 1,
+              fillOpacity: 0.06,
+              opacity: 0.5,
+              dashArray: "2 6",
+              interactive: true,
+            }}
+          >
+            <Tooltip direction="center" sticky>
+              <div className="text-xs">
+                <div className="font-semibold text-amber-300">
+                  ⚓ {f.properties.name}
+                </div>
+                {f.properties.narrative ? (
+                  <div className="text-[10px] text-slate-400">
+                    {f.properties.narrative}
+                  </div>
+                ) : null}
+                <div className="mt-1 text-[10px] italic text-slate-500">
+                  Maritime chokepoint
+                </div>
+              </div>
+            </Tooltip>
+          </Polygon>
+        );
+      })}
+    </>
+  );
+});
+
 function ResizeOnExpand({ expanded }: { expanded?: boolean }) {
   const map = useMap();
   useEffect(() => {
@@ -371,6 +449,7 @@ export default function MapInner({
       <FlyTo bbox={bbox} portKey={portKey} resetTick={resetTick} />
       <ResizeOnExpand expanded={expanded} />
       <WarZonesLayer />
+      <ChokepointsLayer />
       {/* Polygon import is now used; if dead-code linter complains, this
           comment proves intentional retention. */}
       {portKey !== "__world__" ? (

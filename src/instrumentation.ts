@@ -129,4 +129,11 @@ export async function register() {
   // commercial reuse with attribution. Defers 90 s after boot.
   const { startUkslScanner } = await import("./lib/uk-sanctions");
   startUkslScanner();
+
+  // Chokepoint transit detector — scans the last 10 min of positions every
+  // 5 min, matches against 12 chokepoint bboxes, persists transit events
+  // with sanctioned snapshot flag from UKSL. The killer query for compliance:
+  //   /api/chokepoint-transits?sanctionedOnly=1&days=30
+  const { startChokepointDetector } = await import("./lib/chokepoint-detector");
+  startChokepointDetector();
 }
