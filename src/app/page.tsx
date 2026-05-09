@@ -1477,17 +1477,7 @@ export default function Page() {
       </section>
 
 
-      {!worldView ? (
-        <section>
-          <DarkEventsPanel
-            events={darkEvents}
-            selectedMmsi={selectedMmsi}
-            onSelect={handleDarkEventSelect}
-          />
-        </section>
-      ) : null}
-
-      <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
           <div className="mb-2 flex items-baseline justify-between text-xs">
             <span className="uppercase tracking-wider text-slate-400">
@@ -1616,15 +1606,22 @@ export default function Page() {
           </div>
         </div>
 
-      </section>
-
-      <section>
         <AnomalyPanel
           anomalies={anomaliesResp?.anomalies ?? []}
           selectedMmsi={selectedMmsi}
           onSelect={handleVoyageSelect}
         />
       </section>
+
+      {!worldView ? (
+        <section>
+          <DarkEventsPanel
+            events={darkEvents}
+            selectedMmsi={selectedMmsi}
+            onSelect={handleDarkEventSelect}
+          />
+        </section>
+      ) : null}
 
       <footer className="space-y-2 border-t border-slate-800 pt-3 text-xs text-slate-500">
         <div>
