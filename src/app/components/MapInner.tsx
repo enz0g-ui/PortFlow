@@ -525,7 +525,7 @@ export default function MapInner({
       {/* Sanctioned-vessel outer halo — red dashed ring drawn behind the
           regular marker so it always shows up regardless of filter state.
           Only renders for vessels where the API enrichment set sanctioned=true
-          (UK Sanctions List match on IMO or MMSI). */}
+          (UK / OFAC / UN / EU sanctions match on IMO or MMSI). */}
       {vessels
         .filter((v) => v.sanctioned)
         .map((v) => (

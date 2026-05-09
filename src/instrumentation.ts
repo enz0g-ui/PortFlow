@@ -130,6 +130,22 @@ export async function register() {
   const { startUkslScanner } = await import("./lib/uk-sanctions");
   startUkslScanner();
 
+  // OFAC SDN ingestor — US Treasury sanctions list, public domain. Largest
+  // global source of vessel sanctions (Iran/Russia/Venezuela). Defers 120 s.
+  const { startOfacScanner } = await import("./lib/ofac-sanctions");
+  startOfacScanner();
+
+  // UN Security Council Consolidated List — DPRK + Libya + ISIL/AQ vessel
+  // entries. Public information, free reuse. Defers 150 s.
+  const { startUnScScanner } = await import("./lib/un-sanctions");
+  startUnScScanner();
+
+  // EU Consolidated Financial Sanctions List — Russia post-2022 shadow-fleet
+  // tankers, Belarus, Syria. Requires EU_FSF_XML_URL env (registration token).
+  // No-op when not configured; defers 180 s when active.
+  const { startEuScanner } = await import("./lib/eu-sanctions");
+  startEuScanner();
+
   // Chokepoint transit detector — scans the last 10 min of positions every
   // 5 min, matches against 12 chokepoint bboxes, persists transit events
   // with sanctioned snapshot flag from UKSL. The killer query for compliance:

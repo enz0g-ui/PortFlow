@@ -231,7 +231,7 @@ export function VoyagesTable({
                     <span className="font-medium text-slate-200">{v.name}</span>
                     {v.sanctioned ? (
                       <span
-                        title="UK Sanctions List match"
+                        title="Sanctions match (UK / OFAC / UN / EU)"
                         className="rounded bg-rose-500/20 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-300"
                       >
                         🚫
