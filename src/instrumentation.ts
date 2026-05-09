@@ -164,12 +164,17 @@ export async function register() {
   const { startPortwatchScanner } = await import("./lib/portwatch");
   startPortwatchScanner();
 
-  // Kill-switch — set DISABLE_NEW_INGESTORS=1 in .env.local to skip all
-  // sanctions/chokepoint scanners added in this session. Used to isolate
-  // a crash-loop suspect; remove once stability is confirmed.
-  if (process.env.DISABLE_NEW_INGESTORS === "1") {
+  // The new sanctions stack (OFAC/UN/EU) and chokepoint detector caused a
+  // ~90s-uptime crash loop on infra-01 (RAM was fine at 220MB; the kill
+  // signal source remains uncharacterized). Until we trace it, these are
+  // OPT-IN: set ENABLE_NEW_INGESTORS=1 in .env.local to start them again.
+  //
+  // UKSL is also gated here because something in the modified shared
+  // sanctioned-vessel index path is the most likely culprit and we want
+  // to test the system without ANY of this session's scanner code firing.
+  if (process.env.ENABLE_NEW_INGESTORS !== "1") {
     console.log(
-      "[boot] DISABLE_NEW_INGESTORS=1 — UKSL/OFAC/UN/EU/chokepoint scanners NOT started",
+      "[boot] new ingestors NOT started (set ENABLE_NEW_INGESTORS=1 to enable UKSL/OFAC/UN/EU/chokepoint scanners)",
     );
     return;
   }
