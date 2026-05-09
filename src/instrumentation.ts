@@ -30,6 +30,25 @@ export async function register() {
   }
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
+  // Catch-all error handlers so a stray rejection doesn't silently kill the
+  // process (Node 24 default: --unhandled-rejections=throw → exit). We have
+  // had multiple silent-exit crash loops; logging here makes the cause
+  // visible in pm2 logs before the process dies.
+  process.on("uncaughtException", (err) => {
+    console.error(
+      "[FATAL] uncaughtException:",
+      err?.stack || err?.message || err,
+    );
+  });
+  process.on("unhandledRejection", (reason) => {
+    console.error(
+      "[FATAL] unhandledRejection:",
+      (reason as Error)?.stack ||
+        (reason as Error)?.message ||
+        JSON.stringify(reason),
+    );
+  });
+
   const { bulkLoadKpis, bulkLoadStatic } = await import("./lib/store");
   const { loadAllStatic, loadKpisSince } = await import("./lib/db");
   const { isCargoClass } = await import("./lib/cargo");
