@@ -265,6 +265,10 @@ export async function fetchUksl(): Promise<IngestResult> {
       throw err;
     }
 
+    // Force a reload of the in-memory index next time it's queried so the
+    // newly-ingested ships are immediately visible to the hot path.
+    invalidateSanctionedIndex();
+
     return {
       ok: true,
       totalRows: rows.length,
@@ -284,6 +288,62 @@ export async function fetchUksl(): Promise<IngestResult> {
       error: (err as Error).message,
     };
   }
+}
+
+// ─── In-memory sanctioned index (refreshed every 5 min) ───
+// Used by the hot path (vessel API responses, AIS worker per-position
+// updates) to flag sanctioned vessels in O(1) without hitting SQLite for
+// every check.
+let _sanctionedCache: {
+  ts: number;
+  mmsis: Set<number>;
+  imos: Set<number>;
+} | null = null;
+const SANCTIONED_CACHE_TTL_MS = 5 * 60_000;
+
+function loadSanctionedIndex(): { mmsis: Set<number>; imos: Set<number> } {
+  const now = Date.now();
+  if (
+    _sanctionedCache &&
+    now - _sanctionedCache.ts < SANCTIONED_CACHE_TTL_MS
+  ) {
+    return { mmsis: _sanctionedCache.mmsis, imos: _sanctionedCache.imos };
+  }
+  const rows = db()
+    .raw.prepare(
+      `SELECT imo, mmsi FROM sanctioned_vessels
+       WHERE imo IS NOT NULL OR mmsi IS NOT NULL`,
+    )
+    .all() as Array<{ imo: number | null; mmsi: number | null }>;
+  const mmsis = new Set<number>();
+  const imos = new Set<number>();
+  for (const r of rows) {
+    if (r.imo) imos.add(r.imo);
+    if (r.mmsi) mmsis.add(r.mmsi);
+  }
+  _sanctionedCache = { ts: now, mmsis, imos };
+  return { mmsis, imos };
+}
+
+/**
+ * O(1) check whether a vessel is in any sanctions list, given any of its
+ * identifiers. Cheaper than findSanctionsForVessel — returns just a
+ * boolean. Use this on the hot path (vessel listing API). Use
+ * findSanctionsForVessel when you need the full match details.
+ */
+export function isVesselSanctioned(opts: {
+  imo?: number | null;
+  mmsi?: number | null;
+}): boolean {
+  const idx = loadSanctionedIndex();
+  if (opts.imo && idx.imos.has(opts.imo)) return true;
+  if (opts.mmsi && idx.mmsis.has(opts.mmsi)) return true;
+  return false;
+}
+
+/** Forces a reload of the in-memory index — call after a UKSL fetch. */
+export function invalidateSanctionedIndex(): void {
+  _sanctionedCache = null;
 }
 
 // ─── Cross-reference helpers (called from AIS worker, voyages, dark-events) ───

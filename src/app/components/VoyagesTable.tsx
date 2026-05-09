@@ -28,6 +28,8 @@ export interface ActiveVoyage {
   predictedEta?: number | null;
   broadcastEta?: number | null;
   draught?: number | null;
+  /** Set by API enrichment when this vessel is on the UK Sanctions List. */
+  sanctioned?: boolean;
 }
 
 function fmtEta(ts: number | null | undefined, locale: string): string {
@@ -225,7 +227,17 @@ export function VoyagesTable({
                   </td>
                 ) : null}
                 <td className="py-2 pr-2">
-                  <div className="font-medium text-slate-200">{v.name}</div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium text-slate-200">{v.name}</span>
+                    {v.sanctioned ? (
+                      <span
+                        title="UK Sanctions List match"
+                        className="rounded bg-rose-500/20 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-300"
+                      >
+                        🚫
+                      </span>
+                    ) : null}
+                  </div>
                   <div className="text-[10px] text-slate-500">
                     MMSI {v.mmsi} · {v.currentState}
                   </div>

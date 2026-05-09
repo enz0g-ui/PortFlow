@@ -443,6 +443,27 @@ export default function MapInner({
           </Tooltip>
         </CircleMarker>
       ))}
+      {/* Sanctioned-vessel outer halo — red dashed ring drawn behind the
+          regular marker so it always shows up regardless of filter state.
+          Only renders for vessels where the API enrichment set sanctioned=true
+          (UK Sanctions List match on IMO or MMSI). */}
+      {vessels
+        .filter((v) => v.sanctioned)
+        .map((v) => (
+          <CircleMarker
+            key={`sanc-halo-${v.mmsi}`}
+            center={[v.latitude, v.longitude]}
+            radius={11}
+            pathOptions={{
+              color: "#dc2626",
+              weight: 2,
+              fill: false,
+              opacity: 0.9,
+              dashArray: "3 3",
+            }}
+            interactive={false}
+          />
+        ))}
       {vessels.map((v) => {
         const isSelected = v.mmsi === selectedMmsi;
         const hasHighlight =
@@ -490,6 +511,11 @@ export default function MapInner({
             >
               <div className="text-xs leading-snug">
                 <div className="font-semibold">
+                  {v.sanctioned ? (
+                    <span className="mr-1 rounded bg-rose-500/20 px-1 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-300">
+                      🚫 Sanctioned
+                    </span>
+                  ) : null}
                   {v.name ?? `MMSI ${v.mmsi}`}
                 </div>
                 <div className="text-[10px] text-slate-400">

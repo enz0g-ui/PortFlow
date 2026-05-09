@@ -43,6 +43,12 @@ export interface Vessel {
   state: VesselState;
   zone?: string;
   lastUpdate: number;
+  /**
+   * Set by API enrichment when this vessel matches the UK Sanctions List
+   * (or other sanctions sources). Optional — undefined / false on most
+   * vessels, true only for the small flagged subset.
+   */
+  sanctioned?: boolean;
 }
 
 export interface FlowEvent {

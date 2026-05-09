@@ -2,6 +2,7 @@ import { db, type VoyageRow } from "@/lib/db";
 import { getStatic, getVessels } from "@/lib/store";
 import { DEFAULT_PORT_ID, getPort } from "@/lib/ports";
 import { TANKER_CARGOS } from "@/lib/cargo";
+import { isVesselSanctioned } from "@/lib/uk-sanctions";
 import type { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +51,10 @@ export async function GET(request: NextRequest) {
             vessel.longitude,
           )
         : row.start_distance_nm;
+      const sanctioned = isVesselSanctioned({
+        mmsi: row.mmsi,
+        imo: (stat as { imo?: number } | undefined)?.imo ?? null,
+      });
       return {
         voyageId: row.voyage_id,
         mmsi: row.mmsi,
@@ -65,6 +70,7 @@ export async function GET(request: NextRequest) {
         predictedAt: row.predicted_at,
         broadcastEta: row.broadcast_eta,
         draught: stat?.draught,
+        sanctioned: sanctioned || undefined,
       };
     })
     .filter((row) => {
