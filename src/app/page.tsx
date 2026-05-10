@@ -873,11 +873,24 @@ export default function Page() {
     selectedCargoFilter,
   ]);
 
+  // MMSIs that pass the current vessel-class filter (computed against the
+  // live `vessels` map which carries vesselClass; ActiveVoyage doesn't).
+  // Used below to filter the voyages-actifs table so users can sort the
+  // class-filtered subset by ETA / cargo / SOG / distance / etc.
+  const classFilteredMmsis = useMemo(() => {
+    if (!selectedVesselClassFilter) return null;
+    return new Set(vessels.map((v) => v.mmsi));
+  }, [vessels, selectedVesselClassFilter]);
+
   const filteredVoyages = useMemo(() => {
     let list = voyagesResp?.voyages ?? [];
     if (fleetOnly) list = list.filter((v) => bookmarkedMmsis.has(v.mmsi));
     if (selectedCargoFilter)
       list = list.filter((v) => v.cargoClass === selectedCargoFilter);
+    if (classFilteredMmsis)
+      list = list.filter((v) => classFilteredMmsis.has(v.mmsi));
+    if (stateFilter)
+      list = list.filter((v) => v.currentState === stateFilter);
     if (searchMatches)
       list = list.filter((v) => searchMatches(v.mmsi, v.name));
     return list;
@@ -887,6 +900,8 @@ export default function Page() {
     bookmarkedMmsis,
     searchMatches,
     selectedCargoFilter,
+    classFilteredMmsis,
+    stateFilter,
   ]);
 
   const filteredVessels = useMemo(
