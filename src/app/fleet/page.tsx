@@ -56,6 +56,32 @@ interface FleetResp {
   ts: number;
 }
 
+interface FleetEmissionsResp {
+  days: number;
+  vesselsCount: number;
+  fleet: {
+    co2Tonnes: number;
+    fuelTonnes: number;
+    energyMwh: number;
+    distanceNm: number;
+    hoursUnderway: number;
+    avgGramsCo2PerNm: number;
+  };
+  vessels: Array<{
+    mmsi: number;
+    label: string | null;
+    cargoClass: string | null;
+    co2Tonnes: number;
+    fuelTonnes: number;
+    distanceNm: number;
+    avgSpeedKn: number;
+    hoursUnderway: number;
+    gramsCo2PerNm: number;
+    coverage: number;
+  }>;
+  methodology: string;
+}
+
 interface MeResp {
   authenticated: boolean;
   tier: string;
@@ -110,6 +136,7 @@ function DemurrageBadge({
 export default function FleetPage() {
   const { tp, t, locale } = useI18n();
   const [data, setData] = useState<FleetResp | null>(null);
+  const [emissions, setEmissions] = useState<FleetEmissionsResp | null>(null);
   const [unauth, setUnauth] = useState(false);
   const [me, setMe] = useState<MeResp | null>(null);
 
@@ -138,6 +165,16 @@ export default function FleetPage() {
         }
       } catch {
         /* ignore */
+      }
+      try {
+        const r = await fetch("/api/fleet/emissions?days=30", {
+          cache: "no-store",
+        });
+        if (r.ok && !cancelled) {
+          setEmissions((await r.json()) as FleetEmissionsResp);
+        }
+      } catch {
+        /* ignore — emissions are non-critical */
       }
     };
     load();
@@ -222,6 +259,68 @@ export default function FleetPage() {
           {tp("fleet.subtitle")}
         </p>
       </section>
+
+      {emissions && emissions.vesselsCount > 0 ? (
+        <section className="rounded-lg border border-emerald-800/40 bg-emerald-500/5 p-4">
+          <div className="mb-2 flex items-baseline justify-between text-xs">
+            <span className="uppercase tracking-wider text-emerald-300">
+              Émissions de la flotte · 30 derniers jours
+            </span>
+            <span
+              className="cursor-help text-[10px] text-slate-500"
+              title={emissions.methodology}
+            >
+              ⓘ méthodologie
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div>
+              <div className="text-[10px] uppercase text-slate-500">CO₂</div>
+              <div className="text-2xl font-semibold tabular-nums text-emerald-200">
+                {emissions.fleet.co2Tonnes.toLocaleString("fr-FR", {
+                  maximumFractionDigits: 0,
+                })}{" "}
+                <span className="text-xs text-slate-500">t</span>
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase text-slate-500">
+                Fioul (HFO eq.)
+              </div>
+              <div className="text-2xl font-semibold tabular-nums text-amber-200">
+                {emissions.fleet.fuelTonnes.toLocaleString("fr-FR", {
+                  maximumFractionDigits: 0,
+                })}{" "}
+                <span className="text-xs text-slate-500">t</span>
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase text-slate-500">
+                Distance parcourue
+              </div>
+              <div className="text-2xl font-semibold tabular-nums text-slate-100">
+                {emissions.fleet.distanceNm.toLocaleString("fr-FR", {
+                  maximumFractionDigits: 0,
+                })}{" "}
+                <span className="text-xs text-slate-500">nm</span>
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase text-slate-500">
+                Intensité moyenne
+              </div>
+              <div className="text-2xl font-semibold tabular-nums text-sky-200">
+                {emissions.fleet.avgGramsCo2PerNm.toLocaleString("fr-FR")}{" "}
+                <span className="text-xs text-slate-500">g/nm</span>
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 text-[10px] italic text-slate-500">
+            Estimation in-house à partir de l&apos;AIS, ±25 % indicatif.
+            Aucune dépendance externe — recalculée à chaque ouverture de page.
+          </div>
+        </section>
+      ) : null}
 
       {data && data.vessels.length === 0 ? (
         <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-8 text-center">

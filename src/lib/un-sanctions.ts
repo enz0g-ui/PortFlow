@@ -98,10 +98,15 @@ export async function fetchUnSc(): Promise<IngestResult> {
     // Split on </ENTITY> — every block before is one ENTITY record.
     // Vessels can also appear in the INDIVIDUALS section occasionally
     // (rare), but the bulk are in ENTITIES.
+    // Bug fix (May 2026): the previous `lastIndexOf("<ENTITY")` matched
+    // sub-elements like `<ENTITY_ALIAS>` and `<ENTITY_ADDRESS>` inside the
+    // ENTITY block, slicing from the wrong position and dropping the
+    // COMMENTS1 field that holds the IMO. Use the exact opening tag
+    // `<ENTITY>` (no attributes per the actual XSD) to anchor.
     const entityBlocks = xml
       .split(/<\/ENTITY>/i)
       .map((b) => {
-        const start = b.lastIndexOf("<ENTITY");
+        const start = b.lastIndexOf("<ENTITY>");
         return start >= 0 ? b.slice(start) : null;
       })
       .filter((b): b is string => b !== null);
