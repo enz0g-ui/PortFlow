@@ -61,21 +61,23 @@ interface IngestResult {
 }
 
 /**
- * Minimal RFC-4180 CSV parser sufficient for UKSL. Handles quoted fields,
- * embedded commas, escaped double-quotes ("" inside a quoted field).
- * Lazy line-by-line parsing would be ideal for a 50 MB file but UKSL is
- * <10 MB so loading it whole is fine.
+ * RFC-4180 CSV parser as a streaming generator. Yields one row at a time,
+ * memory stays at O(row size) regardless of file size. Used for UKSL,
+ * which has grown to ~50MB / 57k rows in 2026 and was previously
+ * blowing up the heap to 1.4GB when loaded eagerly.
+ *
+ * Caller feeds chunks of text via the controller pattern: build a
+ * buffer, then call `parseCsvLine(line)` for each complete line.
  */
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
+function parseCsvLine(line: string): string[] {
+  const out: string[] = [];
   let field = "";
   let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
     if (inQuotes) {
       if (ch === '"') {
-        if (text[i + 1] === '"') {
+        if (line[i + 1] === '"') {
           field += '"';
           i++;
         } else {
@@ -87,26 +89,71 @@ function parseCsv(text: string): string[][] {
     } else {
       if (ch === '"') inQuotes = true;
       else if (ch === ",") {
-        row.push(field);
-        field = "";
-      } else if (ch === "\n") {
-        row.push(field);
-        rows.push(row);
-        row = [];
+        out.push(field);
         field = "";
       } else if (ch !== "\r") {
         field += ch;
       }
     }
   }
-  if (field !== "" || row.length > 0) {
-    row.push(field);
-    rows.push(row);
-  }
-  return rows;
+  out.push(field);
+  return out;
 }
 
+/**
+ * Stream the body of `response` line by line as Uint8Array → string.
+ * Yields complete CSV lines (handles multiline fields by tracking quote
+ * state across reads). Memory: ~bufferSize + currentLine.
+ */
+async function* streamCsvLines(
+  response: Response,
+): AsyncGenerator<string, void, unknown> {
+  if (!response.body) return;
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let buffer = "";
+  let inQuotes = false;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let lineStart = 0;
+    for (let i = 0; i < buffer.length; i++) {
+      const ch = buffer[i];
+      if (ch === '"') {
+        // Track if we're inside a quoted field that might span newlines.
+        // RFC-4180: doubled quotes inside quoted fields are escapes.
+        if (inQuotes && buffer[i + 1] === '"') {
+          i++; // skip the escape pair
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (ch === "\n" && !inQuotes) {
+        yield buffer.slice(lineStart, i);
+        lineStart = i + 1;
+      }
+    }
+    buffer = buffer.slice(lineStart);
+  }
+  buffer += decoder.decode();
+  if (buffer.length > 0) yield buffer;
+}
+
+/**
+ * UKSL ship detection. As of May 2026 the CSV no longer has a "Group Type"
+ * column; instead ships are detectable by the presence of ship-specific
+ * fields (IMO number, Type of ship, Tonnage of ship) being non-empty.
+ *
+ * We accept any row that has either a 7-digit IMO or a non-empty
+ * "Type of ship".
+ */
 function isShipRow(r: UkslRow): boolean {
+  const imo = (r["IMO number"] ?? r["IMO Number"] ?? "").replace(/\D/g, "");
+  if (imo.length === 7) return true;
+  const type = (r["Type of ship"] ?? r["Vessel Type"] ?? "").trim();
+  if (type) return true;
+  // Legacy detection (older UKSL format) — still works if "Group Type"
+  // ever returns.
   const gt = (r["Group Type"] ?? "").toLowerCase();
   return gt.includes("ship") || gt.includes("vessel");
 }
@@ -167,9 +214,97 @@ export async function fetchUksl(): Promise<IngestResult> {
         error: `HTTP ${res.status}`,
       };
     }
-    const text = await res.text();
-    const grid = parseCsv(text);
-    if (grid.length < 2) {
+
+    // Stream the body line by line. Memory stays bounded — never load the
+    // 50 MB file into a single string. Pre-2026 fix: eager parseCsv would
+    // allocate ~1.4 GB of intermediate string arrays, OOM-killing the
+    // process via PM2 max_memory_restart.
+    let headers: string[] | null = null;
+    let totalRows = 0;
+    let shipRows = 0;
+    const byId = new Map<string, UkslRow>();
+    const aliasesById = new Map<string, Set<string>>();
+
+    const score = (x: UkslRow) =>
+      ["IMO number", "IMO Number", "Type of ship", "Tonnage of ship", "Current believed flag of ship"]
+        .map((k) => (x[k] && x[k]!.trim() ? 1 : 0))
+        .reduce<number>((a, b) => a + b, 0);
+
+    let lineIdx = 0;
+    for await (const line of streamCsvLines(res)) {
+      lineIdx++;
+      if (!line || line.trim() === "") continue;
+
+      // Skip the metadata first line, e.g. "Report Date: 05-May-2026"
+      // (the May 2026 UKSL CSV format added a preamble line).
+      if (lineIdx === 1 && /^Report Date:/i.test(line)) {
+        continue;
+      }
+
+      const fields = parseCsvLine(line);
+      if (!headers) {
+        headers = fields.map((h) => h.trim());
+        continue;
+      }
+
+      // Build the row object only for the columns we actually care about.
+      // Avoids allocating a full 70-key object × 57 k rows.
+      const row: UkslRow = {};
+      for (let i = 0; i < headers.length; i++) {
+        const h = headers[i];
+        if (
+          h === "Unique ID" ||
+          h === "OFSI Group ID" ||
+          h === "Name 6" ||
+          h === "Name 1" ||
+          h === "Name" ||
+          h === "Regime Name" ||
+          h === "Regime" ||
+          h === "Listed On" ||
+          h === "Last Updated" ||
+          h === "UK Statement of Reasons" ||
+          h === "Statement of Reasons" ||
+          h === "Other Information" ||
+          h === "IMO number" ||
+          h === "IMO Number" ||
+          h === "Type of ship" ||
+          h === "Tonnage of ship" ||
+          h === "Length of ship" ||
+          h === "Year built" ||
+          h === "Build Year" ||
+          h === "Current believed flag of ship" ||
+          h === "Vessel Flag" ||
+          h === "Vessel Type" ||
+          h === "Vessel Owner" ||
+          h === "Vessel Operator" ||
+          h === "Group Type"
+        ) {
+          row[h] = fields[i];
+        }
+      }
+      totalRows++;
+
+      if (!isShipRow(row)) continue;
+      shipRows++;
+
+      const id = (row["Unique ID"] ?? row["OFSI Group ID"] ?? "").trim();
+      if (!id) continue;
+
+      // Track aliases (names) — small Set per id, bounded by <10 names.
+      const name = pickString(row["Name 6"], row["Name 1"], row["Name"]);
+      if (name) {
+        if (!aliasesById.has(id)) aliasesById.set(id, new Set());
+        aliasesById.get(id)!.add(name);
+      }
+
+      // Keep the richest row per id. ~1-2k ships max.
+      const existing = byId.get(id);
+      if (!existing || score(row) > score(existing)) {
+        byId.set(id, row);
+      }
+    }
+
+    if (!headers) {
       return {
         ok: false,
         totalRows: 0,
@@ -177,36 +312,8 @@ export async function fetchUksl(): Promise<IngestResult> {
         uniqueShips: 0,
         inserted: 0,
         url,
-        error: "empty or malformed CSV",
+        error: "no header row found",
       };
-    }
-    const headers = grid[0].map((h) => h.trim());
-    const rows: UkslRow[] = grid.slice(1).map((arr) => {
-      const obj: UkslRow = {};
-      for (let i = 0; i < headers.length; i++) {
-        obj[headers[i]] = arr[i];
-      }
-      return obj;
-    });
-
-    // Filter to ship rows + dedup by Unique ID, picking the "richest" row
-    // (most non-empty ship-relevant fields).
-    const shipRows = rows.filter(isShipRow);
-    const byId = new Map<string, UkslRow>();
-    for (const r of shipRows) {
-      const id = (r["Unique ID"] ?? "").trim();
-      if (!id) continue;
-      const existing = byId.get(id);
-      if (!existing) {
-        byId.set(id, r);
-        continue;
-      }
-      // Score by non-empty count of ship-relevant fields.
-      const score = (x: UkslRow) =>
-        ["IMO Number", "Vessel Flag", "Vessel Owner", "Vessel Type", "Tonnage"]
-          .map((k) => (x[k] && x[k]!.trim() ? 1 : 0))
-          .reduce<number>((a, b) => a + b, 0);
-      if (score(r) > score(existing)) byId.set(id, r);
     }
 
     const insert = db().raw.prepare(
@@ -222,21 +329,13 @@ export async function fetchUksl(): Promise<IngestResult> {
     db().raw.exec("BEGIN");
     try {
       for (const [id, r] of byId) {
-        // Aggregate aliases by collecting all rows sharing this Unique ID.
-        const allRowsForId = shipRows.filter((x) => x["Unique ID"] === id);
-        const aliases = new Set<string>();
-        let primaryName: string | null = null;
-        for (const ar of allRowsForId) {
-          const n = pickString(ar["Name 6"], ar.Name);
-          if (n) {
-            if (!primaryName) primaryName = n;
-            aliases.add(n);
-          }
-        }
+        const aliases = aliasesById.get(id) ?? new Set<string>();
+        const primaryName = pickString(r["Name 6"], r["Name 1"], r["Name"]);
         if (primaryName) aliases.delete(primaryName);
 
-        const imo = parseImo(r["IMO Number"]);
+        const imo = parseImo(r["IMO number"] ?? r["IMO Number"]);
         const tonnage =
+          parseFloatSafe(r["Tonnage of ship"]) ??
           parseFloatSafe(r["Tonnage"]) ??
           parseFloatSafe(r["Gross Registered Tonnage"]);
         insert.run(
@@ -244,17 +343,26 @@ export async function fetchUksl(): Promise<IngestResult> {
           primaryName,
           aliases.size > 0 ? Array.from(aliases).join(" | ") : null,
           imo,
-          null, // MMSI rarely in UKSL — left for future EU OJ ingest
-          pickString(r["Vessel Flag"]),
-          pickString(r["Vessel Type"]),
+          null, // MMSI rarely in UKSL
+          pickString(r["Current believed flag of ship"], r["Vessel Flag"]),
+          pickString(r["Type of ship"], r["Vessel Type"]),
           tonnage,
-          parseIntSafe(r["Build Year"]),
+          parseIntSafe(r["Year built"] ?? r["Build Year"]),
           pickString(r["Vessel Owner"]),
           pickString(r["Vessel Operator"]),
-          pickString(r.Regime),
-          parseDate(r["Listed On"]),
-          pickString(r["UK Statement of Reasons"], r["Statement of Reasons"]),
-          JSON.stringify(r),
+          pickString(r["Regime Name"], r["Regime"]),
+          parseDate(r["Listed On"] ?? r["Last Updated"]),
+          pickString(r["UK Statement of Reasons"], r["Statement of Reasons"], r["Other Information"]),
+          // Don't dump the full row to raw_json — it can be very large
+          // since UKSL has ~70 columns. Keep a compact projection.
+          JSON.stringify({
+            id,
+            name: primaryName,
+            imo,
+            type: r["Type of ship"],
+            flag: r["Current believed flag of ship"],
+            regime: r["Regime Name"],
+          }),
           now,
         );
         inserted++;
@@ -265,14 +373,12 @@ export async function fetchUksl(): Promise<IngestResult> {
       throw err;
     }
 
-    // Force a reload of the in-memory index next time it's queried so the
-    // newly-ingested ships are immediately visible to the hot path.
     invalidateSanctionedIndex();
 
     return {
       ok: true,
-      totalRows: rows.length,
-      shipRows: shipRows.length,
+      totalRows,
+      shipRows,
       uniqueShips: byId.size,
       inserted,
       url,
