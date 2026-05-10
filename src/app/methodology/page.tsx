@@ -172,83 +172,49 @@ export default function MethodologyPage() {
 
       <section className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/60 p-4">
         <h2 className="text-lg font-semibold">
-          Sanctions screening — couverture multi-régime
+          {tp("methodology.sanctionsScreening.title")}
         </h2>
         <p className="text-sm text-slate-300">
-          Les navires sont rapprochés de quatre listes officielles, mises à
-          jour quotidiennement et réconciliées sur IMO/MMSI :
+          {tp("methodology.sanctionsScreening.intro")}
         </p>
         <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
-          <li>
-            <strong>UK Sanctions List (UKSL)</strong> — FCDO, Open Government
-            Licence v3.0. ~600 navires (Russie, Iran). Source autoritative
-            depuis le retrait de l&apos;OFSI Consolidated List le 28 janvier 2026.
-          </li>
-          <li>
-            <strong>OFAC SDN</strong> — US Treasury, domaine public (17 USC
-            §105). ~1 500 navires. Plus large couverture mondiale,
-            principalement Iran / Russie / Venezuela / Cuba / Corée du Nord.
-          </li>
-          <li>
-            <strong>UN Security Council Consolidated List</strong> —
-            information publique ONU, libre réutilisation. Coverage RPDC,
-            Libye, Iran historique.
-          </li>
-          <li>
-            <strong>EU Consolidated FSF</strong> — Commission européenne, EC
-            Reuse Decision 2011/833/EU. Russie post-2022 shadow fleet, Belarus,
-            Syrie. Activé sur configuration (jeton EU webgate requis).
-          </li>
+          <li>{tp("methodology.sanctionsScreening.uksl")}</li>
+          <li>{tp("methodology.sanctionsScreening.ofac")}</li>
+          <li>{tp("methodology.sanctionsScreening.un")}</li>
+          <li>{tp("methodology.sanctionsScreening.eu")}</li>
         </ul>
         <p className="text-xs italic text-slate-500">
-          Match sur IMO 7 chiffres en priorité (autoritatif), MMSI en
-          fallback. Indicateur visuel rouge sur la carte et badge 🚫 dans les
-          listes voyages.
+          {tp("methodology.sanctionsScreening.note")}
         </p>
       </section>
 
       <section className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/60 p-4">
         <h2 className="text-lg font-semibold">
-          Détection de transit aux chokepoints maritimes
+          {tp("methodology.chokepoints.title")}
         </h2>
         <p className="text-sm text-slate-300">
-          12 zones suivies en continu : Suez, Hormuz, Bab el-Mandeb, Malacca,
-          Singapour, Bosphore-Dardanelles, Gibraltar, Skagerrak-Kattegat,
-          Détroit du Pas-de-Calais, Panama, Cap de Bonne-Espérance, Magellan.
+          {tp("methodology.chokepoints.intro")}
         </p>
         <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
+          <li>{tp("methodology.chokepoints.detection")}</li>
+          <li>{tp("methodology.chokepoints.dedup")}</li>
+          <li>{tp("methodology.chokepoints.snapshot")}</li>
           <li>
-            Détection point-in-bbox toutes les 5 minutes sur la fenêtre
-            glissante des 10 dernières minutes de positions AIS reçues.
-          </li>
-          <li>
-            Dédup par cooldown 6 h pour absorber le jitter GPS sans
-            doubler les transits.
-          </li>
-          <li>
-            Snapshot de l&apos;état sanctionné au moment de l&apos;entrée — un navire
-            radié ultérieurement reste forensiquement marqué pour ce
-            transit-là.
-          </li>
-          <li>
-            Alerte composable{" "}
+            {tp("methodology.chokepoints.alertPrefix")}{" "}
             <code className="rounded bg-slate-800 px-1 text-[11px]">
               vessel.sanctioned_chokepoint_transit
             </code>{" "}
-            : déclenchée au moment exact où un navire sous sanctions entre dans
-            une de ces zones.
+            {tp("methodology.chokepoints.alertSuffix")}
           </li>
         </ul>
       </section>
 
       <section className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/60 p-4">
         <h2 className="text-lg font-semibold">
-          Estimation des émissions CO₂ — méthode in-house
+          {tp("methodology.emissions.title")}
         </h2>
         <p className="text-sm text-slate-300">
-          Approche bottom-up dérivée de l&apos;IMO Fourth GHG Study (2020),
-          intégrée sur le flux AIS sans dépendance externe. Pour chaque
-          paire de positions consécutives :
+          {tp("methodology.emissions.intro")}
         </p>
         <pre className="overflow-x-auto rounded bg-slate-950/80 p-3 text-[11px] text-slate-300">
           power_kW = installed_kW × max(0.10, (speed/design_speed)³){"\n"}
@@ -257,31 +223,19 @@ export default function MethodologyPage() {
           CO₂_g = fuel_g × 3.114 (HFO emission factor)
         </pre>
         <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
+          <li>{tp("methodology.emissions.power")}</li>
+          <li>{tp("methodology.emissions.skip")}</li>
+          <li>{tp("methodology.emissions.precision")}</li>
           <li>
-            Puissance installée et vitesse de service par défaut tirées des
-            tables IMO Annex 1, par classe de cargaison (tanker / container /
-            LNG / vrac …).
-          </li>
-          <li>
-            Pas de comptage des paires en gap &gt;6 h ou à vitesse &lt;0.5
-            kn (navire à quai ou ancré — la consommation auxiliaire stationnaire
-            n&apos;est pas modélisée en v1).
-          </li>
-          <li>
-            Précision indicative ±25 % — suffisant pour ranking flotte,
-            comparaison voyages, dépistage chartering. Pour reporting
-            réglementaire, croiser avec EU MRV (à venir).
-          </li>
-          <li>
-            Endpoint{" "}
+            {tp("methodology.emissions.endpointPrefix")}{" "}
             <code className="rounded bg-slate-800 px-1 text-[11px]">
               GET /api/vessels/{"{mmsi}"}/emissions?days=30
             </code>{" "}
-            (par navire) et{" "}
+            {tp("methodology.emissions.endpointMid")}{" "}
             <code className="rounded bg-slate-800 px-1 text-[11px]">
               GET /api/fleet/emissions?days=30
             </code>{" "}
-            (agrégat watchlist utilisateur).
+            {tp("methodology.emissions.endpointSuffix")}
           </li>
         </ul>
       </section>
