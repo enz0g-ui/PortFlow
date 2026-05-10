@@ -1,7 +1,8 @@
 import WebSocket from "ws";
 import { classifyCargo, classifyShip, inferState } from "./rotterdam";
 import { findPortByPosition, findZone, PORTS } from "./ports";
-// import { getChokepointSubscriptionBboxes } from "./chokepoint-detector";
+import { getChokepointSubscriptionBboxes, findChokepoint } from "./chokepoint-detector";
+import { db } from "./db";
 import {
   getPreviousZone,
   getStatic,
@@ -106,6 +107,31 @@ function parseBroadcastEta(payload: any): number | undefined {
   return candidate;
 }
 
+/**
+ * Per-MMSI write throttle for chokepoint positions. Hormuz/Malacca/Suez/
+ * Singapore see thousands of vessels; without this we'd write thousands
+ * of positions per minute to disk just for transit detection. One write
+ * per minute per vessel is enough for the 5-min chokepoint scanner to
+ * detect transits with a typical 2-4 hour transit duration giving us
+ * 120-240 sample points per vessel per transit.
+ */
+const CHOKEPOINT_WRITE_INTERVAL_MS = 60_000;
+const chokepointWriteAt = new Map<number, number>();
+
+function shouldWriteChokepointPosition(mmsi: number, ts: number): boolean {
+  const last = chokepointWriteAt.get(mmsi) ?? 0;
+  if (ts - last < CHOKEPOINT_WRITE_INTERVAL_MS) return false;
+  chokepointWriteAt.set(mmsi, ts);
+  // Cap memory: prune entries older than 1h once we cross 5k vessels tracked.
+  if (chokepointWriteAt.size > 5000) {
+    const cutoff = ts - 3_600_000;
+    for (const [k, v] of chokepointWriteAt) {
+      if (v < cutoff) chokepointWriteAt.delete(k);
+    }
+  }
+  return true;
+}
+
 function handleMessage(raw: WebSocket.RawData) {
   let msg: any;
   try {
@@ -162,7 +188,36 @@ function handleMessage(raw: WebSocket.RawData) {
   if (typeof lat !== "number" || typeof lon !== "number") return;
 
   const port = findPortByPosition(lat, lon);
-  if (!port) return;
+  if (!port) {
+    // Position is outside any subscribed port bbox. If it falls inside a
+    // tracked chokepoint, persist a throttled copy so the chokepoint
+    // detector (5-min cadence on the positions table) can reconstruct
+    // the transit. Skip all the port-specific bookkeeping (zones,
+    // anchor transitions, voyages, KPIs).
+    const cp = findChokepoint(lat, lon);
+    if (!cp) return;
+    const ts = Date.now();
+    if (!shouldWriteChokepointPosition(mmsi, ts)) return;
+    const sogRaw = typeof pr.Sog === "number" ? pr.Sog : 0;
+    const sog = sogRaw >= 0 && sogRaw < 60 ? sogRaw : 0;
+    const cog = typeof pr.Cog === "number" && pr.Cog < 360 ? pr.Cog : 0;
+    try {
+      db().insertPosition.run(
+        mmsi,
+        ts,
+        lat,
+        lon,
+        sog,
+        cog,
+        null,
+        null,
+        "transit",
+      );
+    } catch (err) {
+      console.error("[db] chokepoint persistPosition failed", err);
+    }
+    return;
+  }
 
   const sogRaw = typeof pr.Sog === "number" ? pr.Sog : 0;
   const sog = sogRaw >= 0 && sogRaw < 60 ? sogRaw : 0;
@@ -246,19 +301,20 @@ export function startAisWorker(apiKey: string) {
           [p.bbox[2], p.bbox[3]],
         ],
       );
-      // Chokepoint bboxes (Hormuz, Malacca, Suez, Singapore, etc.) are
-      // disabled here — combined message rate exceeded what we can ingest
-      // and likely caused process termination. Re-enable progressively
-      // once we have backpressure / message-rate metrics in place.
-      // const chokepointBboxes = getChokepointSubscriptionBboxes();
+      // Chokepoint bboxes (Hormuz, Malacca, Suez, Singapore, etc.) re-enabled
+      // after the UKSL parser fix removed the 1.4 GB heap blowup. The actual
+      // crash root cause was UKSL (transient allocation), not message rate;
+      // the per-MMSI throttle in handleMessage protects against any residual
+      // pressure from high-traffic chokepoints.
+      const chokepointBboxes = getChokepointSubscriptionBboxes();
       const sub = {
         APIKey: apiKey,
-        BoundingBoxes: portBboxes,
+        BoundingBoxes: [...portBboxes, ...chokepointBboxes],
         FilterMessageTypes: ["PositionReport", "ShipStaticData"],
       };
       ws.send(JSON.stringify(sub));
       console.log(
-        `[ais] connected, subscribed to ${portBboxes.length} ports (chokepoint bboxes disabled pending backpressure work)`,
+        `[ais] connected, subscribed to ${portBboxes.length} ports + ${chokepointBboxes.length} chokepoints`,
       );
     });
 

@@ -151,6 +151,20 @@ function chokepointFor(lat: number, lon: number): Chokepoint | null {
   return null;
 }
 
+/**
+ * Public wrapper for chokepoint membership test, used by the AIS worker
+ * to classify incoming positions that fall outside any port bbox.
+ * Lazy-loads the chokepoints from disk on first call. O(12) bbox tests.
+ */
+export function findChokepoint(
+  lat: number,
+  lon: number,
+): { id: string; name: string } | null {
+  if (_chokepoints.length === 0) loadChokepointsSync();
+  const cp = chokepointFor(lat, lon);
+  return cp ? { id: cp.id, name: cp.name } : null;
+}
+
 interface PositionRow {
   mmsi: number;
   ts: number;
