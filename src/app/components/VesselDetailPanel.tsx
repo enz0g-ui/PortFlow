@@ -156,6 +156,52 @@ export function VesselDetailPanel({
     };
   }, [mmsi]);
 
+  const [gfwEvents, setGfwEvents] = useState<{
+    configured: boolean;
+    count: number;
+    events: Array<{
+      id: string;
+      type: "encounter" | "loitering" | "port_visit" | "fishing";
+      start: number;
+      end: number;
+      durationHours: number;
+      position: { lat: number; lon: number };
+      encounter?: {
+        otherVesselName: string | null;
+        otherVesselMmsi: number | null;
+        medianDistanceKm: number | null;
+      };
+      portVisit?: {
+        portName: string | null;
+        portCountry: string | null;
+      };
+      loitering?: {
+        avgSpeedKn: number | null;
+      };
+    }>;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(
+      `/api/vessels/${mmsi}/events?days=180&types=encounter,loitering,port_visit`,
+      { cache: "no-store" },
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (cancelled || !json) return;
+        setGfwEvents({
+          configured: json.configured ?? false,
+          count: json.count ?? 0,
+          events: json.events ?? [],
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [mmsi]);
+
   return (
     <>
       <aside
@@ -243,6 +289,89 @@ export function VesselDetailPanel({
                 </li>
               ))}
             </ul>
+          </div>
+        ) : null}
+
+        {gfwEvents?.configured && gfwEvents.count > 0 ? (
+          <div className="rounded border border-amber-700/50 bg-amber-500/5 p-3 text-xs">
+            <div className="mb-2 flex items-center justify-between">
+              <strong className="text-amber-300">
+                Activité 180j — Global Fishing Watch
+              </strong>
+              <span className="text-[10px] text-slate-500">
+                {gfwEvents.count} événement{gfwEvents.count > 1 ? "s" : ""}
+              </span>
+            </div>
+            <ul className="space-y-1.5 text-[11px]">
+              {gfwEvents.events.slice(0, 6).map((e) => {
+                const ts = new Date(e.start)
+                  .toISOString()
+                  .replace("T", " ")
+                  .slice(0, 16);
+                if (e.type === "encounter") {
+                  return (
+                    <li
+                      key={e.id}
+                      className="rounded bg-rose-500/10 px-2 py-1.5 text-rose-200"
+                    >
+                      <div className="font-semibold">
+                        🚩 Encounter (ship-to-ship)
+                      </div>
+                      <div className="text-[10px] text-slate-300">
+                        {ts} · {e.durationHours.toFixed(1)} h ·{" "}
+                        {e.encounter?.otherVesselName ?? "navire inconnu"}
+                        {e.encounter?.otherVesselMmsi
+                          ? ` (MMSI ${e.encounter.otherVesselMmsi})`
+                          : ""}
+                        {e.encounter?.medianDistanceKm != null
+                          ? ` · dist méd ${(e.encounter.medianDistanceKm * 1000).toFixed(0)} m`
+                          : ""}
+                      </div>
+                    </li>
+                  );
+                }
+                if (e.type === "loitering") {
+                  return (
+                    <li
+                      key={e.id}
+                      className="rounded bg-amber-500/10 px-2 py-1.5 text-amber-200"
+                    >
+                      <div className="font-semibold">⏸ Loitering</div>
+                      <div className="text-[10px] text-slate-300">
+                        {ts} · {e.durationHours.toFixed(1)} h · vitesse moy{" "}
+                        {e.loitering?.avgSpeedKn?.toFixed(1) ?? "—"} kn
+                      </div>
+                    </li>
+                  );
+                }
+                if (e.type === "port_visit") {
+                  return (
+                    <li
+                      key={e.id}
+                      className="rounded bg-sky-500/10 px-2 py-1.5 text-sky-200"
+                    >
+                      <div className="font-semibold">⚓ Port visit</div>
+                      <div className="text-[10px] text-slate-300">
+                        {ts} · {e.durationHours.toFixed(1)} h ·{" "}
+                        {e.portVisit?.portName ?? "port inconnu"}
+                        {e.portVisit?.portCountry
+                          ? ` (${e.portVisit.portCountry})`
+                          : ""}
+                      </div>
+                    </li>
+                  );
+                }
+                return null;
+              })}
+            </ul>
+            {gfwEvents.count > 6 ? (
+              <div className="mt-2 text-[10px] text-slate-500">
+                … {gfwEvents.count - 6} autres événements
+              </div>
+            ) : null}
+            <div className="mt-2 text-[10px] italic text-slate-500">
+              Source : Global Fishing Watch (free non-commercial use).
+            </div>
           </div>
         ) : null}
 
