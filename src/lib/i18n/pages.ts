@@ -365,7 +365,7 @@ const fr: PageMessages = {
   "guide.limits.eta":
     "Modèle ETA v2 (distance/SOG + correction saisonnière + congestion + météo). Bat l'ETA broadcast quand les voyages sont > 6 h ; moins d'avance sur les voyages courts.",
   "guide.limits.sanctions":
-    "Filtrage sanctions intégré (OFAC + UK OFSI) en plan Professional+. Le client peut aussi appliquer ses propres listes via l'API.",
+    "Filtrage sanctions multi-régime intégré (UKSL + OFAC + UN-SC + EU) — voir page méthodologie. Le client peut aussi superposer ses propres listes via l'API.",
   "guide.checklist.title": "Checklist de déploiement",
   "guide.checklist.s1": "Créer une clé",
   "guide.checklist.s2":
@@ -924,7 +924,7 @@ const en: PageMessages = {
   "guide.limits.eta":
     "ETA model v2 (distance/SOG + seasonal correction + congestion + weather). Beats the broadcast ETA on voyages > 6h; less of an edge on short voyages.",
   "guide.limits.sanctions":
-    "Built-in sanctions filtering (OFAC + UK OFSI) on Professional+. Customers can also apply their own lists via the API.",
+    "Multi-regime sanctions screening built in (UKSL + OFAC + UN-SC + EU) — see methodology page. Customers can also layer their own lists via the API.",
   "guide.checklist.title": "Deployment checklist",
   "guide.checklist.s1": "Create an",
   "guide.checklist.s2":
@@ -1481,6 +1481,77 @@ const nl: PageMessages = {
   "legal.citation.title": "Academische citatie",
   "legal.citation.body":
     "Indien u Port Flow citeert in een publicatie, vermeld dan:",
+
+  // /guide
+  "guide.backLink": "← terug naar dashboard",
+  "guide.methodologyLink": "Methodologie →",
+  "guide.title": "Gebruikershandleiding",
+  "guide.lead":
+    "Port Flow biedt een realtime overzicht van maritieme stromen op 51 strategische havens (ARA, bunkering, LNG export). Deze pagina legt uit hoe u het dashboard leest, wie er waarde uithaalt, en hoe u de data integreert in uw pipelines.",
+  "guide.audience.title": "Voor wie is dit?",
+  "guide.audience.traders":
+    "Grondstoffenhandelaren (olie, LNG, chemie) — nauwkeurige ETA en congestie-indicatoren voeden prijsmodellen. Primaire doelgroep van het platform.",
+  "guide.audience.forwarders":
+    "Expediteurs — anticipatie van demurrage-overschrijdingen, routing-keuzes.",
+  "guide.audience.insurers":
+    "Maritieme verzekeraars — anomaliedetectie (loitering, abnormale dwell), risk pricing.",
+  "guide.audience.quants":
+    "Data scientists / quants — historische feed voor backtesting van macro-strategieën (havenactiviteit = economische proxy).",
+  "guide.dashboard.title": "Het dashboard lezen in 30 seconden",
+  "guide.dashboard.portSelector":
+    "Havenselector rechtsboven — wijzigt de geobserveerde haven. De native naam verschijnt tussen haakjes als de actieve taal verschilt (bv. Antwerpen, Hamburg, الفجيرة).",
+  "guide.dashboard.langSelector":
+    "Taalselector ernaast — 8 zakelijke talen: FR, EN, NL, DE, ES, AR (met automatische RTL), ZH, JA.",
+  "guide.dashboard.toggle":
+    "Toggle Alle / Tankers — filtert direct de kaart en tellers tot de 5 tanker-subklassen (crude, product, chemical, LNG, LPG).",
+  "guide.dashboard.kpis":
+    "KPI-rij — totaal schepen, stationair (congestie-proxy), in vaart, aan ligplaats, binnenkomenden/u, actieve gevolgde reizen.",
+  "guide.dashboard.map":
+    "Kaart — kleur = AIS-categorie, grootte = state. De gestippelde rechthoeken zijn de benoemde zones (anchorage, berth, channel).",
+  "guide.dashboard.voyages":
+    "Actieve reizen — tabel gesorteerd op voorspelde ETA. De kolom \"ETA broadcast\" is het tijdstip dat de bemanning heeft ingevoerd; vergelijk met de afwijkingen van het model.",
+  "guide.dashboard.precision":
+    "ETA precision — RMSE van ons model vs RMSE van ETA broadcast. Dit is de belangrijkste kwaliteitsindicator.",
+  "guide.dashboard.anomalies":
+    "Anomalieën — schepen abnormaal lang aan anker voor hun klasse. Cruciaal te bewaken voor congestie of operationele bijzonderheden.",
+  "guide.dashboard.flow":
+    "Flux 6 u — binnenkomenden / uitgaanden / stationair over de laatste 6 uur. Korte trend.",
+  "guide.precision.title": "ETA precision pagina",
+  "guide.precision.body":
+    "Toegankelijk via de ETA precision-knop of /precision. Publieke weergave bedoeld om aan prospects de kwaliteit van het model te demonstreren. Drie sleutelindicatoren: RMSE model, RMSE broadcast, afwijking in %. Lijst van 50 laatste afgesloten reizen met fout in uren (groen < 1 u, amber < 3 u, rood daarboven). Methodologie onderaan pagina. Filter op venster 7/30/90 dagen.",
+  "guide.api.title": "API-integratie",
+  "guide.api.intro": "Publieke API onder /api/v1, geauthenticeerd door bearer token. OpenAPI-specificatie op",
+  "guide.api.endpoints":
+    "Beschikbare endpoints: /ports, /ports/{id}/snapshot, /ports/{id}/vessels, /ports/{id}/voyages/active, /ports/{id}/voyages/closed, /ports/{id}/anomalies, /webhooks.",
+  "guide.webhooks.title": "Webhooks (alerts)",
+  "guide.webhooks.intro":
+    "Abonneer op een event om een HMAC-SHA256-getekende POST te ontvangen wanneer een drempel wordt overschreden.",
+  "guide.webhooks.headers":
+    "Headers geleverd op elke aflevering: X-Port-Flow-Event en X-Port-Flow-Signature: t=<ts>,v1=<hex> (HMAC-SHA256 van de payload met timestamp prefix). Verificatie aan ontvangerszijde: hmac_sha256(secret, \"{ts}.{body}\").",
+  "guide.webhooks.events":
+    "Ondersteunde events: congestion.threshold / congestion.cleared, anomaly.detected, voyage.arrived.",
+  "guide.limits.title": "Bekende beperkingen",
+  "guide.limits.coverage":
+    "Zwakke AIS-dekking Middellandse Zee en Perzische Golf met aisstream.io (community-netwerk). Algeciras, Fujairah, Ras Laffan tonen vaak weinig of geen schepen in v1. Oplossing: overstappen naar commerciële provider (Spire, Orbcomm) — op de roadmap.",
+  "guide.limits.classification":
+    "Cargo-classificatie ~85% (tankers) / ~95% (containers). Valse positieven op niet-benoemde schepen.",
+  "guide.limits.grace":
+    "Bij worker-start voorkomt een 60s grace-periode dat reeds aanwezige schepen als \"binnenkomenden\" worden geteld. KPIs binnenkomenden/u kalibreren zich daarna natuurlijk.",
+  "guide.limits.eta":
+    "ETA-model v2 (afstand/SOG + seizoenscorrectie + congestie + weer). Verslaat de broadcast-ETA op reizen > 6 u; minder voorsprong op korte reizen.",
+  "guide.limits.sanctions":
+    "Multi-regime sanctie-screening ingebouwd (UKSL + OFAC + UN-SC + EU) — zie methodologiepagina. Klanten kunnen ook eigen lijsten via de API leggen.",
+  "guide.checklist.title": "Deployment-checklist",
+  "guide.checklist.s1": "Maak een",
+  "guide.checklist.s2":
+    "cp .env.example .env.local, vul AISSTREAM_API_KEY en PORT_API_TOKENS in.",
+  "guide.checklist.s3": "npm install && npm run dev.",
+  "guide.checklist.s4":
+    "Verifieer de AIS Live banner rechtsboven (groen = inkomende feed).",
+  "guide.checklist.s5":
+    "Wacht 60s + enkele minuten om reizen te zien openen (afhankelijk van het verkeer).",
+  "guide.checklist.s6":
+    "De /precision pagina toont cijfers nadat de eerste reizen zijn afgesloten (voorspelde ETA + werkelijke aankomst).",
 };
 
 const de: PageMessages = {
@@ -1836,6 +1907,77 @@ const de: PageMessages = {
   "legal.citation.title": "Akademische Zitation",
   "legal.citation.body":
     "Wenn Sie Port Flow in einer Publikation zitieren, fügen Sie bitte hinzu:",
+
+  // /guide
+  "guide.backLink": "← zurück zum Dashboard",
+  "guide.methodologyLink": "Methodik →",
+  "guide.title": "Benutzerhandbuch",
+  "guide.lead":
+    "Port Flow bietet eine Echtzeitansicht der maritimen Ströme über 51 strategische Häfen (ARA, Bunkering, LNG-Export). Diese Seite erklärt, wie Sie das Dashboard lesen, wer davon profitiert und wie Sie die Daten in Ihre Pipelines integrieren.",
+  "guide.audience.title": "Für wen ist das?",
+  "guide.audience.traders":
+    "Rohstoffhändler (Öl, LNG, Chemie) — präzise ETA und Stauindikatoren speisen Preismodelle. Primäre Zielgruppe der Plattform.",
+  "guide.audience.forwarders":
+    "Spediteure — Antizipation von Demurrage-Überschreitungen, Routing-Entscheidungen.",
+  "guide.audience.insurers":
+    "Maritime Versicherer — Anomalieerkennung (Loitering, abnormaler Dwell), Risk Pricing.",
+  "guide.audience.quants":
+    "Data Scientists / Quants — historischer Feed für Backtesting von Makro-Strategien (Hafenaktivität = Wirtschaftsproxy).",
+  "guide.dashboard.title": "Das Dashboard in 30 Sekunden lesen",
+  "guide.dashboard.portSelector":
+    "Hafenselektor oben rechts — wechselt den beobachteten Hafen. Der einheimische Name erscheint in Klammern, wenn die aktive Sprache abweicht (z. B. Antwerpen, Hamburg, الفجيرة).",
+  "guide.dashboard.langSelector":
+    "Sprachselektor daneben — 8 Geschäftssprachen: FR, EN, NL, DE, ES, AR (mit automatischem RTL), ZH, JA.",
+  "guide.dashboard.toggle":
+    "Toggle Alle / Tanker — filtert sofort die Karte und Zähler auf die 5 Tanker-Subklassen (crude, product, chemical, LNG, LPG).",
+  "guide.dashboard.kpis":
+    "KPI-Reihe — Gesamtschiffe, Stationär (Stau-Proxy), in Fahrt, am Liegeplatz, Eingehende/h, aktive verfolgte Reisen.",
+  "guide.dashboard.map":
+    "Karte — Farbe = AIS-Kategorie, Größe = State. Die gestrichelten Rechtecke sind die benannten Zonen (Anchorage, Berth, Channel).",
+  "guide.dashboard.voyages":
+    "Aktive Reisen — Tabelle sortiert nach prognostizierter ETA. Die Spalte „ETA Broadcast\" ist die Zeit, die die Besatzung eingegeben hat; mit den Modellabweichungen vergleichen.",
+  "guide.dashboard.precision":
+    "ETA Precision — RMSE unseres Modells vs. RMSE der ETA Broadcast. Dies ist der Hauptqualitätsindikator.",
+  "guide.dashboard.anomalies":
+    "Anomalien — Schiffe abnormal lange am Anker für ihre Klasse. Kritisch zu überwachen für Stau oder operative Auffälligkeiten.",
+  "guide.dashboard.flow":
+    "Flow 6h — Eingehende / Ausgehende / Stationär über die letzten 6 Stunden. Kurzer Trend.",
+  "guide.precision.title": "ETA Precision Seite",
+  "guide.precision.body":
+    "Zugänglich über den ETA Precision-Button oder /precision. Öffentliche Ansicht zur Demonstration der Modellqualität gegenüber Prospects. Drei Schlüsselindikatoren: RMSE Modell, RMSE Broadcast, Abweichung in %. Liste der 50 letzten abgeschlossenen Reisen mit Fehler in Stunden (grün < 1h, bernstein < 3h, rot darüber). Methodik unten auf der Seite. Filter Fenster 7/30/90 Tage.",
+  "guide.api.title": "API-Integration",
+  "guide.api.intro": "Öffentliche API unter /api/v1, authentifiziert per Bearer Token. OpenAPI-Spezifikation auf",
+  "guide.api.endpoints":
+    "Verfügbare Endpoints: /ports, /ports/{id}/snapshot, /ports/{id}/vessels, /ports/{id}/voyages/active, /ports/{id}/voyages/closed, /ports/{id}/anomalies, /webhooks.",
+  "guide.webhooks.title": "Webhooks (Alarme)",
+  "guide.webhooks.intro":
+    "Abonnieren Sie ein Event, um einen HMAC-SHA256-signierten POST zu erhalten, wenn ein Schwellenwert überschritten wird.",
+  "guide.webhooks.headers":
+    "Headers bei jeder Lieferung: X-Port-Flow-Event und X-Port-Flow-Signature: t=<ts>,v1=<hex> (HMAC-SHA256 der Payload mit Timestamp-Präfix). Verifizierung empfängerseitig: hmac_sha256(secret, \"{ts}.{body}\").",
+  "guide.webhooks.events":
+    "Unterstützte Events: congestion.threshold / congestion.cleared, anomaly.detected, voyage.arrived.",
+  "guide.limits.title": "Bekannte Einschränkungen",
+  "guide.limits.coverage":
+    "Schwache AIS-Abdeckung Mittelmeer und Persischer Golf mit aisstream.io (Community-Netzwerk). Algeciras, Fujairah, Ras Laffan zeigen oft wenig oder keine Schiffe in v1. Lösung: Wechsel zu kommerziellem Anbieter (Spire, Orbcomm) — auf der Roadmap.",
+  "guide.limits.classification":
+    "Frachtklassifizierung ~85% (Tanker) / ~95% (Container). Falsch-Positive bei nicht benannten Schiffen.",
+  "guide.limits.grace":
+    "Beim Worker-Start verhindert eine 60s Karenzzeit, dass bereits anwesende Schiffe als „Eingehende\" gezählt werden. KPIs Eingehende/h kalibrieren sich danach natürlich.",
+  "guide.limits.eta":
+    "ETA-Modell v2 (Distanz/SOG + Saisonkorrektur + Stau + Wetter). Schlägt die Broadcast-ETA bei Reisen > 6h; weniger Vorsprung bei kurzen Reisen.",
+  "guide.limits.sanctions":
+    "Multi-Regime Sanktions-Screening eingebaut (UKSL + OFAC + UN-SC + EU) — siehe Methodik-Seite. Kunden können auch eigene Listen via API überlagern.",
+  "guide.checklist.title": "Deployment-Checklist",
+  "guide.checklist.s1": "Erstellen Sie einen",
+  "guide.checklist.s2":
+    "cp .env.example .env.local, AISSTREAM_API_KEY und PORT_API_TOKENS ausfüllen.",
+  "guide.checklist.s3": "npm install && npm run dev.",
+  "guide.checklist.s4":
+    "Verifizieren Sie das AIS Live Banner oben rechts (grün = eingehender Feed).",
+  "guide.checklist.s5":
+    "Warten Sie 60s + einige Minuten, um Reisen zu sehen (je nach Verkehr).",
+  "guide.checklist.s6":
+    "Die /precision Seite zeigt Zahlen nach den ersten abgeschlossenen Reisen (prognostizierte ETA + festgestellte Ankunft).",
 };
 
 const es: PageMessages = {
@@ -2191,6 +2333,77 @@ const es: PageMessages = {
   "legal.citation.title": "Cita académica",
   "legal.citation.body":
     "Si cita Port Flow en una publicación, por favor incluya:",
+
+  // /guide
+  "guide.backLink": "← volver al dashboard",
+  "guide.methodologyLink": "Metodología →",
+  "guide.title": "Guía de uso",
+  "guide.lead":
+    "Port Flow ofrece una vista en tiempo real de los flujos marítimos sobre 51 puertos estratégicos (ARA, búnker, exportación LNG). Esta página explica cómo leer el dashboard, quién obtiene valor de él, y cómo integrar los datos en sus pipelines.",
+  "guide.audience.title": "¿A quién sirve?",
+  "guide.audience.traders":
+    "Traders de materias primas (petróleo, LNG, química) — ETA precisa e índices de congestión alimentan los modelos de precios. Objetivo primario de la plataforma.",
+  "guide.audience.forwarders":
+    "Transitarios — anticipación de excesos de estancia (demurrage), elección de routing.",
+  "guide.audience.insurers":
+    "Aseguradoras marítimas — detección de anomalías (loitering, dwell anormal), risk pricing.",
+  "guide.audience.quants":
+    "Data scientists / quants — feed histórico para backtesting de estrategias macro (actividad portuaria = proxy económico).",
+  "guide.dashboard.title": "Leer el dashboard en 30 segundos",
+  "guide.dashboard.portSelector":
+    "Selector de puerto arriba a la derecha — cambia el puerto observado. El nombre nativo aparece entre paréntesis si la lengua activa difiere (ej. Anvers, Hamburgo, الفجيرة).",
+  "guide.dashboard.langSelector":
+    "Selector de lengua al lado — 8 lenguas de negocio: FR, EN, NL, DE, ES, AR (con RTL automático), ZH, JA.",
+  "guide.dashboard.toggle":
+    "Toggle Todos / Tankers — filtra instantáneamente el mapa y los contadores a las 5 sub-clases tanker (crude, product, chemical, LNG, LPG).",
+  "guide.dashboard.kpis":
+    "Línea KPI — total buques, estacionarios (proxy de congestión), en ruta, atracados, entrantes/h, viajes activos rastreados.",
+  "guide.dashboard.map":
+    "Mapa — color = categoría AIS, tamaño = state. Los rectángulos punteados son las zonas nombradas (anchorage, berth, channel).",
+  "guide.dashboard.voyages":
+    "Viajes activos — tabla ordenada por ETA prevista. La columna \"ETA broadcast\" es la hora que la tripulación introdujo; comparar con las desviaciones del modelo.",
+  "guide.dashboard.precision":
+    "ETA precision — RMSE de nuestro modelo vs RMSE de la ETA broadcast. Es el indicador principal de calidad.",
+  "guide.dashboard.anomalies":
+    "Anomalías — buques en fondeo anormalmente prolongado para su clase. Crítico vigilar para congestión o particularidades operativas.",
+  "guide.dashboard.flow":
+    "Flujo 6 h — entrantes / salientes / estacionarios sobre las últimas 6 horas. Tendencia corta.",
+  "guide.precision.title": "Página ETA precision",
+  "guide.precision.body":
+    "Accesible vía el botón ETA precision o /precision. Vista pública destinada a demostrar a los prospects la calidad del modelo. Tres indicadores clave: RMSE modelo, RMSE broadcast, desviación en %. Lista de los 50 últimos viajes cerrados con error en horas (verde < 1 h, ámbar < 3 h, rojo más allá). Metodología al pie de página. Filtro ventana 7/30/90 días.",
+  "guide.api.title": "Integración API",
+  "guide.api.intro": "API pública bajo /api/v1, autenticada por bearer token. Especificación OpenAPI en",
+  "guide.api.endpoints":
+    "Endpoints disponibles: /ports, /ports/{id}/snapshot, /ports/{id}/vessels, /ports/{id}/voyages/active, /ports/{id}/voyages/closed, /ports/{id}/anomalies, /webhooks.",
+  "guide.webhooks.title": "Webhooks (alertas)",
+  "guide.webhooks.intro":
+    "Suscríbase a un evento para recibir un POST firmado HMAC-SHA256 cuando se cruza un umbral.",
+  "guide.webhooks.headers":
+    "Headers proporcionados en cada entrega: X-Port-Flow-Event y X-Port-Flow-Signature: t=<ts>,v1=<hex> (HMAC-SHA256 del payload prefijado por el timestamp). Verificación lado receptor: hmac_sha256(secret, \"{ts}.{body}\").",
+  "guide.webhooks.events":
+    "Eventos soportados: congestion.threshold / congestion.cleared, anomaly.detected, voyage.arrived.",
+  "guide.limits.title": "Limitaciones conocidas",
+  "guide.limits.coverage":
+    "Cobertura AIS débil Mediterráneo y Golfo Pérsico con aisstream.io (red comunitaria). Algeciras, Fujairah, Ras Laffan muestran a menudo pocos o ningún buque en v1. Solución: pasar a un proveedor comercial (Spire, Orbcomm) — en la roadmap.",
+  "guide.limits.classification":
+    "Clasificación de carga ~85% (tankers) / ~95% (containers). Falsos positivos en buques no nombrados.",
+  "guide.limits.grace":
+    "Al inicio del worker, un periodo de gracia de 60 s evita contar los buques ya presentes como \"entrantes\". Los KPIs entrantes/h se calibran después naturalmente.",
+  "guide.limits.eta":
+    "Modelo ETA v2 (distancia/SOG + corrección estacional + congestión + meteorología). Bate la ETA broadcast en viajes > 6 h; menos ventaja en viajes cortos.",
+  "guide.limits.sanctions":
+    "Filtrado de sanciones multi-régimen integrado (UKSL + OFAC + UN-SC + EU) — ver página metodología. El cliente puede también superponer sus propias listas vía API.",
+  "guide.checklist.title": "Checklist de despliegue",
+  "guide.checklist.s1": "Crear una clave",
+  "guide.checklist.s2":
+    "cp .env.example .env.local, rellenar AISSTREAM_API_KEY y PORT_API_TOKENS.",
+  "guide.checklist.s3": "npm install && npm run dev.",
+  "guide.checklist.s4":
+    "Verificar el banner AIS Live arriba a la derecha (verde = feed entrante).",
+  "guide.checklist.s5":
+    "Esperar 60 s + algunos minutos para ver los viajes abrirse (según el tráfico).",
+  "guide.checklist.s6":
+    "La página /precision mostrará cifras tras los primeros viajes cerrados (ETA prevista + llegada constatada).",
 };
 
 const ar: PageMessages = {
