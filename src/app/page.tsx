@@ -228,6 +228,15 @@ export default function Page() {
     useState<VesselClass | null>(null);
   const [selectedCargoFilter, setSelectedCargoFilter] =
     useState<CargoClass | null>(null);
+  // Toggle for the amber state-filter list — click "X de plus" to render
+  // all entries with a taller scroll container instead of capping at 60.
+  const [filteredListExpanded, setFilteredListExpanded] = useState(false);
+  // Auto-collapse when the filter context changes (different state /
+  // class / cargo) — avoids confusing carry-over of an "expanded" view
+  // from the previous filter onto the new vessel list.
+  useEffect(() => {
+    setFilteredListExpanded(false);
+  }, [stateFilter, selectedVesselClassFilter, selectedCargoFilter]);
   const [me, setMe] = useState<{
     tier: string;
     portsAccessible: "all" | string[];
@@ -1405,9 +1414,16 @@ export default function Page() {
               ✕
             </button>
           </div>
-          <div className="scroll-thin max-h-48 overflow-y-auto">
+          <div
+            className={`scroll-thin overflow-y-auto ${
+              filteredListExpanded ? "max-h-[480px]" : "max-h-48"
+            }`}
+          >
             <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredVessels.slice(0, 60).map((v) => (
+              {(filteredListExpanded
+                ? filteredVessels
+                : filteredVessels.slice(0, 60)
+              ).map((v) => (
                 <li key={v.mmsi}>
                   <button
                     onClick={() => setSelectedMmsi(v.mmsi)}
@@ -1429,8 +1445,15 @@ export default function Page() {
               ))}
             </ul>
             {filteredVessels.length > 60 ? (
-              <div className="mt-2 text-center text-[10px] text-slate-500">
-                … {filteredVessels.length - 60} de plus
+              <div className="mt-2 text-center">
+                <button
+                  onClick={() => setFilteredListExpanded((v) => !v)}
+                  className="rounded border border-amber-700/40 bg-amber-500/10 px-3 py-1 text-[11px] text-amber-200 hover:border-amber-500 hover:bg-amber-500/20"
+                >
+                  {filteredListExpanded
+                    ? "↑ replier"
+                    : `… ${filteredVessels.length - 60} de plus (déplier)`}
+                </button>
               </div>
             ) : null}
             {filteredVessels.length === 0 ? (
