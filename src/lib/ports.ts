@@ -26,6 +26,15 @@ export interface Port {
   cargoStrength: CargoClass[];
   blurb: string;
   blurbs?: Partial<Record<Locale, string>>;
+  /**
+   * Honest assessment of expected AIS visibility from aisstream.io
+   * (community-driven receiver network). Zones with sparse community
+   * coverage (mainland China, Persian Gulf, parts of Mediterranean,
+   * South Asia) get "low" — surfaced in the UI as a banner explaining
+   * that a commercial feed (Spire / Orbcomm BYO key) would unlock full
+   * visibility. Defaults to "good" when not set.
+   */
+  aisCoverage?: "good" | "limited" | "low";
 }
 
 const z = (
@@ -460,6 +469,7 @@ export const PORTS: Port[] = [
     },
     center: [36.12, -5.42],
     bbox: [35.95, -5.55, 36.2, -5.3],
+    aisCoverage: "low",
     cargoStrength: ["container", "product", "crude"],
     blurb: "Méd · transshipment conteneurs + soutage majeur · gateway Gibraltar",
     blurbs: {
@@ -508,6 +518,7 @@ export const PORTS: Port[] = [
     },
     center: [25.2, 56.4],
     bbox: [25.05, 56.3, 25.4, 56.55],
+    aisCoverage: "low",
     cargoStrength: ["crude", "product", "lpg"],
     blurb: "Soutage mondial #2 · gateway Hormuz · stockage produits raffinés",
     blurbs: {
@@ -768,6 +779,7 @@ export const PORTS: Port[] = [
     },
     center: [25.95, 51.6],
     bbox: [25.85, 51.5, 26.05, 51.8],
+    aisCoverage: "low",
     cargoStrength: ["lng", "lpg", "crude"],
     blurb: "Qatar LNG export · 1er port LNG mondial historique",
     blurbs: {
@@ -1225,6 +1237,7 @@ export const PORTS: Port[] = [
     countryNames: { zh: "中国", en: "China", fr: "Chine", ja: "中国" },
     center: [30.6, 122.05],
     bbox: [30.45, 121.85, 30.75, 122.3],
+    aisCoverage: "low",
     cargoStrength: ["container", "general-cargo"],
     blurb: "1er port conteneurs mondial · Yangshan deep-water",
     blurbs: { en: "World #1 container port · Yangshan deep-water" },
@@ -1251,6 +1264,7 @@ export const PORTS: Port[] = [
     countryNames: { zh: "中国", en: "China", fr: "Chine", ja: "中国" },
     center: [29.95, 121.85],
     bbox: [29.7, 121.5, 30.15, 122.4],
+    aisCoverage: "low",
     cargoStrength: ["container", "dry-bulk", "crude"],
     blurb: "1er port mondial en tonnage · Zhoushan oil hub",
     blurbs: { en: "World #1 by tonnage · Zhoushan oil hub" },
@@ -1275,6 +1289,7 @@ export const PORTS: Port[] = [
     countryNames: { zh: "中国", en: "China", fr: "Chine", ja: "中国" },
     center: [22.55, 114.0],
     bbox: [22.4, 113.8, 22.7, 114.3],
+    aisCoverage: "low",
     cargoStrength: ["container"],
     blurb: "Conteneurs Sud-Chine · Yantian + Shekou",
     blurbs: { en: "South China container · Yantian + Shekou" },
@@ -1427,6 +1442,7 @@ export const PORTS: Port[] = [
     nativeLocale: "en",
     names: { en: "Colombo", fr: "Colombo" },
     countryNames: { en: "Sri Lanka", fr: "Sri Lanka" },
+    aisCoverage: "low",
     center: [6.95, 79.85],
     bbox: [6.8, 79.7, 7.1, 80.0],
     cargoStrength: ["container"],

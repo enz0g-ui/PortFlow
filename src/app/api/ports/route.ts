@@ -22,6 +22,7 @@ export async function GET() {
       cargoStrength: p.cargoStrength,
       blurb: p.blurb,
       blurbs: p.blurbs ?? null,
+      aisCoverage: p.aisCoverage ?? null,
       vesselCount: perPort[p.id]?.vesselCount ?? 0,
     })),
   });
