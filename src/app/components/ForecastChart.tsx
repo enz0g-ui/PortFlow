@@ -11,6 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import type { ForecastResult } from "@/lib/forecast";
+import { useI18n } from "@/lib/i18n/context";
 
 interface Props {
   forecast: ForecastResult | null;
@@ -27,6 +28,7 @@ function fmtTime(ts: number) {
 }
 
 export function ForecastChart({ forecast }: Props) {
+  const { t } = useI18n();
   if (!forecast)
     return (
       <div className="flex h-[260px] items-center justify-center rounded-lg border border-slate-800 bg-slate-900/60 p-3 text-sm text-slate-500">
@@ -85,14 +87,14 @@ export function ForecastChart({ forecast }: Props) {
             fill="#38bdf8"
             stroke="none"
             fillOpacity={0.15}
-            name="Intervalle 95%"
+            name={t("forecast.interval95")}
           />
           <Line
             type="monotone"
             dataKey="actual"
             stroke="#34d399"
             dot={false}
-            name="Observé"
+            name={t("forecast.observed")}
           />
           <Line
             type="monotone"
@@ -100,7 +102,7 @@ export function ForecastChart({ forecast }: Props) {
             stroke="#38bdf8"
             strokeDasharray="4 2"
             dot={false}
-            name="Prévision"
+            name={t("forecast.predicted")}
           />
         </ComposedChart>
       </ResponsiveContainer>

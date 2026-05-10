@@ -140,7 +140,7 @@ export function VoyagesTable({
               <th
                 className="cursor-pointer py-1 pr-2 font-normal hover:text-slate-300"
                 onClick={() => cycleSort("name")}
-                title="Trier par nom"
+                title={t("table.sortBy", { col: t("table.vessel") })}
               >
                 {t("table.vessel")}
                 {sortIndicator("name")}
@@ -148,7 +148,7 @@ export function VoyagesTable({
               <th
                 className="cursor-pointer py-1 pr-2 font-normal hover:text-slate-300"
                 onClick={() => cycleSort("cargo")}
-                title="Trier par cargo"
+                title={t("table.sortBy", { col: t("table.cargo") })}
               >
                 {t("table.cargo")}
                 {sortIndicator("cargo")}
@@ -156,7 +156,7 @@ export function VoyagesTable({
               <th
                 className="cursor-pointer py-1 pr-2 font-normal text-right hover:text-slate-300"
                 onClick={() => cycleSort("sog")}
-                title="Trier par vitesse"
+                title={t("table.sortBy", { col: t("table.sog") })}
               >
                 {t("table.sog")}
                 {sortIndicator("sog")}
@@ -164,7 +164,7 @@ export function VoyagesTable({
               <th
                 className="cursor-pointer py-1 pr-2 font-normal text-right hover:text-slate-300"
                 onClick={() => cycleSort("distance")}
-                title="Trier par distance"
+                title={t("table.sortBy", { col: t("table.distance") })}
               >
                 {t("table.distance")}
                 {sortIndicator("distance")}
@@ -172,7 +172,7 @@ export function VoyagesTable({
               <th
                 className="cursor-pointer py-1 pr-2 font-normal hover:text-slate-300"
                 onClick={() => cycleSort("predictedEta")}
-                title="Trier par ETA prédit"
+                title={t("table.sortBy", { col: t("table.predictedEta") })}
               >
                 {t("table.predictedEta")}
                 {sortIndicator("predictedEta")}
@@ -180,7 +180,7 @@ export function VoyagesTable({
               <th
                 className="cursor-pointer py-1 pr-2 font-normal hover:text-slate-300"
                 onClick={() => cycleSort("broadcastEta")}
-                title="Trier par ETA broadcast"
+                title={t("table.sortBy", { col: t("table.broadcastEta") })}
               >
                 {t("table.broadcastEta")}
                 {sortIndicator("broadcastEta")}

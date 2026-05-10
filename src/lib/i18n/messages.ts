@@ -196,6 +196,18 @@ const fr: Messages = {
   "vessel.bookmark.limitTitle": "Limite watchlist atteinte",
   "vessel.bookmark.limitBody":
     "Tu as atteint le maximum de navires en watchlist pour ton plan. Passe en plan supérieur ou supprime un navire existant.",
+  "table.sortBy": "Trier par {col}",
+  "map.expand": "Agrandir",
+  "map.collapse": "Réduire (Esc)",
+  "map.recenter": "Recentrer sur le port",
+  "map.recenterShort": "Recentrer",
+  "map.expandShort": "Agrandir",
+  "map.collapseShort": "Réduire",
+  "port.tierLocked": "Plan supérieur requis",
+  "port.locked": "Verrouillé",
+  "forecast.observed": "Observé",
+  "forecast.predicted": "Prévision",
+  "forecast.interval95": "Intervalle 95%",
 };
 
 const en: Messages = {
@@ -358,6 +370,18 @@ const en: Messages = {
   "vessel.bookmark.limitTitle": "Watchlist limit reached",
   "vessel.bookmark.limitBody":
     "You've reached the maximum number of vessels on watchlist for your plan. Upgrade to a higher plan or remove an existing vessel.",
+  "table.sortBy": "Sort by {col}",
+  "map.expand": "Expand",
+  "map.collapse": "Collapse (Esc)",
+  "map.recenter": "Recenter on port",
+  "map.recenterShort": "Recenter",
+  "map.expandShort": "Expand",
+  "map.collapseShort": "Collapse",
+  "port.tierLocked": "Higher plan required",
+  "port.locked": "Locked",
+  "forecast.observed": "Observed",
+  "forecast.predicted": "Forecast",
+  "forecast.interval95": "95% interval",
 };
 
 const nl: Messages = {

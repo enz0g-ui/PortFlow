@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import type { Vessel, Zone } from "@/lib/types";
+import { useI18n } from "@/lib/i18n/context";
 import type { SarDetection } from "./MapInner";
 
 const MapInner = dynamic(() => import("./MapInner"), {
@@ -30,6 +31,7 @@ interface Props {
 }
 
 export function MapView(props: Props) {
+  const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const [resetTick, setResetTick] = useState(0);
 
@@ -65,18 +67,20 @@ export function MapView(props: Props) {
         />
         <div className="absolute right-3 top-3 z-[1700] flex gap-1.5">
           <button
-            onClick={() => setResetTick((t) => t + 1)}
+            onClick={() => setResetTick((n) => n + 1)}
             className="rounded-md border border-slate-700 bg-slate-900/90 px-2 py-1 text-xs text-slate-200 shadow-lg backdrop-blur-sm hover:border-sky-500 hover:text-sky-300"
-            title="Recentrer sur le port"
+            title={t("map.recenter")}
           >
-            ⊕ Recentrer
+            ⊕ {t("map.recenterShort")}
           </button>
           <button
             onClick={() => setExpanded((v) => !v)}
             className="rounded-md border border-slate-700 bg-slate-900/90 px-2 py-1 text-xs text-slate-200 shadow-lg backdrop-blur-sm hover:border-sky-500 hover:text-sky-300"
-            title={expanded ? "Réduire (Esc)" : "Agrandir"}
+            title={expanded ? t("map.collapse") : t("map.expand")}
           >
-            {expanded ? "✕ Réduire" : "⤢ Agrandir"}
+            {expanded
+              ? `✕ ${t("map.collapseShort")}`
+              : `⤢ ${t("map.expandShort")}`}
           </button>
         </div>
       </div>

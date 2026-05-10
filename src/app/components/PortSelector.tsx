@@ -357,6 +357,7 @@ function PortRow({
   bookmarkAddLabel: string;
   bookmarkRemoveLabel: string;
 }) {
+  const { t } = useI18n();
   const l = localized(port, locale);
   return (
     <div
@@ -389,8 +390,8 @@ function PortRow({
               {!accessible ? (
                 <span
                   className="text-amber-400"
-                  title="Plan supérieur requis"
-                  aria-label="Verrouillé"
+                  title={t("port.tierLocked")}
+                  aria-label={t("port.locked")}
                 >
                   🔒
                 </span>
