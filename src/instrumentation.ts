@@ -207,4 +207,16 @@ export async function register() {
   //   /api/chokepoint-transits?sanctionedOnly=1&days=30
   const { startChokepointDetector } = await import("./lib/chokepoint-detector");
   startChokepointDetector();
+
+  // Encounter detector (in-house ship-to-ship) — scans 4h positions every
+  // 15 min in chokepoint zones, finds vessel pairs within 500 m for >2 h.
+  // Replaces GFW's commercial-restricted encounters dataset.
+  const { startEncounterDetector } = await import("./lib/encounter-detector");
+  startEncounterDetector();
+
+  // Loitering detector (in-house) — scans 8h positions every 30 min for
+  // vessels with SOG <2 kn for >2 h far from any port. Suspicious staging
+  // signal. Replaces GFW's loitering dataset.
+  const { startLoiteringDetector } = await import("./lib/loitering-detector");
+  startLoiteringDetector();
 }
