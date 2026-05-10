@@ -159,6 +159,43 @@ const fr: Messages = {
   "port.bookmark.signIn": "Connecte-toi pour suivre des ports",
   "port.bookmark.limit": "Limite de favoris atteinte ({n}). Passe en plan supérieur pour en ajouter.",
   "port.section.mine": "Mes ports",
+  // Filter strip + amber list interactions (added 2026-05-10)
+  "filter.expand": "… {n} de plus (déplier)",
+  "filter.collapse": "↑ replier",
+  "filter.active": "Filtre actif",
+  "filter.classLabel": "classe {c}",
+  "filter.cargoLabel": "cargaison {c}",
+  "filter.clear": "✕ effacer le filtre",
+  "filter.clearShort": "✕ effacer",
+  "filter.clearTooltip": "Effacer le filtre",
+  "filter.clearStateTooltip": "Cliquer pour effacer le filtre d'état",
+  "filter.applyStateTooltip": "Cliquer pour appliquer le filtre d'état",
+  "filter.noVesselsState": "Aucun navire dans cet état",
+  "filter.noVesselsClass": "Aucun navire de cette classe",
+  "filter.noVesselsCargo": "Aucun navire de cette cargaison",
+  "filter.applyClass": "Filtrer la carte sur {c} ({n})",
+  "filter.applyCargo": "Filtrer la carte sur {c} ({n})",
+  "filter.searchPlaceholder": "Rechercher navire ({n} ports)",
+  "filter.searchClear": "Effacer la recherche",
+  "filter.fleetTooltip":
+    "Filtrer la carte sur tes navires favoris, port par port",
+  "filter.fleetCycleTooltip":
+    "Cycle vers le port suivant de ta flotte ({n} ports)",
+  "filter.favoritesPanelTooltip":
+    "Liste de tous tes navires favoris dans le panneau de droite",
+  "filter.worldView": "Vue monde",
+  "filter.worldViewTooltip":
+    "Voir tous tes navires de flotte sur une carte mondiale",
+  "filter.worldViewBackTooltip": "Revenir à la vue port",
+  "filter.vesselsCount": "{n} navires",
+  "filter.fleetMultiPortsHint": "flotte sur {n} ports — clic ▶ pour cycler",
+  "vessel.bookmark.upgrade.title":
+    "🔒 Watchlist navires non disponible en Free",
+  "vessel.bookmark.upgrade.body":
+    "Le suivi de navires spécifiques (favoris) débloque à partir du plan Starter (25 navires) — Professional (100) — Pro+ (250). C'est ce qui te permet de recevoir une alerte quand UN navire précis arrive ou bouge, sans surveiller manuellement le dashboard.",
+  "vessel.bookmark.limitTitle": "Limite watchlist atteinte",
+  "vessel.bookmark.limitBody":
+    "Tu as atteint le maximum de navires en watchlist pour ton plan. Passe en plan supérieur ou supprime un navire existant.",
 };
 
 const en: Messages = {
@@ -284,6 +321,43 @@ const en: Messages = {
   "port.bookmark.signIn": "Sign in to bookmark ports",
   "port.bookmark.limit": "Favorites limit reached ({n}). Upgrade to add more.",
   "port.section.mine": "My ports",
+  // Filter strip + amber list interactions
+  "filter.expand": "… {n} more (expand)",
+  "filter.collapse": "↑ collapse",
+  "filter.active": "Active filter",
+  "filter.classLabel": "class {c}",
+  "filter.cargoLabel": "cargo {c}",
+  "filter.clear": "✕ clear filter",
+  "filter.clearShort": "✕ clear",
+  "filter.clearTooltip": "Clear filter",
+  "filter.clearStateTooltip": "Click to clear state filter",
+  "filter.applyStateTooltip": "Click to apply state filter",
+  "filter.noVesselsState": "No vessels in this state",
+  "filter.noVesselsClass": "No vessels in this class",
+  "filter.noVesselsCargo": "No vessels of this cargo",
+  "filter.applyClass": "Filter map to {c} ({n})",
+  "filter.applyCargo": "Filter map to {c} ({n})",
+  "filter.searchPlaceholder": "Search vessel ({n} ports)",
+  "filter.searchClear": "Clear search",
+  "filter.fleetTooltip":
+    "Filter the map to your favorite vessels, port by port",
+  "filter.fleetCycleTooltip":
+    "Cycle to the next port in your fleet ({n} ports)",
+  "filter.favoritesPanelTooltip":
+    "List of all your favorite vessels in the right panel",
+  "filter.worldView": "World view",
+  "filter.worldViewTooltip":
+    "See all your fleet vessels on a world map",
+  "filter.worldViewBackTooltip": "Back to port view",
+  "filter.vesselsCount": "{n} vessels",
+  "filter.fleetMultiPortsHint": "fleet on {n} ports — click ▶ to cycle",
+  "vessel.bookmark.upgrade.title":
+    "🔒 Vessel watchlist not available on Free",
+  "vessel.bookmark.upgrade.body":
+    "Tracking specific vessels (favorites) unlocks from the Starter plan (25 vessels) — Professional (100) — Pro+ (250). This is what enables you to receive an alert when ONE specific vessel arrives or moves, without monitoring the dashboard manually.",
+  "vessel.bookmark.limitTitle": "Watchlist limit reached",
+  "vessel.bookmark.limitBody":
+    "You've reached the maximum number of vessels on watchlist for your plan. Upgrade to a higher plan or remove an existing vessel.",
 };
 
 const nl: Messages = {

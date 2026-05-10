@@ -647,13 +647,13 @@ export default function Page() {
           };
           if (json.error?.includes("tier does not allow")) {
             setUpgradeFeature({
-              title: "🔒 Watchlist navires non disponible en Free",
-              body: "Le suivi de navires spécifiques (favoris) débloque à partir du plan Starter (25 navires) — Professional (100) — Pro+ (250). C'est ce qui te permet de recevoir une alerte quand UN navire précis arrive ou bouge, sans surveiller manuellement le dashboard.",
+              title: t("vessel.bookmark.upgrade.title"),
+              body: t("vessel.bookmark.upgrade.body"),
             });
           } else if (json.error?.includes("limit reached")) {
             setUpgradeFeature({
-              title: "Limite watchlist atteinte",
-              body: `Tu as atteint le maximum de navires en watchlist pour ton plan. Passe en plan supérieur ou supprime un navire existant.`,
+              title: t("vessel.bookmark.limitTitle"),
+              body: t("vessel.bookmark.limitBody"),
             });
           }
         }
@@ -1140,8 +1140,8 @@ export default function Page() {
               onClick={onFleetChipClick}
               title={
                 fleetOnly && fleetPortIds.length > 1
-                  ? `Cycle vers le port suivant de ta flotte (${fleetPortIds.length} ports)`
-                  : "Filtrer la carte sur tes navires favoris, port par port"
+                  ? t("filter.fleetCycleTooltip", { n: fleetPortIds.length })
+                  : t("filter.fleetTooltip")
               }
               className={`rounded px-3 py-1 ${
                 fleetOnly
@@ -1167,7 +1167,7 @@ export default function Page() {
           {vesselBookmarksEnabled && bookmarkedMmsis.size > 0 ? (
             <button
               onClick={() => setShowFavoritesPanel((v) => !v)}
-              title="Liste de tous tes navires favoris dans le panneau de droite"
+              title={t("filter.favoritesPanelTooltip")}
               className={`rounded px-3 py-1 ${
                 showFavoritesPanel
                   ? "bg-amber-500/15 text-amber-300"
@@ -1182,7 +1182,7 @@ export default function Page() {
           ) : null}
           {fleetOnly && fleetPortMap.size > 1 ? (
             <span className="text-[10px] text-slate-500">
-              flotte sur {fleetPortMap.size} ports — clic ▶ pour cycler
+              {t("filter.fleetMultiPortsHint", { n: fleetPortMap.size })}
             </span>
           ) : null}
           <div className="relative ml-auto flex items-center">
@@ -1202,14 +1202,14 @@ export default function Page() {
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setSearchOpen(true)}
               onBlur={() => window.setTimeout(() => setSearchOpen(false), 150)}
-              placeholder="Rechercher navire (51 ports)"
+              placeholder={t("filter.searchPlaceholder", { n: 51 })}
               className="w-64 rounded border border-slate-700 bg-slate-950 pl-7 pr-7 py-1 text-xs text-slate-100 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none"
             />
             {searchQuery ? (
               <button
                 onClick={() => setSearchQuery("")}
                 className="absolute right-1 flex h-5 w-5 items-center justify-center text-slate-500 hover:text-slate-200"
-                aria-label="Effacer la recherche"
+                aria-label={t("filter.searchClear")}
               >
                 ✕
               </button>
@@ -1272,8 +1272,8 @@ export default function Page() {
               }}
               title={
                 worldView
-                  ? "Revenir à la vue port"
-                  : "Voir tous tes navires de flotte sur une carte mondiale"
+                  ? t("filter.worldViewBackTooltip")
+                  : t("filter.worldViewTooltip")
               }
               className={`rounded px-3 py-1 ${
                 worldView
@@ -1281,7 +1281,7 @@ export default function Page() {
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              🌍 {worldView ? "Vue monde" : "Vue monde"}
+              🌍 {t("filter.worldView")}
               {worldView ? (
                 <span className="ml-1 text-[10px] text-emerald-400">
                   ({worldVessels.length}/{bookmarkedMmsis.size})
@@ -1299,9 +1299,7 @@ export default function Page() {
           value={k?.totalVessels ?? "—"}
           active={stateFilter === null}
           onClick={() => setStateFilter(null)}
-          hint={
-            stateFilter ? "Cliquer pour effacer le filtre d'état" : undefined
-          }
+          hint={stateFilter ? t("filter.clearStateTooltip") : undefined}
         />
         <KpiCard
           label={t("kpi.anchored")}
@@ -1339,16 +1337,20 @@ export default function Page() {
         <section className="rounded-lg border border-sky-700/50 bg-sky-500/5 p-3">
           <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-xs">
             <span className="uppercase tracking-wider text-sky-300">
-              Filtre actif :{" "}
+              {t("filter.active")} :{" "}
               <span className="font-semibold text-sky-100">
                 {selectedVesselClassFilter
-                  ? `classe ${classLabel(selectedVesselClassFilter)}`
+                  ? t("filter.classLabel", {
+                      c: classLabel(selectedVesselClassFilter),
+                    })
                   : selectedCargoFilter
-                    ? `cargaison ${CARGO_LABELS[selectedCargoFilter]}`
+                    ? t("filter.cargoLabel", {
+                        c: CARGO_LABELS[selectedCargoFilter],
+                      })
                     : ""}
               </span>{" "}
-              · {classFilterBreakdown.total} navire
-              {classFilterBreakdown.total > 1 ? "s" : ""}
+              ·{" "}
+              {t("filter.vesselsCount", { n: classFilterBreakdown.total })}
             </span>
             <button
               onClick={() => {
@@ -1357,7 +1359,7 @@ export default function Page() {
               }}
               className="rounded border border-slate-700 px-2 py-0.5 text-xs text-slate-300 hover:border-sky-500"
             >
-              ✕ effacer le filtre
+              {t("filter.clear")}
             </button>
           </div>
           <div className="grid grid-cols-3 gap-2">
@@ -1383,8 +1385,10 @@ export default function Page() {
                   }`}
                   title={
                     count > 0
-                      ? `Cliquer pour ${active ? "effacer" : "appliquer"} le filtre d'état`
-                      : "Aucun navire dans cet état"
+                      ? active
+                        ? t("filter.clearStateTooltip")
+                        : t("filter.applyStateTooltip")
+                      : t("filter.noVesselsState")
                   }
                 >
                   <div className="text-[10px] uppercase tracking-wider text-slate-500">
@@ -1451,8 +1455,10 @@ export default function Page() {
                   className="rounded border border-amber-700/40 bg-amber-500/10 px-3 py-1 text-[11px] text-amber-200 hover:border-amber-500 hover:bg-amber-500/20"
                 >
                   {filteredListExpanded
-                    ? "↑ replier"
-                    : `… ${filteredVessels.length - 60} de plus (déplier)`}
+                    ? t("filter.collapse")
+                    : t("filter.expand", {
+                        n: filteredVessels.length - 60,
+                      })}
                 </button>
               </div>
             ) : null}
@@ -1548,9 +1554,9 @@ export default function Page() {
               <button
                 onClick={() => setSelectedVesselClassFilter(null)}
                 className="text-[10px] text-sky-400 hover:text-sky-300"
-                title="Effacer le filtre"
+                title={t("filter.clearTooltip")}
               >
-                ✕ effacer
+                {t("filter.clearShort")}
               </button>
             ) : null}
           </div>
@@ -1579,8 +1585,8 @@ export default function Page() {
                   }`}
                   title={
                     n > 0
-                      ? `Filtrer la carte sur ${classLabel(cls)} (${n})`
-                      : "Aucun navire de cette classe"
+                      ? t("filter.applyClass", { c: classLabel(cls), n })
+                      : t("filter.noVesselsClass")
                   }
                 >
                   <span className="w-24 text-slate-400 capitalize">
@@ -1616,9 +1622,9 @@ export default function Page() {
               <button
                 onClick={() => setSelectedCargoFilter(null)}
                 className="text-[10px] text-amber-400 hover:text-amber-300"
-                title="Effacer le filtre"
+                title={t("filter.clearTooltip")}
               >
-                ✕ effacer
+                {t("filter.clearShort")}
               </button>
             ) : null}
           </div>
@@ -1644,8 +1650,8 @@ export default function Page() {
                     }`}
                     title={
                       n > 0
-                        ? `Filtrer la carte sur ${CARGO_LABELS[c]} (${n})`
-                        : "Aucun navire de cette cargaison"
+                        ? t("filter.applyCargo", { c: CARGO_LABELS[c], n })
+                        : t("filter.noVesselsCargo")
                     }
                   >
                     <span className="w-24 text-slate-400">
