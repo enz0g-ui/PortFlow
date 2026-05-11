@@ -10,6 +10,11 @@ import { FavoritesPanel } from "./components/FavoritesPanel";
 import { AccuracyPanel } from "./components/AccuracyPanel";
 import { AnomalyPanel } from "./components/AnomalyPanel";
 import { DarkEventsPanel, type DarkEventEntry } from "./components/DarkEventsPanel";
+import {
+  EncountersLoiteringPanel,
+  type EncounterEntry,
+  type LoiteringEntry,
+} from "./components/EncountersLoiteringPanel";
 import { CongestionGauge } from "./components/CongestionGauge";
 import { WeatherWidget } from "./components/WeatherWidget";
 import { VesselDetailPanel } from "./components/VesselDetailPanel";
@@ -818,6 +823,19 @@ export default function Page() {
     events: DarkEventEntry[];
   }>(worldView ? null : `/api/dark-events${q}&days=30`, 5 * 60_000);
   const darkEvents = darkEventsResp?.events ?? [];
+
+  // In-house ship-to-ship encounters in chokepoint zones (replaces GFW).
+  // Encounter scanner runs every 15 min; loitering every 30 min.
+  const encountersResp = usePolling<{ encounters: EncounterEntry[] }>(
+    "/api/encounters?days=30&limit=50",
+    5 * 60_000,
+  );
+  const loiteringResp = usePolling<{ events: LoiteringEntry[] }>(
+    "/api/loitering?days=30&limit=50",
+    5 * 60_000,
+  );
+  const encounters = encountersResp?.encounters ?? [];
+  const loitering = loiteringResp?.events ?? [];
 
   const handleDarkEventSelect = (
     mmsi: number,
@@ -1689,6 +1707,15 @@ export default function Page() {
           />
         </section>
       ) : null}
+
+      <section>
+        <EncountersLoiteringPanel
+          encounters={encounters}
+          loitering={loitering}
+          selectedMmsi={selectedMmsi}
+          onSelect={handleDarkEventSelect}
+        />
+      </section>
 
       <footer className="space-y-2 border-t border-slate-800 pt-3 text-xs text-slate-500">
         <div>

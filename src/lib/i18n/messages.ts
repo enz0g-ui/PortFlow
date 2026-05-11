@@ -208,6 +208,20 @@ const fr: Messages = {
   "forecast.observed": "Observé",
   "forecast.predicted": "Prévision",
   "forecast.interval95": "Intervalle 95%",
+  "encounters.title": "Rencontres ship-to-ship",
+  "encounters.count": "détectées (30j)",
+  "encounters.sanctioned": "sous sanctions",
+  "encounters.empty":
+    "Aucune rencontre détectée. Les rencontres apparaissent quand 2 navires restent à <500m pendant >2h dans un chokepoint.",
+  "encounters.tooltipClick": "cliquer pour zoomer sur la rencontre",
+  "encounters.openWater": "Eaux ouvertes",
+  "loitering.title": "Loitering (stationnaire)",
+  "loitering.count": "événements (30j)",
+  "loitering.sanctioned": "sous sanctions",
+  "loitering.empty":
+    "Aucun événement de loitering. Détecté quand un navire reste à <2 kn pendant >2h, à >10nm de tout port.",
+  "loitering.tooltipClick": "cliquer pour zoomer",
+  "loitering.statusOpen": "EN COURS",
 };
 
 const en: Messages = {
@@ -382,6 +396,20 @@ const en: Messages = {
   "forecast.observed": "Observed",
   "forecast.predicted": "Forecast",
   "forecast.interval95": "95% interval",
+  "encounters.title": "Ship-to-ship encounters",
+  "encounters.count": "detected (30d)",
+  "encounters.sanctioned": "under sanctions",
+  "encounters.empty":
+    "No encounters detected. Encounters appear when 2 vessels stay within 500m for >2h inside a chokepoint.",
+  "encounters.tooltipClick": "click to zoom on encounter",
+  "encounters.openWater": "Open water",
+  "loitering.title": "Loitering (stationary)",
+  "loitering.count": "events (30d)",
+  "loitering.sanctioned": "under sanctions",
+  "loitering.empty":
+    "No loitering events. Detected when a vessel stays under 2 kn for >2h, >10nm from any port.",
+  "loitering.tooltipClick": "click to zoom",
+  "loitering.statusOpen": "ONGOING",
 };
 
 const nl: Messages = {
