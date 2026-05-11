@@ -359,6 +359,231 @@ export default function SourcesPage() {
         ))}
       </section>
 
+      <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-5">
+        <div className="mb-3">
+          <h2 className="text-base font-semibold text-slate-100">
+            Sources évaluées &amp; arbitrages
+          </h2>
+          <p className="mt-1 text-xs italic text-slate-500">
+            Transparence sur ce qu&apos;on a regardé, retenu, ou écarté — et
+            pourquoi. Si vous achetez Port Flow, vous achetez des choix
+            techniques explicites, pas une boîte noire.
+          </p>
+        </div>
+
+        <div className="space-y-4 text-sm text-slate-300">
+          <div>
+            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-emerald-300">
+              ✅ Sources actives en production
+            </h3>
+            <ul className="list-disc space-y-1 pl-5 text-slate-400">
+              <li>
+                <strong className="text-slate-200">AISStream.io</strong>{" "}
+                — WebSocket gratuit, mondial terrestre. Couverture excellente
+                Europe / US, faible Méditerranée orientale et Golfe Persique.
+                Source principale temps réel.
+              </li>
+              <li>
+                <strong className="text-slate-200">
+                  Sanctions multi-régime
+                </strong>{" "}
+                — UK Sanctions List (FCDO, OGL v3), OFAC SDN (US Treasury,
+                public domain), UN Security Council Consolidated List, EU
+                Consolidated FSF. Quatre listes officielles, réconciliées
+                quotidiennement sur IMO/MMSI dans une table unifiée.
+              </li>
+              <li>
+                <strong className="text-slate-200">JWC JWLA-033</strong> —
+                zones de risque guerre maritime (Mer Rouge, Hormuz, Golfe
+                d&apos;Aden, Bosphore). Coordonnées sont des faits, non
+                copyrightables EU/UK.
+              </li>
+              <li>
+                <strong className="text-slate-200">NGA ASAM</strong> —
+                incidents de piraterie / armed robbery mondial. US Government
+                public domain.
+              </li>
+              <li>
+                <strong className="text-slate-200">IMF PortWatch</strong> —
+                statistiques de transits chokepoints + activité portuaire,
+                données IMF (CC-BY).
+              </li>
+              <li>
+                <strong className="text-slate-200">Copernicus Sentinel-1</strong>{" "}
+                — imagerie SAR satellite, gratuit avec compte (ESA).
+              </li>
+              <li>
+                <strong className="text-slate-200">Open-Meteo Marine</strong>{" "}
+                — vagues, vent, courants. CC-BY-4.0, sans clé.
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-sky-300">
+              ⚙ Capabilities calculées in-house (zéro dépendance)
+            </h3>
+            <ul className="list-disc space-y-1 pl-5 text-slate-400">
+              <li>
+                <strong className="text-slate-200">
+                  Détecteur de transit chokepoint
+                </strong>{" "}
+                — 12 zones (Suez, Hormuz, Bab el-Mandeb, Malacca, Singapour,
+                Bosphore, Gibraltar, Skagerrak, Dover, Panama, Cape, Magellan)
+              </li>
+              <li>
+                <strong className="text-slate-200">
+                  Détecteur d&apos;encounter ship-to-ship
+                </strong>{" "}
+                — paires de navires dans 500 m pendant &gt;2 h dans les zones
+                de chokepoint (signal fort sanctions evasion)
+              </li>
+              <li>
+                <strong className="text-slate-200">
+                  Détecteur de loitering
+                </strong>{" "}
+                — SOG &lt; 2 kn pendant &gt;2 h, à &gt;10 nm de tout port
+              </li>
+              <li>
+                <strong className="text-slate-200">
+                  Estimateur CO₂ / fioul
+                </strong>{" "}
+                — méthode IMO 4th GHG Study (2020) bottom-up sur l&apos;AIS,
+                par classe de cargaison
+              </li>
+              <li>
+                <strong className="text-slate-200">
+                  Détecteur dark fleet
+                </strong>{" "}
+                — algorithme Welch et al. 2022 (Science Advances), coupures
+                AIS suspectes
+              </li>
+              <li>
+                <strong className="text-slate-200">
+                  ETA v2 corrigée par saisonnalité
+                </strong>{" "}
+                — médiane (port × jour × heure × cargo) + pénalité congestion
+                live + attribution météo
+              </li>
+            </ul>
+            <p className="mt-2 text-[11px] italic text-slate-500">
+              Toutes ces capabilities sont calculées sur nos propres données
+              AIS et restent 100 % redistribuables sous notre licence
+              commerciale. Pas de licence non-commerciale qui se retournerait
+              contre l&apos;usage B2B.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-amber-300">
+              ⏳ Sources évaluées et écartées (et pourquoi)
+            </h3>
+            <ul className="list-disc space-y-1 pl-5 text-slate-400">
+              <li>
+                <strong className="text-slate-200">AISHub</strong> — bonne
+                couverture Méditerranée mais exige une station AIS
+                contributrice 24/7 (récepteur RTL-SDR + dAISy). Sur roadmap
+                quand on aura installé le matériel côte sud (~150 €).
+              </li>
+              <li>
+                <strong className="text-slate-200">
+                  BarentsWatch / Kystverket
+                </strong>{" "}
+                — flux Norvège uniquement, hors de nos 51 ports cibles.
+                Réactivable si Bergen / Tromsø rejoignent le catalogue.
+              </li>
+              <li>
+                <strong className="text-slate-200">
+                  MarineTraffic / FleetMon
+                </strong>{" "}
+                — consolidation Kpler depuis 2023, plus de tier gratuit
+                utilisable. Pricing entreprise opaque (~10 k$/mois). FleetMon
+                a été phased out en janvier 2024.
+              </li>
+              <li>
+                <strong className="text-slate-200">
+                  Spire Maritime / Kpler AIS
+                </strong>{" "}
+                — couverture satellite premium hauturière mais ~10 k$/mois
+                minimum. Disponible via{" "}
+                <strong>BYO key Pro+</strong> pour les clients qui ont déjà
+                leur propre contrat.
+              </li>
+              <li>
+                <strong className="text-slate-200">VesselFinder</strong> —
+                pas de free tier, crédits cher pour satellite. Bypass possible
+                via BYO key.
+              </li>
+              <li>
+                <strong className="text-slate-200">Datalastic</strong> —
+                trial 9 €/14 j possible mais redondant avec notre AIS terrestre
+                actuel.
+              </li>
+              <li>
+                <strong className="text-slate-200">
+                  Global Fishing Watch
+                </strong>{" "}
+                — gratuit pour usage non-commercial uniquement, refus de
+                licence commerciale via self-service. On a construit
+                encounter + loitering in-house pour avoir des droits
+                redistributables.
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-300">
+              🗺 Méditerranée — pourquoi c&apos;est compliqué
+            </h3>
+            <p className="text-xs text-slate-400">
+              Aucun État côtier méditerranéen (France, Italie, Espagne, Grèce,
+              Malte, Croatie) ne publie de flux AIS public temps réel
+              équivalent à BarentsWatch. Les données sont centralisées par
+              EMSA / SafeSeaNet et restent inter-administrations. data.gouv.fr
+              ne publie que la flotte océanographique. SASEMAR, Salvamento,
+              Guardia Costiera : pas d&apos;API. Conséquence pratique : pour
+              couvrir la Méditerranée de bout en bout, il faut combiner
+              AISStream + AISHub + récepteur DIY. C&apos;est notre roadmap.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-purple-300">
+              📍 Roadmap d&apos;enrichissement
+            </h3>
+            <ol className="list-decimal space-y-1 pl-5 text-slate-400">
+              <li>
+                Récepteur RTL-SDR côte méditerranéenne + intégration AISHub —
+                débloque la couverture Med ouest. ~150 € hardware, Q3 2026.
+              </li>
+              <li>
+                <strong className="text-slate-200">Spire BYO key</strong> —
+                activation pour clients Pro+ avec contrat Spire existant
+                (déjà câblé, juste env à configurer).
+              </li>
+              <li>
+                <strong className="text-slate-200">EU MRV import</strong> —
+                émissions CO₂ officielles déclarées par les armateurs,
+                complète notre estimation in-house pour le reporting
+                réglementaire.
+              </li>
+              <li>
+                <strong className="text-slate-200">
+                  OpenSanctions maritime add-on
+                </strong>{" "}
+                — discussion commerciale en cours (mai 2026). Ajoute le
+                vessel-level coverage du shadow fleet que les listes
+                publiques manquent.
+              </li>
+              <li>
+                EMODnet vessel density rasters — overlay carte mondiale pour
+                visualiser le trafic moyen même hors fenêtre AIS live.
+              </li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
       <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-300">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-200">
           {tp("sources.recommendation.title")}
