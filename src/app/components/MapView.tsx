@@ -44,15 +44,20 @@ export function MapView(props: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [expanded]);
 
+  // Expanded map must sit ABOVE the vessel detail panel (z-[1900])
+  // otherwise clicking "Agrandir" while a vessel is selected sends the
+  // map behind the side panel. Stacking: backdrop 1950 < map 2000 <
+  // anything inside the map (controls/legend at 1700 are inside the
+  // map's stacking context so they appear above its content).
   const containerClass = expanded
-    ? "fixed inset-4 z-[1500]"
+    ? "fixed inset-4 z-[2000]"
     : "relative h-full w-full";
 
   return (
     <>
       {expanded ? (
         <div
-          className="fixed inset-0 z-[1400] bg-slate-950/80 backdrop-blur-sm"
+          className="fixed inset-0 z-[1950] bg-slate-950/80 backdrop-blur-sm"
           onClick={() => setExpanded(false)}
         />
       ) : null}
