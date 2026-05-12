@@ -1562,7 +1562,7 @@ export default function Page() {
       </section>
 
 
-      <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+      <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
           <div className="mb-2 flex items-baseline justify-between text-xs">
             <span className="uppercase tracking-wider text-slate-400">
@@ -1691,30 +1691,38 @@ export default function Page() {
           </div>
         </div>
 
-        <AnomalyPanel
-          anomalies={anomaliesResp?.anomalies ?? []}
-          selectedMmsi={selectedMmsi}
-          onSelect={handleVoyageSelect}
-        />
       </section>
 
-      {!worldView ? (
-        <section>
-          <DarkEventsPanel
-            events={darkEvents}
+      <section className="rounded-lg border border-rose-900/40 bg-slate-900/40 p-4">
+        <RiskSectionHeader
+          anomaliesCount={anomaliesResp?.anomalies?.length ?? 0}
+          darkEventsCount={darkEvents.length}
+          encountersCount={encounters.length}
+          loiteringCount={loitering.length}
+          sanctionedCount={
+            allVessels.filter((v) => v.sanctioned).length
+          }
+        />
+        <div className="mt-3 space-y-3">
+          <AnomalyPanel
+            anomalies={anomaliesResp?.anomalies ?? []}
+            selectedMmsi={selectedMmsi}
+            onSelect={handleVoyageSelect}
+          />
+          {!worldView ? (
+            <DarkEventsPanel
+              events={darkEvents}
+              selectedMmsi={selectedMmsi}
+              onSelect={handleDarkEventSelect}
+            />
+          ) : null}
+          <EncountersLoiteringPanel
+            encounters={encounters}
+            loitering={loitering}
             selectedMmsi={selectedMmsi}
             onSelect={handleDarkEventSelect}
           />
-        </section>
-      ) : null}
-
-      <section>
-        <EncountersLoiteringPanel
-          encounters={encounters}
-          loitering={loitering}
-          selectedMmsi={selectedMmsi}
-          onSelect={handleDarkEventSelect}
-        />
+        </div>
       </section>
 
       <footer className="space-y-2 border-t border-slate-800 pt-3 text-xs text-slate-500">
@@ -1809,5 +1817,85 @@ export default function Page() {
         </div>
       ) : null}
     </main>
+  );
+}
+
+/**
+ * Header for the consolidated Risk section. Surfaces a one-line summary
+ * of all detection counts so users can gauge the scale of intelligence
+ * signals without scrolling through the sub-panels.
+ */
+function RiskSectionHeader({
+  anomaliesCount,
+  darkEventsCount,
+  encountersCount,
+  loiteringCount,
+  sanctionedCount,
+}: {
+  anomaliesCount: number;
+  darkEventsCount: number;
+  encountersCount: number;
+  loiteringCount: number;
+  sanctionedCount: number;
+}) {
+  const { t } = useI18n();
+  const total =
+    anomaliesCount +
+    darkEventsCount +
+    encountersCount +
+    loiteringCount +
+    sanctionedCount;
+  return (
+    <div className="flex flex-wrap items-baseline justify-between gap-2">
+      <div className="flex items-baseline gap-2">
+        <span className="text-sm font-semibold uppercase tracking-wider text-rose-300">
+          ⚠ {t("risk.title")}
+        </span>
+        <span className="text-xs text-slate-500">
+          {t("risk.subtitle")}
+        </span>
+      </div>
+      <div className="flex flex-wrap items-baseline gap-3 text-[11px] text-slate-400">
+        <span>
+          <span className="font-semibold text-slate-100 tabular-nums">
+            {total}
+          </span>{" "}
+          {t("risk.totalSignals")}
+        </span>
+        <span className="text-slate-600">·</span>
+        <RiskCount label={t("risk.label.anomalies")} n={anomaliesCount} />
+        <RiskCount label={t("risk.label.darkFleet")} n={darkEventsCount} />
+        <RiskCount label={t("risk.label.encounters")} n={encountersCount} />
+        <RiskCount label={t("risk.label.loitering")} n={loiteringCount} />
+        <RiskCount
+          label={t("risk.label.sanctioned")}
+          n={sanctionedCount}
+          tone="bad"
+        />
+      </div>
+    </div>
+  );
+}
+
+function RiskCount({
+  label,
+  n,
+  tone = "default",
+}: {
+  label: string;
+  n: number;
+  tone?: "default" | "bad";
+}) {
+  const color =
+    n === 0
+      ? "text-slate-600"
+      : tone === "bad"
+        ? "text-rose-400"
+        : "text-slate-300";
+  return (
+    <span>
+      <span className={`font-semibold tabular-nums ${color}`}>{n}</span>{" "}
+      {label}
+    </span>
   );
 }
