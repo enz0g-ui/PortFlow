@@ -1487,78 +1487,77 @@ export default function Page() {
         </section>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:items-stretch">
-        <div className="lg:col-span-2 h-[440px] sm:h-[560px] lg:h-[680px]">
-          {worldView ? (
-            <MapView
-              vessels={
-                searchMatches
-                  ? worldVessels.filter((v) =>
-                      searchMatches(v.mmsi, v.name, v.callsign),
-                    )
-                  : worldVessels
-              }
-              center={WORLD_CENTER}
-              bbox={WORLD_BBOX}
-              zones={EMPTY_ZONES}
-              portKey="__world__"
-              selectedMmsi={selectedMmsi}
-              onSelect={setSelectedMmsi}
-              selectedTrack={EMPTY_TRACK}
-              highlightedMmsis={undefined}
-              sarDetections={undefined}
-              panTo={panTo ?? undefined}
-            />
-          ) : port ? (
-            <MapView
-              vessels={vessels}
-              center={port.center}
-              bbox={port.bbox}
-              zones={port.zones}
-              portKey={port.id}
-              selectedMmsi={selectedMmsi}
-              onSelect={setSelectedMmsi}
-              selectedTrack={selectedTrack}
-              highlightedMmsis={highlightedMmsis}
-              sarDetections={sarResp?.detections.map((d) => ({
-                id: d.id,
-                ts: d.ts,
-                lat: d.lat,
-                lon: d.lon,
-                intensity: d.intensity,
-                sizePx: d.size_px,
-              }))}
-              trails={trails}
-              panTo={panTo ?? undefined}
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center rounded-lg border border-slate-800 bg-slate-900/40 text-sm text-slate-500" />
-          )}
-        </div>
-        <div className="h-[440px] sm:h-[560px] lg:h-[680px]">
-          {showFavoritesPanel ? (
-            <FavoritesPanel
-              selectedMmsi={selectedMmsi}
-              onSelect={handleFavoritesSelect}
-              onSelectPort={(id) => {
-                trySelectPort(id);
-                setShowFavoritesPanel(false);
-              }}
-              onToggleBookmark={toggleVesselBookmark}
-              searchQuery={searchQuery}
-            />
-          ) : (
-            <VoyagesTable
-              voyages={filteredVoyages}
-              loading={!voyagesResp}
-              selectedMmsi={selectedMmsi}
-              onSelect={handleVoyageSelect}
-              bookmarkedMmsis={bookmarkedMmsis}
-              onToggleBookmark={toggleVesselBookmark}
-              bookmarksEnabled={vesselBookmarksEnabled}
-            />
-          )}
-        </div>
+      <section className="h-[480px] sm:h-[620px] lg:h-[720px]">
+        {worldView ? (
+          <MapView
+            vessels={
+              searchMatches
+                ? worldVessels.filter((v) =>
+                    searchMatches(v.mmsi, v.name, v.callsign),
+                  )
+                : worldVessels
+            }
+            center={WORLD_CENTER}
+            bbox={WORLD_BBOX}
+            zones={EMPTY_ZONES}
+            portKey="__world__"
+            selectedMmsi={selectedMmsi}
+            onSelect={setSelectedMmsi}
+            selectedTrack={EMPTY_TRACK}
+            highlightedMmsis={undefined}
+            sarDetections={undefined}
+            panTo={panTo ?? undefined}
+          />
+        ) : port ? (
+          <MapView
+            vessels={vessels}
+            center={port.center}
+            bbox={port.bbox}
+            zones={port.zones}
+            portKey={port.id}
+            selectedMmsi={selectedMmsi}
+            onSelect={setSelectedMmsi}
+            selectedTrack={selectedTrack}
+            highlightedMmsis={highlightedMmsis}
+            sarDetections={sarResp?.detections.map((d) => ({
+              id: d.id,
+              ts: d.ts,
+              lat: d.lat,
+              lon: d.lon,
+              intensity: d.intensity,
+              sizePx: d.size_px,
+            }))}
+            trails={trails}
+            panTo={panTo ?? undefined}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center rounded-lg border border-slate-800 bg-slate-900/40 text-sm text-slate-500" />
+        )}
+      </section>
+
+      <section className="min-h-[440px]">
+        {showFavoritesPanel ? (
+          <FavoritesPanel
+            selectedMmsi={selectedMmsi}
+            onSelect={handleFavoritesSelect}
+            onSelectPort={(id) => {
+              trySelectPort(id);
+              setShowFavoritesPanel(false);
+            }}
+            onToggleBookmark={toggleVesselBookmark}
+            searchQuery={searchQuery}
+          />
+        ) : (
+          <VoyagesTable
+            voyages={filteredVoyages}
+            loading={!voyagesResp}
+            selectedMmsi={selectedMmsi}
+            onSelect={handleVoyageSelect}
+            bookmarkedMmsis={bookmarkedMmsis}
+            onToggleBookmark={toggleVesselBookmark}
+            bookmarksEnabled={vesselBookmarksEnabled}
+          />
+        )}
       </section>
 
 

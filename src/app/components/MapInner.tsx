@@ -76,6 +76,11 @@ const MIN_TRAIL_ZOOM = 8;
 // them only in regional / world view where they convey context.
 const MAX_WARZONE_ZOOM = 7;
 
+// Cluster vessels into grid buckets when the rendered count would exceed
+// CLUSTER_THRESHOLD. Below it, render every vessel individually for the
+// best signal-to-noise. The selected vessel always escapes clustering.
+const CLUSTER_THRESHOLD = 50;
+
 interface WarZoneFeature {
   type: "Feature";
   properties: {
@@ -408,6 +413,204 @@ const ChokepointsLayer = memo(function ChokepointsLayer() {
   );
 });
 
+interface VesselsLayerProps {
+  vessels: Vessel[];
+  selectedMmsi?: number | null;
+  highlightedMmsis?: Set<number>;
+  onSelect?: (mmsi: number) => void;
+}
+
+/**
+ * Renders vessels — either individually (count ≤ CLUSTER_THRESHOLD) or
+ * grouped into grid-based cluster bubbles to keep the world view legible.
+ * Selected vessel is always rendered individually on top.
+ */
+function VesselsLayer({
+  vessels,
+  selectedMmsi,
+  highlightedMmsis,
+  onSelect,
+}: VesselsLayerProps) {
+  const zoom = useMapZoom(11);
+
+  // Grid size in degrees — coarser at lower zoom, finer at port-level zoom.
+  // 2^zoom doubles tiles per zoom level → invert to get screen-equivalent
+  // degree step. Tuned to ~30px buckets at common zooms.
+  const gridDeg = Math.max(0.05, 50 / Math.pow(2, zoom));
+
+  const { clusters, soloVessels } = useMemo(() => {
+    if (vessels.length <= CLUSTER_THRESHOLD || zoom >= 9) {
+      // Port-level or low count → no clustering noise.
+      return { clusters: [] as Cluster[], soloVessels: vessels };
+    }
+    const buckets = new Map<string, Vessel[]>();
+    for (const v of vessels) {
+      // Selected vessel always renders solo.
+      if (v.mmsi === selectedMmsi) continue;
+      const lat = Math.floor(v.latitude / gridDeg) * gridDeg;
+      const lon = Math.floor(v.longitude / gridDeg) * gridDeg;
+      const key = `${lat.toFixed(3)}_${lon.toFixed(3)}`;
+      let arr = buckets.get(key);
+      if (!arr) {
+        arr = [];
+        buckets.set(key, arr);
+      }
+      arr.push(v);
+    }
+    const clusters: Cluster[] = [];
+    const solo: Vessel[] = [];
+    for (const arr of buckets.values()) {
+      if (arr.length === 1) {
+        solo.push(arr[0]);
+      } else {
+        let sumLat = 0;
+        let sumLon = 0;
+        let hasSanctioned = false;
+        for (const v of arr) {
+          sumLat += v.latitude;
+          sumLon += v.longitude;
+          if (v.sanctioned) hasSanctioned = true;
+        }
+        clusters.push({
+          lat: sumLat / arr.length,
+          lon: sumLon / arr.length,
+          count: arr.length,
+          hasSanctioned,
+        });
+      }
+    }
+    const sel = vessels.find((v) => v.mmsi === selectedMmsi);
+    if (sel) solo.push(sel);
+    return { clusters, soloVessels: solo };
+  }, [vessels, zoom, gridDeg, selectedMmsi]);
+
+  return (
+    <>
+      {clusters.map((c, i) => (
+        <CircleMarker
+          key={`cluster-${i}-${c.lat.toFixed(2)}-${c.lon.toFixed(2)}`}
+          center={[c.lat, c.lon]}
+          radius={Math.min(20, 6 + Math.sqrt(c.count) * 2)}
+          pathOptions={{
+            color: c.hasSanctioned ? "#fb7185" : "#38bdf8",
+            fillColor: c.hasSanctioned ? "#7f1d1d" : "#0c4a6e",
+            fillOpacity: 0.75,
+            weight: 2,
+          }}
+        >
+          <Tooltip opacity={0.9} permanent direction="center">
+            <span className="text-xs font-semibold text-slate-100">
+              {c.count}
+            </span>
+          </Tooltip>
+        </CircleMarker>
+      ))}
+      {soloVessels.map((v) => (
+        <VesselMarker
+          key={v.mmsi}
+          vessel={v}
+          isSelected={v.mmsi === selectedMmsi}
+          highlightedMmsis={highlightedMmsis}
+          onSelect={onSelect}
+        />
+      ))}
+    </>
+  );
+}
+
+interface Cluster {
+  lat: number;
+  lon: number;
+  count: number;
+  hasSanctioned: boolean;
+}
+
+function VesselMarker({
+  vessel: v,
+  isSelected,
+  highlightedMmsis,
+  onSelect,
+}: {
+  vessel: Vessel;
+  isSelected: boolean;
+  highlightedMmsis?: Set<number>;
+  onSelect?: (mmsi: number) => void;
+}) {
+  const hasHighlight =
+    highlightedMmsis !== undefined && highlightedMmsis.size > 0;
+  const isHighlighted = highlightedMmsis?.has(v.mmsi) ?? false;
+  const baseColor = CLASS_COLOR[v.vesselClass];
+  const isFocused = isSelected || !hasHighlight || isHighlighted;
+  return (
+    <CircleMarker
+      center={[v.latitude, v.longitude]}
+      radius={
+        isSelected
+          ? 8
+          : isFocused
+            ? v.state === "underway"
+              ? 4
+              : 3
+            : 2
+      }
+      pathOptions={{
+        color: isSelected ? "#38bdf8" : baseColor,
+        fillColor: baseColor,
+        fillOpacity: isSelected
+          ? 1
+          : isFocused
+            ? v.state === "underway"
+              ? 0.85
+              : 0.5
+            : 0.15,
+        opacity: isSelected ? 1 : isFocused ? 0.9 : 0.25,
+        weight: isSelected ? 3 : 1,
+      }}
+      eventHandlers={
+        onSelect ? { click: () => onSelect(v.mmsi) } : undefined
+      }
+    >
+      <Tooltip opacity={0.9}>
+        <div className="text-xs leading-snug">
+          <div className="font-semibold">
+            {v.sanctioned ? (
+              <span className="mr-1 rounded bg-rose-500/20 px-1 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-300">
+                🚫 Sanctioned
+              </span>
+            ) : null}
+            {v.name ?? `MMSI ${v.mmsi}`}
+          </div>
+          <div className="text-[10px] text-slate-400">
+            MMSI {v.mmsi}
+            {v.callsign ? ` · ${v.callsign}` : ""}
+          </div>
+          <div className="mt-1">
+            {v.cargoClass ?? v.vesselClass} · {v.state}
+          </div>
+          <div>
+            {v.sog.toFixed(1)} kn · cap {Math.round(v.cog)}°
+          </div>
+          {v.lengthM || v.draught ? (
+            <div className="text-[10px] text-slate-400">
+              {v.lengthM ? `L ${Math.round(v.lengthM)} m` : ""}
+              {v.lengthM && v.draught ? " · " : ""}
+              {v.draught ? `tirant d'eau ${v.draught.toFixed(1)} m` : ""}
+            </div>
+          ) : null}
+          {v.destination ? <div>→ {v.destination}</div> : null}
+          {v.zone ? <div className="text-slate-400">zone : {v.zone}</div> : null}
+          {v.lastUpdate ? (
+            <div className="text-[10px] text-slate-500">
+              màj{" "}
+              {Math.max(0, Math.round((Date.now() - v.lastUpdate) / 1000))}s
+            </div>
+          ) : null}
+        </div>
+      </Tooltip>
+    </CircleMarker>
+  );
+}
+
 function ResizeOnExpand({ expanded }: { expanded?: boolean }) {
   const map = useMap();
   useEffect(() => {
@@ -543,91 +746,12 @@ export default function MapInner({
             interactive={false}
           />
         ))}
-      {vessels.map((v) => {
-        const isSelected = v.mmsi === selectedMmsi;
-        const hasHighlight =
-          highlightedMmsis !== undefined && highlightedMmsis.size > 0;
-        const isHighlighted = highlightedMmsis?.has(v.mmsi) ?? false;
-        const baseColor = CLASS_COLOR[v.vesselClass];
-        // When a filter is active (state filter, search match…) we dim
-        // non-matching vessels rather than draw extra halos around the
-        // matches — keeps the eye on the relevant subset, less visual
-        // noise. The selected vessel always stays bright.
-        const isFocused = isSelected || !hasHighlight || isHighlighted;
-        return (
-          <CircleMarker
-            key={v.mmsi}
-            center={[v.latitude, v.longitude]}
-            radius={
-              isSelected
-                ? 8
-                : isFocused
-                  ? v.state === "underway"
-                    ? 4
-                    : 3
-                  : 2
-            }
-            pathOptions={{
-              color: isSelected ? "#38bdf8" : baseColor,
-              fillColor: baseColor,
-              fillOpacity: isSelected
-                ? 1
-                : isFocused
-                  ? v.state === "underway"
-                    ? 0.85
-                    : 0.5
-                  : 0.15,
-              opacity: isSelected ? 1 : isFocused ? 0.9 : 0.25,
-              weight: isSelected ? 3 : 1,
-            }}
-            eventHandlers={
-              onSelect ? { click: () => onSelect(v.mmsi) } : undefined
-            }
-          >
-            <Tooltip
-              key={`tip-${v.mmsi}`}
-              opacity={0.9}
-            >
-              <div className="text-xs leading-snug">
-                <div className="font-semibold">
-                  {v.sanctioned ? (
-                    <span className="mr-1 rounded bg-rose-500/20 px-1 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-300">
-                      🚫 Sanctioned
-                    </span>
-                  ) : null}
-                  {v.name ?? `MMSI ${v.mmsi}`}
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  MMSI {v.mmsi}
-                  {v.callsign ? ` · ${v.callsign}` : ""}
-                </div>
-                <div className="mt-1">
-                  {v.cargoClass ?? v.vesselClass} · {v.state}
-                </div>
-                <div>
-                  {v.sog.toFixed(1)} kn · cap {Math.round(v.cog)}°
-                </div>
-                {v.lengthM || v.draught ? (
-                  <div className="text-[10px] text-slate-400">
-                    {v.lengthM ? `L ${Math.round(v.lengthM)} m` : ""}
-                    {v.lengthM && v.draught ? " · " : ""}
-                    {v.draught ? `tirant d'eau ${v.draught.toFixed(1)} m` : ""}
-                  </div>
-                ) : null}
-                {v.destination ? <div>→ {v.destination}</div> : null}
-                {v.zone ? (
-                  <div className="text-slate-400">zone : {v.zone}</div>
-                ) : null}
-                {v.lastUpdate ? (
-                  <div className="text-[10px] text-slate-500">
-                    màj {Math.max(0, Math.round((Date.now() - v.lastUpdate) / 1000))}s
-                  </div>
-                ) : null}
-              </div>
-            </Tooltip>
-          </CircleMarker>
-        );
-      })}
+      <VesselsLayer
+        vessels={vessels}
+        selectedMmsi={selectedMmsi}
+        highlightedMmsis={highlightedMmsis}
+        onSelect={onSelect}
+      />
     </MapContainer>
   );
 }

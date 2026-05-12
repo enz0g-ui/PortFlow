@@ -83,7 +83,50 @@ export function MapView(props: Props) {
               : `⤢ ${t("map.expandShort")}`}
           </button>
         </div>
+        <MapLegend />
       </div>
     </>
+  );
+}
+
+function MapLegend() {
+  const { t } = useI18n();
+  const entries: Array<{ color: string; label: string }> = [
+    { color: "#f87171", label: t("map.legend.tanker") },
+    { color: "#34d399", label: t("map.legend.cargo") },
+    { color: "#a78bfa", label: t("map.legend.passenger") },
+    { color: "#facc15", label: t("map.legend.fishing") },
+    { color: "#38bdf8", label: t("map.legend.tug") },
+    { color: "#94a3b8", label: t("map.legend.other") },
+  ];
+  return (
+    <div
+      className="absolute bottom-3 left-3 z-[1700] rounded-md border border-slate-700 bg-slate-900/90 px-2.5 py-2 text-[10px] shadow-lg backdrop-blur-sm"
+      aria-label={t("map.legend.title")}
+    >
+      <div className="mb-1 uppercase tracking-wider text-slate-500">
+        {t("map.legend.title")}
+      </div>
+      <ul className="space-y-0.5">
+        {entries.map((e) => (
+          <li key={e.label} className="flex items-center gap-1.5">
+            <span
+              className="inline-block h-2 w-2 rounded-full"
+              style={{ background: e.color }}
+              aria-hidden
+            />
+            <span className="text-slate-300">{e.label}</span>
+          </li>
+        ))}
+        <li className="flex items-center gap-1.5 border-t border-slate-800 pt-1 mt-1">
+          <span
+            className="inline-block h-3 w-3 rounded-full border-2 border-rose-400"
+            style={{ background: "#7f1d1d" }}
+            aria-hidden
+          />
+          <span className="text-slate-300">{t("map.legend.sanctioned")}</span>
+        </li>
+      </ul>
+    </div>
   );
 }
