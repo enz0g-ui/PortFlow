@@ -72,6 +72,37 @@ function fallbackThreshold(
  * Returns the threshold (warn, critical) for the (port, cargo) pair.
  * Reads from the anomaly_thresholds cache; falls back to hardcoded if the
  * cache has no qualifying row.
+ *
+ * **v1 — pooled cargo, fan-out per port**
+ *
+ * recomputeThresholds() currently pools sessions globally by cargo class
+ * (one P50/P95 per cargo over ALL ports) and writes the SAME values to
+ * every PORTS row. That means today, querying (port="rotterdam",
+ * cargo="crude") and (port="houston", cargo="crude") returns identical
+ * thresholds — the per-port dimension exists in the schema but isn't
+ * yet driven by per-port data.
+ *
+ * **v2 path — per-port refinement (not implemented yet)**
+ *
+ * When a port accumulates ≥MIN_SAMPLES of its own anchored-dwell
+ * sessions, we want its threshold to switch from "pooled cargo" to
+ * "port-specific" automatically. The plan:
+ *   1. recomputeThresholds() computes BOTH the pooled-cargo aggregate
+ *      AND a per-port aggregate.
+ *   2. For each (port, cargo): if per-port n_samples ≥ MIN_SAMPLES,
+ *      write port-specific values; else write the pool values (current
+ *      behaviour).
+ *   3. Surface this transition in the UI — the threshold metadata
+ *      already carries isDynamic + nSamples; we could add a
+ *      `source: "pool" | "port-specific"` field.
+ *
+ * **Why this matters**: without this fan-out, a port that just crossed
+ * the MIN_SAMPLES bar would see its scores jump discontinuously
+ * (pooled-cargo threshold replaced by tighter port-specific one).
+ * Future-you will need to audit when this kicks in.
+ *
+ * Until v2 ships, all rows in anomaly_thresholds are derived from
+ * pool-level statistics; the per-port row is a copy.
  */
 export function getThreshold(
   port: string,
