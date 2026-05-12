@@ -23,8 +23,11 @@ interface AccuracyResp {
   rmseHours: number | null;
   maeHours: number | null;
   baselineRmseHours: number | null;
+  baselineCount: number;
   voyages: VoyageSample[];
 }
+
+const MIN_BASELINE_N = 20;
 
 interface PortMini {
   id: string;
@@ -111,8 +114,10 @@ function PrecisionInner() {
 
   const rmse = data?.rmseHours ?? null;
   const baseline = data?.baselineRmseHours ?? null;
+  const baselineN = data?.baselineCount ?? 0;
+  const baselineMeaningful = baselineN >= MIN_BASELINE_N;
   const delta =
-    rmse !== null && baseline !== null
+    rmse !== null && baseline !== null && baselineMeaningful
       ? ((rmse - baseline) / baseline) * 100
       : null;
   const beats = delta !== null && delta < 0;
@@ -174,19 +179,28 @@ function PrecisionInner() {
         />
         <Stat
           label={tp("precision.stat.broadcast")}
-          value={fmtH(baseline)}
+          value={baselineMeaningful ? fmtH(baseline) : tp("precision.stat.broadcast.insufficient")}
           tone="default"
-          hint={tp("precision.stat.broadcast.hint")}
+          hint={
+            baselineMeaningful
+              ? tp("precision.stat.broadcast.hintN", { n: baselineN })
+              : tp("precision.stat.broadcast.disclaimer", {
+                  n: baselineN,
+                  min: MIN_BASELINE_N,
+                })
+          }
         />
         <Stat
           label={
             beats ? tp("precision.stat.advantage") : tp("precision.stat.gap")
           }
           value={delta !== null ? `${Math.abs(delta).toFixed(1)} %` : "—"}
-          tone={beats ? "good" : "warn"}
+          tone={delta === null ? "default" : beats ? "good" : "warn"}
           hint={
             delta === null
-              ? tp("precision.stat.delta.notEnough")
+              ? !baselineMeaningful
+                ? tp("precision.stat.delta.waiting")
+                : tp("precision.stat.delta.notEnough")
               : beats
                 ? tp("precision.stat.delta.beats")
                 : tp("precision.stat.delta.behind")

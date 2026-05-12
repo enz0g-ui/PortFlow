@@ -8,11 +8,14 @@ interface AccuracyResp {
   rmseHours: number | null;
   maeHours: number | null;
   baselineRmseHours: number | null;
+  baselineCount?: number;
 }
 
 interface Props {
   data: AccuracyResp | null;
 }
+
+const MIN_BASELINE_N = 20;
 
 function fmtH(v: number | null | undefined): string {
   if (v === null || v === undefined) return "—";
@@ -28,9 +31,11 @@ export function AccuracyPanel({ data }: Props) {
   const { t } = useI18n();
   const rmse = data?.rmseHours ?? null;
   const baseline = data?.baselineRmseHours ?? null;
-  const tnone = tone(rmse, baseline);
+  const baselineN = data?.baselineCount ?? 0;
+  const baselineMeaningful = baselineN >= MIN_BASELINE_N;
+  const tnone = tone(rmse, baselineMeaningful ? baseline : null);
   const delta =
-    rmse !== null && baseline !== null
+    rmse !== null && baseline !== null && baselineMeaningful
       ? ((rmse - baseline) / baseline) * 100
       : null;
 
@@ -64,12 +69,28 @@ export function AccuracyPanel({ data }: Props) {
           <div className="text-[10px] uppercase text-slate-500">
             {t("accuracy.broadcastRmse")}
           </div>
-          <div className="text-2xl font-semibold tabular-nums text-slate-300">
-            {fmtH(baseline)}
-          </div>
-          <div className="text-[10px] text-slate-500">
-            {t("accuracy.broadcastSubtitle")}
-          </div>
+          {baselineMeaningful ? (
+            <>
+              <div className="text-2xl font-semibold tabular-nums text-slate-300">
+                {fmtH(baseline)}
+              </div>
+              <div className="text-[10px] text-slate-500">
+                {t("accuracy.broadcastN", { n: baselineN })}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-base font-medium text-slate-400">
+                {t("accuracy.broadcastInsufficient")}
+              </div>
+              <div className="text-[10px] text-slate-500">
+                {t("accuracy.broadcastDisclaimer", {
+                  n: baselineN,
+                  min: MIN_BASELINE_N,
+                })}
+              </div>
+            </>
+          )}
         </div>
       </div>
       {delta !== null ? (
@@ -87,7 +108,9 @@ export function AccuracyPanel({ data }: Props) {
         </div>
       ) : (
         <div className="mt-2 text-xs text-slate-500">
-          {t("accuracy.notEnough")}
+          {!baselineMeaningful && baseline !== null
+            ? t("accuracy.waitingSample")
+            : t("accuracy.notEnough")}
         </div>
       )}
     </div>

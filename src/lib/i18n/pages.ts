@@ -75,12 +75,19 @@ const fr: PageMessages = {
   "precision.stat.our": "Notre RMSE",
   "precision.stat.broadcast": "RMSE ETA broadcast",
   "precision.stat.broadcast.hint": "Référence : ETA déclarée par les armateurs",
+  "precision.stat.broadcast.hintN":
+    "ETA armateur · {n} voyages avec broadcast valide",
+  "precision.stat.broadcast.insufficient": "—",
+  "precision.stat.broadcast.disclaimer":
+    "Pas assez de voyages avec ETA broadcast pour un RMSE significatif ({n}/{min}). Beaucoup d'armateurs ne diffusent pas leur ETA — pattern attendu sur les routes Asie/Moyen-Orient.",
   "precision.stat.advantage": "Avantage modèle",
   "precision.stat.gap": "Écart",
   "precision.stat.our.hint": "MAE {mae} · {n} voyages",
   "precision.stat.delta.beats": "Plus précis que l'ETA broadcast",
   "precision.stat.delta.behind": "Moins précis que l'ETA broadcast",
   "precision.stat.delta.notEnough": "Comparaison disponible après quelques voyages",
+  "precision.stat.delta.waiting":
+    "Comparaison en attente d'un échantillon broadcast significatif",
   "precision.table.title": "50 derniers voyages clos",
   "precision.table.errHelp": "err = predicted − actual",
   "precision.table.col.mmsi": "MMSI",
@@ -634,12 +641,19 @@ const en: PageMessages = {
   "precision.stat.our": "Our RMSE",
   "precision.stat.broadcast": "Broadcast ETA RMSE",
   "precision.stat.broadcast.hint": "Reference: ETA declared by carriers",
+  "precision.stat.broadcast.hintN":
+    "Carrier-declared ETA · {n} voyages with valid broadcast",
+  "precision.stat.broadcast.insufficient": "—",
+  "precision.stat.broadcast.disclaimer":
+    "Not enough voyages with broadcast ETA to compute a meaningful RMSE ({n}/{min}). Many carriers do not broadcast their ETA — expected pattern on Asia/Middle-East routes.",
   "precision.stat.advantage": "Model advantage",
   "precision.stat.gap": "Gap",
   "precision.stat.our.hint": "MAE {mae} · {n} voyages",
   "precision.stat.delta.beats": "More accurate than broadcast ETA",
   "precision.stat.delta.behind": "Less accurate than broadcast ETA",
   "precision.stat.delta.notEnough": "Comparison available after a few voyages",
+  "precision.stat.delta.waiting":
+    "Comparison pending a meaningful broadcast sample",
   "precision.table.title": "Last 50 closed voyages",
   "precision.table.errHelp": "err = predicted − actual",
   "precision.table.col.mmsi": "MMSI",

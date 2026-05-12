@@ -206,6 +206,7 @@ export function getVoyageAccuracy(
   maeHours: number | null;
   count: number;
   baselineRmseHours: number | null;
+  baselineCount: number;
 } {
   const voyages = recentClosedVoyages(portId, sinceMs, 1000).filter(
     (v) => v.predicted_eta != null && v.arrived_ts != null,
@@ -218,6 +219,7 @@ export function getVoyageAccuracy(
       maeHours: null,
       count: 0,
       baselineRmseHours: null,
+      baselineCount: 0,
     };
   }
 
@@ -247,5 +249,6 @@ export function getVoyageAccuracy(
     baselineRmseHours: baselineCount
       ? Math.sqrt(baselineSumSq / baselineCount)
       : null,
+    baselineCount,
   };
 }
