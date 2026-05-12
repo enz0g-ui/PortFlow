@@ -57,6 +57,8 @@ interface KpiResponse {
 
 interface VoyagesResp {
   count: number;
+  inboundCount?: number;
+  waitingCount?: number;
   voyages: ActiveVoyage[];
 }
 
@@ -912,6 +914,11 @@ export default function Page() {
 
   const filteredVoyages = useMemo(() => {
     let list = voyagesResp?.voyages ?? [];
+    // Active-voyages table shows only inbound voyages. Waiting-in-roads
+    // surfaces as its own KPI to avoid polluting the ETA-sorted view with
+    // anchored vessels whose ETA is stale (often the source of "-60h"
+    // negative-ETA noise the reviewer flagged).
+    list = list.filter((v) => v.voyageState !== "waiting");
     if (fleetOnly) list = list.filter((v) => bookmarkedMmsis.has(v.mmsi));
     if (selectedCargoFilter)
       list = list.filter((v) => v.cargoClass === selectedCargoFilter);
@@ -1346,8 +1353,24 @@ export default function Page() {
         />
         <KpiCard
           label={t("kpi.activeVoyages")}
-          value={voyagesResp?.count ?? "—"}
-          hint={tankersOnly ? t("kpi.tankersHint") : t("kpi.allHint")}
+          value={voyagesResp?.inboundCount ?? voyagesResp?.count ?? "—"}
+          hint={
+            voyagesResp?.waitingCount && voyagesResp.waitingCount > 0
+              ? t("kpi.activeVoyagesInbound")
+              : tankersOnly
+                ? t("kpi.tankersHint")
+                : t("kpi.allHint")
+          }
+        />
+        <KpiCard
+          label={t("kpi.waitingInRoads")}
+          value={voyagesResp?.waitingCount ?? "—"}
+          hint={t("kpi.waitingHint")}
+          tone={
+            voyagesResp?.waitingCount && voyagesResp.waitingCount > 5
+              ? "warn"
+              : "default"
+          }
         />
       </section>
 

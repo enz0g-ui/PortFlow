@@ -24,6 +24,12 @@ export interface ActiveVoyage {
   currentDistanceNm?: number;
   currentSog: number;
   currentState: string;
+  /**
+   * "inbound" = vessel moving towards port (SOG≥2kn, dist≥3nm, course
+   * convergent). "waiting" = anchored / drifting / idle in roads.
+   * Classification done server-side; see /api/voyages/active.
+   */
+  voyageState?: "inbound" | "waiting";
   zone?: string;
   predictedEta?: number | null;
   broadcastEta?: number | null;
