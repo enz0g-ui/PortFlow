@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { CARGO_LABELS } from "@/lib/cargo";
 import { useI18n } from "@/lib/i18n/context";
+import { formatEtaLocal, timezoneForLongitude } from "@/lib/portTime";
 import type { CargoClass } from "@/lib/types";
 
 type SortKey =
@@ -32,25 +33,6 @@ export interface ActiveVoyage {
   sanctioned?: boolean;
 }
 
-function fmtEta(ts: number | null | undefined, locale: string): string {
-  if (!ts) return "—";
-  const d = new Date(ts);
-  const now = Date.now();
-  const diffH = (ts - now) / 3_600_000;
-  const sign = diffH < 0 ? "−" : "+";
-  // ETAs are shown in UTC across the whole platform — every professional
-  // maritime tracker (MarineTraffic, VesselFinder, Spire, Lloyd's List)
-  // does the same, since traders work across timezones and UTC is the
-  // unambiguous standard for charterparty / shipping documents.
-  return `${d.toLocaleString(locale, {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "UTC",
-  })} UTC (${sign}${Math.abs(diffH).toFixed(1)} h)`;
-}
-
 interface Props {
   voyages: ActiveVoyage[];
   loading?: boolean;
@@ -59,6 +41,8 @@ interface Props {
   bookmarkedMmsis?: ReadonlySet<number>;
   onToggleBookmark?: (mmsi: number) => void;
   bookmarksEnabled?: boolean;
+  /** Longitude of the selected port — drives the local timezone derivation. */
+  portLongitude?: number;
 }
 
 export function VoyagesTable({
@@ -69,8 +53,14 @@ export function VoyagesTable({
   bookmarkedMmsis,
   onToggleBookmark,
   bookmarksEnabled = false,
+  portLongitude,
 }: Props) {
   const { t, locale } = useI18n();
+  const timezone = useMemo(
+    () =>
+      portLongitude != null ? timezoneForLongitude(portLongitude) : "UTC",
+    [portLongitude],
+  );
   const isBookmarked = (mmsi: number) => bookmarkedMmsis?.has(mmsi) ?? false;
   const [sortKey, setSortKey] = useState<SortKey>("predictedEta");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -271,10 +261,10 @@ export function VoyagesTable({
                   </div>
                 </td>
                 <td className="py-2 pr-2 tabular-nums text-sky-300">
-                  {fmtEta(v.predictedEta, locale)}
+                  <EtaCell ts={v.predictedEta} locale={locale} tz={timezone} />
                 </td>
                 <td className="py-2 pr-2 tabular-nums text-slate-400">
-                  {fmtEta(v.broadcastEta, locale)}
+                  <EtaCell ts={v.broadcastEta} locale={locale} tz={timezone} />
                 </td>
               </tr>
             ))}
@@ -315,6 +305,26 @@ function ProgressBar({ progress }: { progress: number }) {
         style={{ width: `${pct}%` }}
       />
     </div>
+  );
+}
+
+function EtaCell({
+  ts,
+  locale,
+  tz,
+}: {
+  ts: number | null | undefined;
+  locale: string;
+  tz: string;
+}) {
+  const { display, title, ok } = formatEtaLocal(ts, locale, tz);
+  return (
+    <span
+      title={title}
+      className={ok ? undefined : "text-slate-600"}
+    >
+      {display}
+    </span>
   );
 }
 

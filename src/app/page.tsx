@@ -1556,6 +1556,7 @@ export default function Page() {
               bookmarkedMmsis={bookmarkedMmsis}
               onToggleBookmark={toggleVesselBookmark}
               bookmarksEnabled={vesselBookmarksEnabled}
+              portLongitude={port?.center?.[1]}
             />
           )}
         </div>
@@ -1728,6 +1729,7 @@ export default function Page() {
         <VesselDetailPanel
           mmsi={selectedMmsi}
           port={portId}
+          portLongitude={port?.center?.[1]}
           onClose={() => setSelectedMmsi(null)}
           bookmarked={bookmarkedMmsis.has(selectedMmsi)}
           onToggleBookmark={toggleVesselBookmark}
