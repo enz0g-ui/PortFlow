@@ -1092,21 +1092,18 @@ export default function Page() {
       {port?.aisCoverage === "low" ? (
         <div className="rounded-lg border border-amber-700/50 bg-amber-500/5 px-4 py-3 text-xs">
           <span className="font-semibold text-amber-300">
-            🛰️ Couverture AIS limitée
+            🛰️ {t("aisCoverage.lowTitle")}
           </span>{" "}
-          <span className="text-slate-300">
-            — ce port se trouve dans une zone faiblement couverte par
-            aisstream.io (réseau communautaire). Les compteurs peuvent
-            afficher peu ou aucun navire malgré l&apos;activité réelle. Pour
-            la visibilité complète :
-          </span>{" "}
+          <span className="text-slate-300">— {t("aisCoverage.lowBody")}</span>{" "}
           <span className="text-slate-400">
-            (a) ajouter une clé API Spire ou Orbcomm via{" "}
-            <Link href="/sources" className="text-amber-300 underline hover:text-amber-200">
+            {t("aisCoverage.lowOptions.before")}{" "}
+            <Link
+              href="/sources"
+              className="text-amber-300 underline hover:text-amber-200"
+            >
               /sources
             </Link>{" "}
-            (BYO key, plan Pro+), ou (b) attendre l&apos;intégration
-            propriétaire prévue sur la roadmap.
+            {t("aisCoverage.lowOptions.after")}
           </span>
         </div>
       ) : null}
