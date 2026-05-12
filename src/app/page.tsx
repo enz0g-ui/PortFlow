@@ -1318,7 +1318,7 @@ export default function Page() {
         <span className="text-slate-500">{t("filter.subclasses")}</span>
       </div>
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 lg:gap-3">
         <KpiCard
           label={t("kpi.totalVessels")}
           value={k?.totalVessels ?? "—"}
