@@ -219,4 +219,12 @@ export async function register() {
   // signal. Replaces GFW's loitering dataset.
   const { startLoiteringDetector } = await import("./lib/loitering-detector");
   startLoiteringDetector();
+
+  // Dynamic anomaly thresholds — recomputes P50/P95 of anchor-dwell
+  // distributions every 6 h, snapshot to anomaly_thresholds table.
+  // Falls back to hardcoded warn/critical if the cache is empty.
+  const { startAnomalyThresholdScheduler } = await import(
+    "./lib/anomaly-thresholds"
+  );
+  startAnomalyThresholdScheduler();
 }
