@@ -32,8 +32,8 @@ High-level map of what runs where. Read this first when onboarding.
                 ┌────────────────┴────────────────┐
                 │                                 │
         Clerk (auth.clerk.com)         Stripe (api.stripe.com)
-        AISStream (websocket)          OFAC + UK OFSI (24h pull)
-        Copernicus Data Space          OpenSanctions (optional)
+        AISStream (websocket)          UKSL / OFAC / UN / EU (24h pull)
+        Copernicus Data Space          Open-Meteo (weather)
 ```
 
 ## Key design decisions
