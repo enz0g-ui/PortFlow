@@ -84,11 +84,17 @@ const fr: Messages = {
   "accuracy.modelRmse": "RMSE modèle",
   "accuracy.broadcastRmse": "RMSE broadcast",
   "accuracy.broadcastSubtitle": "ETA déclarée par les armateurs",
+  "accuracy.broadcastN": "{n} voyages avec ETA broadcast",
+  "accuracy.broadcastInsufficient": "Échantillon insuffisant",
+  "accuracy.broadcastDisclaimer":
+    "{n}/{min} broadcasts — beaucoup d'armateurs ne diffusent pas leur ETA.",
   "accuracy.beats": "{pct}% plus précis",
   "accuracy.behind": "{pct}% moins précis",
   "accuracy.suffix": "que l'ETA broadcast",
   "accuracy.notEnough":
     "Comparaison disponible après quelques voyages clos avec ETA broadcast.",
+  "accuracy.waitingSample":
+    "Comparaison en attente d'un échantillon broadcast significatif.",
   "accuracy.samples": "{n} voyages clos",
   "channel.avgSpeed": "Vitesse moyenne dans le chenal",
   "ais.live": "Live",
@@ -272,9 +278,15 @@ const en: Messages = {
   "accuracy.modelRmse": "Model RMSE",
   "accuracy.broadcastRmse": "Broadcast RMSE",
   "accuracy.broadcastSubtitle": "ETA declared by carriers",
+  "accuracy.broadcastN": "{n} voyages with broadcast ETA",
+  "accuracy.broadcastInsufficient": "Insufficient sample",
+  "accuracy.broadcastDisclaimer":
+    "{n}/{min} broadcasts — many carriers do not broadcast ETA.",
   "accuracy.beats": "{pct}% more accurate",
   "accuracy.behind": "{pct}% less accurate",
   "accuracy.suffix": "than broadcast ETA",
+  "accuracy.waitingSample":
+    "Comparison pending a meaningful broadcast sample.",
   "accuracy.notEnough":
     "Comparison available after a few closed voyages with broadcast ETA.",
   "accuracy.samples": "{n} closed voyages",
