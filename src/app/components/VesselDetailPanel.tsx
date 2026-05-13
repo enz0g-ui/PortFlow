@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/context";
 import { CARGO_LABELS } from "@/lib/cargo";
+import { formatEtaLocal, timezoneForLongitude } from "@/lib/portTime";
 import type { CargoClass, Vessel } from "@/lib/types";
 
 interface VoyageRow {
@@ -45,24 +46,27 @@ interface DetailResp {
 interface Props {
   mmsi: number;
   port: string;
+  /** Longitude of the parent port, for local-time formatting of ETAs. */
+  portLongitude?: number;
   onClose: () => void;
   bookmarked?: boolean;
   onToggleBookmark?: (mmsi: number) => void;
   bookmarksEnabled?: boolean;
 }
 
-function fmtTs(ts: number | null | undefined, locale: string): string {
+function fmtTs(
+  ts: number | null | undefined,
+  locale: string,
+  tz: string = "UTC",
+): string {
   if (!ts) return "—";
-  // UTC across the platform — see VoyagesTable.fmtEta for rationale.
-  return (
-    new Date(ts).toLocaleString(locale, {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "UTC",
-    }) + " UTC"
-  );
+  return new Date(ts).toLocaleString(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: tz,
+  });
 }
 
 function fmtEtaDelta(ts: number | null | undefined): string {
@@ -72,9 +76,27 @@ function fmtEtaDelta(ts: number | null | undefined): string {
   return `${sign}${Math.abs(diff).toFixed(1)} h`;
 }
 
+function EtaSpan({
+  ts,
+  locale,
+  tz,
+}: {
+  ts: number | null | undefined;
+  locale: string;
+  tz: string;
+}) {
+  const { display, title, ok } = formatEtaLocal(ts, locale, tz);
+  return (
+    <span title={title} className={ok ? undefined : "text-slate-600"}>
+      {display}
+    </span>
+  );
+}
+
 export function VesselDetailPanel({
   mmsi,
   port,
+  portLongitude,
   onClose,
   bookmarked = false,
   onToggleBookmark,
@@ -83,6 +105,8 @@ export function VesselDetailPanel({
   const { t, locale } = useI18n();
   const [data, setData] = useState<DetailResp | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const timezone =
+    portLongitude != null ? timezoneForLongitude(portLongitude) : "UTC";
 
   useEffect(() => {
     setData(null);
@@ -463,8 +487,11 @@ export function VesselDetailPanel({
                 </div>
                 <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
                   <dt className="text-slate-400">Start</dt>
-                  <dd className="tabular-nums text-slate-200">
-                    {fmtTs(open.start_ts, locale)}
+                  <dd
+                    className="tabular-nums text-slate-200"
+                    title={`${fmtTs(open.start_ts, locale, "UTC")} UTC`}
+                  >
+                    {fmtTs(open.start_ts, locale, timezone)}
                   </dd>
                   <dt className="text-slate-400">Distance @ start</dt>
                   <dd className="tabular-nums text-slate-200">
@@ -472,14 +499,22 @@ export function VesselDetailPanel({
                   </dd>
                   <dt className="text-slate-400">{t("table.predictedEta")}</dt>
                   <dd className="tabular-nums text-sky-300">
-                    {fmtTs(open.predicted_eta ?? null, locale)}{" "}
+                    <EtaSpan
+                      ts={open.predicted_eta}
+                      locale={locale}
+                      tz={timezone}
+                    />{" "}
                     <span className="text-slate-500">
                       ({fmtEtaDelta(open.predicted_eta ?? null)})
                     </span>
                   </dd>
                   <dt className="text-slate-400">{t("table.broadcastEta")}</dt>
                   <dd className="tabular-nums text-slate-300">
-                    {fmtTs(open.broadcast_eta ?? null, locale)}
+                    <EtaSpan
+                      ts={open.broadcast_eta}
+                      locale={locale}
+                      tz={timezone}
+                    />
                   </dd>
                 </dl>
               </section>
@@ -490,18 +525,27 @@ export function VesselDetailPanel({
                 </div>
                 <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
                   <dt className="text-slate-500">Start</dt>
-                  <dd className="tabular-nums text-slate-200">
-                    {fmtTs(last.start_ts, locale)}
+                  <dd
+                    className="tabular-nums text-slate-200"
+                    title={`${fmtTs(last.start_ts, locale, "UTC")} UTC`}
+                  >
+                    {fmtTs(last.start_ts, locale, timezone)}
                   </dd>
                   <dt className="text-slate-500">Arrived</dt>
-                  <dd className="tabular-nums text-slate-200">
-                    {fmtTs(last.arrived_ts ?? null, locale)}
+                  <dd
+                    className="tabular-nums text-slate-200"
+                    title={`${fmtTs(last.arrived_ts ?? null, locale, "UTC")} UTC`}
+                  >
+                    {fmtTs(last.arrived_ts ?? null, locale, timezone)}
                   </dd>
                   {last.departed_ts ? (
                     <>
                       <dt className="text-slate-500">Departed</dt>
-                      <dd className="tabular-nums text-slate-200">
-                        {fmtTs(last.departed_ts, locale)}
+                      <dd
+                        className="tabular-nums text-slate-200"
+                        title={`${fmtTs(last.departed_ts, locale, "UTC")} UTC`}
+                      >
+                        {fmtTs(last.departed_ts, locale, timezone)}
                       </dd>
                     </>
                   ) : null}

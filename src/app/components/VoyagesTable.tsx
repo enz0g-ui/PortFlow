@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { CARGO_LABELS } from "@/lib/cargo";
 import { useI18n } from "@/lib/i18n/context";
+import { formatEtaLocal, timezoneForLongitude } from "@/lib/portTime";
 import type { CargoClass } from "@/lib/types";
 
 type SortKey =
@@ -32,25 +33,6 @@ export interface ActiveVoyage {
   sanctioned?: boolean;
 }
 
-function fmtEta(ts: number | null | undefined, locale: string): string {
-  if (!ts) return "—";
-  const d = new Date(ts);
-  const now = Date.now();
-  const diffH = (ts - now) / 3_600_000;
-  const sign = diffH < 0 ? "−" : "+";
-  // ETAs are shown in UTC across the whole platform — every professional
-  // maritime tracker (MarineTraffic, VesselFinder, Spire, Lloyd's List)
-  // does the same, since traders work across timezones and UTC is the
-  // unambiguous standard for charterparty / shipping documents.
-  return `${d.toLocaleString(locale, {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "UTC",
-  })} UTC (${sign}${Math.abs(diffH).toFixed(1)} h)`;
-}
-
 interface Props {
   voyages: ActiveVoyage[];
   loading?: boolean;
@@ -59,6 +41,8 @@ interface Props {
   bookmarkedMmsis?: ReadonlySet<number>;
   onToggleBookmark?: (mmsi: number) => void;
   bookmarksEnabled?: boolean;
+  /** Longitude of the selected port — drives the local timezone derivation. */
+  portLongitude?: number;
 }
 
 export function VoyagesTable({
@@ -69,8 +53,14 @@ export function VoyagesTable({
   bookmarkedMmsis,
   onToggleBookmark,
   bookmarksEnabled = false,
+  portLongitude,
 }: Props) {
   const { t, locale } = useI18n();
+  const timezone = useMemo(
+    () =>
+      portLongitude != null ? timezoneForLongitude(portLongitude) : "UTC",
+    [portLongitude],
+  );
   const isBookmarked = (mmsi: number) => bookmarkedMmsis?.has(mmsi) ?? false;
   const [sortKey, setSortKey] = useState<SortKey>("predictedEta");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -255,26 +245,16 @@ export function VoyagesTable({
                     <span className="tabular-nums text-slate-300">
                       {v.currentDistanceNm?.toFixed(1) ?? "—"} nm
                     </span>
-                    {v.startDistanceNm != null &&
-                    v.currentDistanceNm != null &&
-                    v.startDistanceNm > 0 ? (
-                      <ProgressBar
-                        progress={Math.max(
-                          0,
-                          Math.min(
-                            1,
-                            1 - v.currentDistanceNm / v.startDistanceNm,
-                          ),
-                        )}
-                      />
+                    {v.currentDistanceNm != null ? (
+                      <ProgressBar distanceNm={v.currentDistanceNm} />
                     ) : null}
                   </div>
                 </td>
                 <td className="py-2 pr-2 tabular-nums text-sky-300">
-                  {fmtEta(v.predictedEta, locale)}
+                  <EtaCell ts={v.predictedEta} locale={locale} tz={timezone} />
                 </td>
                 <td className="py-2 pr-2 tabular-nums text-slate-400">
-                  {fmtEta(v.broadcastEta, locale)}
+                  <EtaCell ts={v.broadcastEta} locale={locale} tz={timezone} />
                 </td>
               </tr>
             ))}
@@ -295,9 +275,30 @@ export function VoyagesTable({
   );
 }
 
-function ProgressBar({ progress }: { progress: number }) {
+/**
+ * Visual "distance to port" gauge. Earlier version used voyage progress
+ * (1 − current/start), which felt counter-intuitive: a vessel that
+ * started its voyage 3 nm out and is now at 3 nm read 0 % (just
+ * started) even though it was physically right at the port. Reviewers
+ * read the bar as "how close is this vessel to arrival", so we now
+ * encode that directly: bar fills as the vessel approaches port,
+ * regardless of where the voyage began.
+ *
+ * Scale: 0 nm → 100 %, ≥ APPROACH_REFERENCE_NM → 0 %.
+ *
+ * Colors keep the same intent — closer = warmer success signal:
+ *   ≥ 80 % filled (≤ ~4 nm)  → emerald (almost arrived)
+ *   33–80 %     (~4-13 nm)    → sky (mid-approach)
+ *   < 33 %      (> ~13 nm)    → amber (still far out)
+ */
+const APPROACH_REFERENCE_NM = 20;
+
+function ProgressBar({ distanceNm }: { distanceNm: number }) {
+  const progress = Math.max(
+    0,
+    Math.min(1, 1 - distanceNm / APPROACH_REFERENCE_NM),
+  );
   const pct = Math.round(progress * 100);
-  // < 33% amber (early), 33-80% sky (in transit), > 80% emerald (almost there).
   const color =
     pct >= 80
       ? "bg-emerald-400"
@@ -307,14 +308,34 @@ function ProgressBar({ progress }: { progress: number }) {
   return (
     <div
       className="relative h-1 w-20 overflow-hidden rounded-full bg-slate-800"
-      title={`${pct}% du voyage`}
-      aria-label={`${pct}% complete`}
+      title={`${distanceNm.toFixed(1)} nm from port`}
+      aria-label={`${distanceNm.toFixed(1)} nm from port`}
     >
       <div
         className={`absolute left-0 top-0 h-full ${color} transition-[width]`}
         style={{ width: `${pct}%` }}
       />
     </div>
+  );
+}
+
+function EtaCell({
+  ts,
+  locale,
+  tz,
+}: {
+  ts: number | null | undefined;
+  locale: string;
+  tz: string;
+}) {
+  const { display, title, ok } = formatEtaLocal(ts, locale, tz);
+  return (
+    <span
+      title={title}
+      className={ok ? undefined : "text-slate-600"}
+    >
+      {display}
+    </span>
   );
 }
 
