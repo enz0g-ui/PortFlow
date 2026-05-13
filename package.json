@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "tsx --test tests/**/*.test.ts",
+    "test:unit": "tsx --test tests/weather.test.ts",
     "setup": "node scripts/setup.mjs"
   },
   "dependencies": {
