@@ -131,6 +131,14 @@ const fr: Messages = {
   "section.anomalies": "Anomalies actives",
   "anomaly.count": "détection(s)",
   "anomaly.none": "Aucune anomalie détectée.",
+  "anomaly.recentCompact": "récentes repliées",
+  "anomaly.expandFresh": "déplier {n} détection(s) récente(s) (<24h)",
+  "anomaly.collapseFresh": "replier les détections récentes",
+  "anomaly.clickToCenter": "clic pour centrer la carte",
+  "anomaly.scoreTooltip":
+    "Score de sévérité {s}/100 — relatif au seuil P95 du port/cargo",
+  "anomaly.dynamicTooltip":
+    "Seuil dérivé de {n} sessions historiques (P95)",
   "risk.title": "Risque & intelligence",
   "risk.subtitle":
     "détections in-house · anomalies · dark fleet · STS · loitering · sanctions",
@@ -355,6 +363,14 @@ const en: Messages = {
   "section.anomalies": "Active anomalies",
   "anomaly.count": "detection(s)",
   "anomaly.none": "No anomalies detected.",
+  "anomaly.recentCompact": "recent collapsed",
+  "anomaly.expandFresh": "show {n} recent detection(s) (<24h)",
+  "anomaly.collapseFresh": "collapse recent detections",
+  "anomaly.clickToCenter": "click to center the map",
+  "anomaly.scoreTooltip":
+    "Severity score {s}/100 — relative to port/cargo P95 threshold",
+  "anomaly.dynamicTooltip":
+    "Threshold derived from {n} historical sessions (P95)",
   "risk.title": "Risk & intelligence",
   "risk.subtitle":
     "in-house detections · anomalies · dark fleet · STS · loitering · sanctions",
