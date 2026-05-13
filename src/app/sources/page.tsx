@@ -568,14 +568,6 @@ export default function SourcesPage() {
                 réglementaire.
               </li>
               <li>
-                <strong className="text-slate-200">
-                  OpenSanctions maritime add-on
-                </strong>{" "}
-                — discussion commerciale en cours (mai 2026). Ajoute le
-                vessel-level coverage du shadow fleet que les listes
-                publiques manquent.
-              </li>
-              <li>
                 EMODnet vessel density rasters — overlay carte mondiale pour
                 visualiser le trafic moyen même hors fenêtre AIS live.
               </li>
