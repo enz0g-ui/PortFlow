@@ -48,6 +48,16 @@ const fr: Messages = {
   "nav.pricing": "Tarifs",
   "nav.billing": "Facturation",
   "nav.fleet": "Ma flotte",
+  "auth.signIn": "Se connecter",
+  "auth.signUp": "Créer un compte",
+  "auth.account": "Compte",
+  "aisCoverage.lowTitle": "Couverture AIS limitée",
+  "aisCoverage.lowBody":
+    "ce port se trouve dans une zone faiblement couverte par aisstream.io (réseau communautaire). Les compteurs peuvent afficher peu ou aucun navire malgré l'activité réelle. Pour la visibilité complète :",
+  "aisCoverage.lowOptions.before":
+    "(a) ajouter une clé API Spire ou Orbcomm via",
+  "aisCoverage.lowOptions.after":
+    "(BYO key, plan Pro+), ou (b) attendre l'intégration propriétaire prévue sur la roadmap.",
   "filter.all": "Tous",
   "filter.tankers": "Tankers",
   "filter.fleet": "Ma flotte",
@@ -253,6 +263,16 @@ const en: Messages = {
   "nav.pricing": "Pricing",
   "nav.billing": "Billing",
   "nav.fleet": "My fleet",
+  "auth.signIn": "Sign in",
+  "auth.signUp": "Sign up",
+  "auth.account": "Account",
+  "aisCoverage.lowTitle": "Limited AIS coverage",
+  "aisCoverage.lowBody":
+    "this port sits in a region poorly covered by aisstream.io (community-driven). Counters may show few or no vessels despite real activity. For full visibility:",
+  "aisCoverage.lowOptions.before":
+    "(a) add a Spire or Orbcomm API key via",
+  "aisCoverage.lowOptions.after":
+    "(BYO key, Pro+ plan), or (b) wait for the proprietary integration on the roadmap.",
   "filter.all": "All",
   "filter.tankers": "Tankers",
   "filter.fleet": "My fleet",

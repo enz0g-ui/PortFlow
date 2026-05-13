@@ -29,17 +29,24 @@ const I18nContext = createContext<Ctx | null>(null);
 
 const STORAGE_KEY = "portflow.locale";
 
+/**
+ * Default locale flipped from "fr" to "en" 2026-05-13.
+ * Shipping is anglophone; reviewer flagged the FR/EN mixing in the
+ * chrome ("Sign in" alongside "Tarifs") as hurting credibility for
+ * UK / intl audience. We still honor browser-Accept-Language and the
+ * user's saved preference; only the cold-start fallback changes.
+ */
 function detectInitial(): Locale {
-  if (typeof window === "undefined") return "fr";
+  if (typeof window === "undefined") return "en";
   const saved = window.localStorage.getItem(STORAGE_KEY) as Locale | null;
   if (saved && (LOCALES as readonly string[]).includes(saved)) return saved;
   const nav = window.navigator?.language?.slice(0, 2) as Locale | undefined;
   if (nav && (LOCALES as readonly string[]).includes(nav)) return nav;
-  return "fr";
+  return "en";
 }
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("fr");
+  const [locale, setLocaleState] = useState<Locale>("en");
 
   useEffect(() => {
     setLocaleState(detectInitial());
