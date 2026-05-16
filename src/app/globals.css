@@ -79,6 +79,25 @@ body {
   border-top-color: #38bdf8;
 }
 
+/* Cluster bubble count — drawn permanent at center of the CircleMarker.
+ * Default Leaflet tooltip is opaque white with an arrow; we want just
+ * the count text floating inside the cyan/rose circle.
+ */
+.leaflet-tooltip.cluster-count-tip {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: #f8fafc;
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.leaflet-tooltip.cluster-count-tip::before {
+  display: none;
+}
+
 /* Restyle leaflet +/− zoom controls */
 .leaflet-bar {
   border: 1px solid rgba(31, 41, 55, 0.9) !important;

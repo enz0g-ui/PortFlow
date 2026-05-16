@@ -71,6 +71,14 @@ interface Props {
 // Below this zoom, trails are visual mush (segments collapse to dots) — skip
 // rendering entirely. Port-level zoom is ~10-11; world-level is ~2-4.
 const MIN_TRAIL_ZOOM = 8;
+// Above this zoom (street-level on Leaflet), trails draw straight chords
+// between consecutive AIS positions and visibly cut through buildings,
+// canals, and quays. We don't have hydrography snapping (would require
+// OpenSeaMap waterway data + on-the-fly routing — ~100ms/trace, too
+// expensive client-side). Mirroring VesselFinder's behaviour: hide the
+// trail layer once the map is zoomed in enough that the individual
+// position dots are clearly visible on their own.
+const MAX_TRAIL_ZOOM = 13;
 // Above this zoom, war-risk zones are too coarse to be visually useful (the
 // polygon bounding box is dozens of km, fills the whole port view). Show
 // them only in regional / world view where they convey context.
@@ -263,7 +271,7 @@ function TrailsForCurrentZoom(props: {
   highlightedMmsis?: Set<number>;
 }) {
   const zoom = useMapZoom(11);
-  const visible = zoom >= MIN_TRAIL_ZOOM;
+  const visible = zoom >= MIN_TRAIL_ZOOM && zoom <= MAX_TRAIL_ZOOM;
   const vesselClassByMmsi = useMemo(() => {
     const m = new Map<number, VesselClass>();
     for (const v of props.vessels) m.set(v.mmsi, v.vesselClass);
@@ -498,10 +506,13 @@ function VesselsLayer({
             weight: 2,
           }}
         >
-          <Tooltip opacity={0.9} permanent direction="center">
-            <span className="text-xs font-semibold text-slate-100">
-              {c.count}
-            </span>
+          <Tooltip
+            opacity={1}
+            permanent
+            direction="center"
+            className="cluster-count-tip"
+          >
+            <span>{c.count}</span>
           </Tooltip>
         </CircleMarker>
       ))}
