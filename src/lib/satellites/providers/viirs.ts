@@ -6,19 +6,18 @@ export const viirsSource: SatelliteSource = {
   tier: "optical-night",
   tariff: "paid",
   description:
-    "VIIRS Day/Night Band detects vessel lights at night — précieux pour fishing fleets et dark fleets (navires AIS éteints). Désormais sous licence commerciale via le Payne Institute (Colorado School of Mines) — pricing sur demande. Pour une alternative gratuite couvrant un cas d'usage similaire, voir Sentinel-1 SAR.",
+    "VIIRS Day/Night Band detects vessel lights at night — valuable for fishing fleets and dark fleets (AIS-off vessels). Commercial licence via the Payne Institute (Colorado School of Mines) — pricing on request. For free dark-fleet detection today, see Sentinel-1 SAR.",
   homepage: "https://payneinstitute.mines.edu/viirs-nightfire-licensing/",
   envKeys: ["EOG_LICENSE_KEY"],
   integration: "planned",
-  integrationEta: "Q4 2026",
   status(): SourceStatus {
     const configured = !!process.env.EOG_LICENSE_KEY;
     return {
       active: false,
       configured,
       reason: configured
-        ? "Licence Payne configurée mais le pull NetCDF nightly n'est pas encore codé — intégration finale Q4 2026."
-        : "Licence commerciale Payne Institute requise. Pour la détection dark fleet aujourd'hui, voir Sentinel-1 SAR (déjà intégré et live).",
+        ? "Payne licence configured — nightly NetCDF pull not yet implemented."
+        : "Payne Institute commercial licence required. For dark-fleet detection today, see Sentinel-1 SAR (live).",
     };
   },
 };

@@ -16,8 +16,7 @@ export const dynamic = "force-dynamic";
  *     duration: "forever"       // coupon duration ("forever", "once", "repeating")
  *   }
  *
- * Response when the env var is missing or no promo code is found:
- *   { enabled: false, reason: "STRIPE_FOUNDER_PROMO_CODE_ID not set" }
+ * Response when not configured: { enabled: false }
  *
  * Cached in-process for 60 seconds to avoid hammering the Stripe API on
  * every pricing-page load.
@@ -38,12 +37,7 @@ export async function GET() {
   const stripe = getStripe();
   const promoId = process.env.STRIPE_FOUNDER_PROMO_CODE_ID;
   if (!stripe || !promoId) {
-    const payload = {
-      enabled: false,
-      reason: !stripe
-        ? "stripe not configured"
-        : "STRIPE_FOUNDER_PROMO_CODE_ID not set",
-    };
+    const payload = { enabled: false };
     cache = { fetchedAt: Date.now(), payload };
     return Response.json(payload);
   }
@@ -99,11 +93,7 @@ export async function GET() {
     cache = { fetchedAt: Date.now(), payload };
     return Response.json(payload);
   } catch (err) {
-    const payload = {
-      enabled: false,
-      reason: "stripe call failed",
-      detail: (err as Error).message,
-    };
-    return Response.json(payload, { status: 502 });
+    console.error("[founder-slots] Stripe lookup failed", err);
+    return Response.json({ enabled: false }, { status: 502 });
   }
 }

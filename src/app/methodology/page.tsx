@@ -199,6 +199,7 @@ export default function MethodologyPage() {
           <li>{tp("methodology.chokepoints.detection")}</li>
           <li>{tp("methodology.chokepoints.dedup")}</li>
           <li>{tp("methodology.chokepoints.snapshot")}</li>
+          <li>{tp("methodology.chokepoints.coverage")}</li>
           <li>
             {tp("methodology.chokepoints.alertPrefix")}{" "}
             <code className="rounded bg-slate-800 px-1 text-[11px]">
@@ -216,12 +217,6 @@ export default function MethodologyPage() {
         <p className="text-sm text-slate-300">
           {tp("methodology.emissions.intro")}
         </p>
-        <pre className="overflow-x-auto rounded bg-slate-950/80 p-3 text-[11px] text-slate-300">
-          power_kW = installed_kW × max(0.10, (speed/design_speed)³){"\n"}
-          energy_kWh = power_kW × dt_hours{"\n"}
-          fuel_g = energy_kWh × 200 (SFOC){"\n"}
-          CO₂_g = fuel_g × 3.114 (HFO emission factor)
-        </pre>
         <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
           <li>{tp("methodology.emissions.power")}</li>
           <li>{tp("methodology.emissions.skip")}</li>

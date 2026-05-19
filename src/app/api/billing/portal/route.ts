@@ -12,13 +12,13 @@ interface UserRow {
 export async function POST(request: NextRequest) {
   if (!isStripeEnabled()) {
     return Response.json(
-      { error: "stripe disabled — set STRIPE_SECRET_KEY" },
+      { error: "Billing temporarily unavailable" },
       { status: 503 },
     );
   }
   if (!isClerkEnabled()) {
     return Response.json(
-      { error: "auth disabled — set CLERK_SECRET_KEY first" },
+      { error: "Authentication temporarily unavailable" },
       { status: 503 },
     );
   }
@@ -52,8 +52,9 @@ export async function POST(request: NextRequest) {
     });
     return Response.json({ url: session.url });
   } catch (err) {
+    console.error("[billing] portal session failed", err);
     return Response.json(
-      { error: "portal session failed", detail: (err as Error).message },
+      { error: "Could not open billing portal" },
       { status: 500 },
     );
   }

@@ -13,13 +13,13 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   if (!isStripeEnabled()) {
     return Response.json(
-      { error: "stripe disabled — set STRIPE_SECRET_KEY" },
+      { error: "Billing temporarily unavailable" },
       { status: 503 },
     );
   }
   if (!isClerkEnabled()) {
     return Response.json(
-      { error: "auth disabled — set CLERK_SECRET_KEY first" },
+      { error: "Authentication temporarily unavailable" },
       { status: 503 },
     );
   }
@@ -43,18 +43,17 @@ export async function POST(request: NextRequest) {
   }
   const priceId = getStripePriceId(tier, cycle);
   if (!priceId) {
+    console.error(
+      `[billing] missing Stripe price for tier=${tier} cycle=${cycle}`,
+    );
     return Response.json(
-      {
-        error: `Stripe price missing for ${tier} ${cycle} — set STRIPE_PRICE_${tier.toUpperCase()}${
-          cycle === "yearly" ? "_YEARLY" : ""
-        }`,
-      },
+      { error: `Plan ${tier} (${cycle}) is not available right now` },
       { status: 400 },
     );
   }
 
   const stripe = getStripe()!;
-  const origin = request.headers.get("origin") ?? "http://localhost:3000";
+  const origin = request.headers.get("origin") ?? "https://portflow.uk";
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",

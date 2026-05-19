@@ -105,13 +105,37 @@ export const meta = {
   },
   perPortStatus: () => {
     const s = getState();
+    const cutoff = Date.now() - STALE_MS;
     const out: Record<string, { vesselCount: number }> = {};
     for (const [id, p] of s.ports.entries()) {
-      out[id] = { vesselCount: p.vessels.size };
+      let fresh = 0;
+      for (const v of p.vessels.values()) {
+        if (v.lastUpdate >= cutoff) fresh++;
+      }
+      out[id] = { vesselCount: fresh };
     }
     return out;
   },
 };
+
+export function pruneStaleVessels(now = Date.now()): number {
+  const s = getState();
+  const cutoff = now - STALE_MS;
+  let removed = 0;
+  for (const p of s.ports.values()) {
+    for (const [mmsi, v] of p.vessels) {
+      if (v.lastUpdate < cutoff) {
+        p.vessels.delete(mmsi);
+        p.lastZone.delete(mmsi);
+        p.lastState.delete(mmsi);
+        p.anchorStarts.delete(mmsi);
+        p.positionWriteAt.delete(mmsi);
+        removed++;
+      }
+    }
+  }
+  return removed;
+}
 
 export function upsertVessel(portId: string, v: Vessel) {
   ps(portId).vessels.set(v.mmsi, v);

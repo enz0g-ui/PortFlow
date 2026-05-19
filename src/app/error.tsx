@@ -22,10 +22,9 @@ export default function ErrorPage({
       </p>
       {error.digest ? (
         <p className="font-mono text-[10px] text-slate-600">
-          digest: {error.digest}
+          ref: {error.digest}
         </p>
       ) : null}
-      <p className="font-mono text-xs text-rose-300">{error.message}</p>
       <div className="flex gap-2">
         <button
           onClick={() => reset()}

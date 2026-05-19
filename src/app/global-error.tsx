@@ -40,12 +40,9 @@ export default function GlobalError({
           </p>
           {error.digest ? (
             <p style={{ fontFamily: "monospace", fontSize: 11, color: "#475569" }}>
-              digest: {error.digest}
+              ref: {error.digest}
             </p>
           ) : null}
-          <p style={{ fontFamily: "monospace", fontSize: 13, color: "#fda4af" }}>
-            {error.message}
-          </p>
           <div style={{ marginTop: 16, display: "flex", gap: 8, justifyContent: "center" }}>
             <button
               onClick={() => reset()}

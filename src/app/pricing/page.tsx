@@ -222,6 +222,10 @@ export default function PricingPage() {
         })}
       </section>
 
+      <p className="text-center text-xs text-slate-500">
+        {tp("pricing.vatNotice")}
+      </p>
+
       <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-400">
         <p>
           <strong className="text-slate-200">

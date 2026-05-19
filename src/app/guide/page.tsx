@@ -70,19 +70,19 @@ export default function GuidePage() {
           .
         </p>
         <pre className="overflow-x-auto rounded bg-slate-950 p-3 text-xs text-slate-300">
-{`# Configure
-echo "PORT_API_TOKENS=your-secret-token" >> .env.local
+{`# Generate an API key from /account (Starter plan and above),
+# then use it as a Bearer token:
 
 # List ports
-curl -H "Authorization: Bearer your-secret-token" \\
+curl -H "Authorization: Bearer YOUR_API_KEY" \\
   https://portflow.uk/api/v1/ports
 
 # Rotterdam snapshot
-curl -H "Authorization: Bearer your-secret-token" \\
+curl -H "Authorization: Bearer YOUR_API_KEY" \\
   https://portflow.uk/api/v1/ports/rotterdam/snapshot
 
 # Active tanker voyages
-curl -H "Authorization: Bearer your-secret-token" \\
+curl -H "Authorization: Bearer YOUR_API_KEY" \\
   "https://portflow.uk/api/v1/ports/rotterdam/voyages/active?tankersOnly=1"`}
         </pre>
         <p className="text-sm text-slate-300">{tp("guide.api.endpoints")}</p>

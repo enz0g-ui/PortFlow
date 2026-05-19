@@ -15,9 +15,32 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Port Flow · tanker intelligence",
+  metadataBase: new URL("https://portflow.uk"),
+  title: {
+    default: "Port Flow · tanker intelligence",
+    template: "%s · Port Flow",
+  },
   description:
-    "Multi-port AIS dashboard with predicted ETA and broadcast benchmark",
+    "Real-time multi-port AIS — predicted ETA vs broadcast benchmark, sanctions screening, chokepoint transit alerts. Built for commodity traders, freight forwarders, P&I underwriters.",
+  applicationName: "Port Flow",
+  openGraph: {
+    type: "website",
+    siteName: "Port Flow",
+    title: "Port Flow · tanker intelligence",
+    description:
+      "Real-time AIS across 51 ports — predicted ETA vs broadcast benchmark, sanctions screening, chokepoint transit alerts.",
+    url: "https://portflow.uk",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Port Flow · tanker intelligence",
+    description:
+      "Real-time AIS across 51 ports — predicted ETA vs broadcast benchmark, sanctions screening, chokepoint transit alerts.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

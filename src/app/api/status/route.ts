@@ -41,11 +41,15 @@ export async function GET() {
           sar.lastScanAt != null
             ? Math.round((Date.now() - sar.lastScanAt) / 1000)
             : null,
-        lastError: sar.lastError,
+        degraded: sar.lastError != null,
       },
       sanctions: {
         healthy: sancHealthy,
-        ...sanc,
+        fetchedAt: sanc.fetchedAt,
+        count: sanc.count,
+        countByImo: sanc.countByImo,
+        countByMmsi: sanc.countByMmsi,
+        errorCount: sanc.errors.length,
         ageSeconds: sancAge != null ? Math.round(sancAge / 1000) : null,
       },
     },

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useI18n } from "@/lib/i18n/context";
 
 interface PortInfo {
   id: string;
@@ -18,18 +19,19 @@ interface PortsResp {
   ports: PortInfo[];
 }
 
-const SUGGESTED: Array<{ id: string; reason: string }> = [
-  { id: "rotterdam", reason: "ARA hub n°1 — pétrochimie + LNG" },
-  { id: "antwerp", reason: "ARA hub — chemicals + container" },
-  { id: "hormuz", reason: "Chokepoint pétrolier critique" },
-  { id: "singapore", reason: "Hub bunkering + transbordement Asie" },
-  { id: "fujairah", reason: "Bunkering Moyen-Orient + STS zone" },
-  { id: "rasLaffan", reason: "LNG export n°1 mondial" },
-  { id: "houston", reason: "Crude + product US Gulf" },
-  { id: "shanghai", reason: "Container n°1 mondial" },
-];
+const SUGGESTED_IDS = [
+  "rotterdam",
+  "antwerp",
+  "hormuz",
+  "singapore",
+  "fujairah",
+  "rasLaffan",
+  "houston",
+  "shanghai",
+] as const;
 
 function WelcomeInner() {
+  const { tp } = useI18n();
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [allPorts, setAllPorts] = useState<PortInfo[]>([]);
@@ -98,7 +100,9 @@ function WelcomeInner() {
   return (
     <main className="mx-auto flex w-full max-w-[900px] flex-col gap-8 p-6 pt-12">
       <header className="flex items-center justify-between">
-        <div className="text-xs text-slate-500">Setup · {step}/3</div>
+        <div className="text-xs text-slate-500">
+          {tp("welcome.setup", { step })}
+        </div>
         <button
           onClick={() => {
             setSkipped(true);
@@ -106,7 +110,7 @@ function WelcomeInner() {
           }}
           className="text-xs text-slate-500 hover:text-slate-300"
         >
-          Passer →
+          {tp("welcome.skip")}
         </button>
       </header>
 
@@ -114,34 +118,22 @@ function WelcomeInner() {
         <section className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Bienvenue sur Port Flow 👋
+              {tp("welcome.step1.title")}
             </h1>
-            <p className="mt-2 text-slate-300">
-              En 90 secondes, on configure ton dashboard pour qu&apos;il te soit
-              utile dès aujourd&apos;hui.
-            </p>
+            <p className="mt-2 text-slate-300">{tp("welcome.step1.lead")}</p>
           </div>
           <ul className="space-y-2 text-sm text-slate-300">
             <li className="flex gap-2">
               <span className="text-sky-400">①</span>
-              <span>
-                Choisis tes <strong>3 ports prioritaires</strong> (Free) — ils
-                seront tes favoris dès le dashboard
-              </span>
+              <span>{tp("welcome.step1.b1")}</span>
             </li>
             <li className="flex gap-2">
               <span className="text-sky-400">②</span>
-              <span>
-                Découvre les <strong>features clés</strong> — précision ETA,
-                demurrage risk, alertes
-              </span>
+              <span>{tp("welcome.step1.b2")}</span>
             </li>
             <li className="flex gap-2">
               <span className="text-sky-400">③</span>
-              <span>
-                Tu saisiras une <strong>API key + alerte</strong> dès que tu
-                upgrade
-              </span>
+              <span>{tp("welcome.step1.b3")}</span>
             </li>
           </ul>
           <div className="flex gap-3">
@@ -149,13 +141,13 @@ function WelcomeInner() {
               onClick={() => setStep(2)}
               className="rounded bg-sky-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-sky-400"
             >
-              Démarrer →
+              {tp("welcome.step1.cta")}
             </button>
             <Link
               href="/"
               className="rounded border border-slate-700 px-5 py-2.5 text-sm text-slate-300 hover:border-sky-500"
             >
-              Aller direct au dashboard
+              {tp("welcome.step1.skip")}
             </Link>
           </div>
         </section>
@@ -165,24 +157,22 @@ function WelcomeInner() {
         <section className="space-y-5">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
-              Tes 3 ports prioritaires
+              {tp("welcome.step2.title")}
             </h2>
             <p className="mt-1 text-sm text-slate-400">
-              Le plan Free te donne accès à 3 ports. Choisis les plus
-              pertinents pour ton activité — tu pourras les modifier à tout
-              moment depuis le sélecteur de port.
+              {tp("welcome.step2.lead")}
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              Sélection : {picked.size}/3
+              {tp("welcome.step2.selection", { n: picked.size })}
             </p>
           </div>
 
           <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
             <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              Suggestions stratégiques
+              {tp("welcome.step2.suggestionsTitle")}
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {SUGGESTED.map(({ id, reason }) => {
+              {SUGGESTED_IDS.map((id) => {
                 const port = allPorts.find((p) => p.id === id);
                 if (!port) return null;
                 const isPicked = picked.has(id);
@@ -209,7 +199,7 @@ function WelcomeInner() {
                         ) : null}
                       </div>
                       <div className="text-[11px] text-slate-500">
-                        {reason}
+                        {tp(`welcome.suggest.${id}`)}
                       </div>
                     </div>
                   </button>
@@ -220,7 +210,7 @@ function WelcomeInner() {
 
           <details className="rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-xs">
             <summary className="cursor-pointer text-slate-400">
-              Voir les 51 ports disponibles
+              {tp("welcome.step2.allPortsToggle")}
             </summary>
             <div className="mt-3 grid max-h-60 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3 scroll-thin">
               {allPorts
@@ -260,14 +250,17 @@ function WelcomeInner() {
               {savingPorts
                 ? "…"
                 : picked.size === 0
-                  ? "Choisis au moins 1 port"
-                  : `Suivant — ${picked.size} port${picked.size > 1 ? "s" : ""} →`}
+                  ? tp("welcome.step2.ctaEmpty")
+                  : tp("welcome.step2.ctaNext", {
+                      n: picked.size,
+                      s: picked.size > 1 ? "s" : "",
+                    })}
             </button>
             <button
               onClick={() => setStep(1)}
               className="rounded border border-slate-700 px-5 py-2.5 text-sm text-slate-300 hover:border-sky-500"
             >
-              ← Retour
+              {tp("welcome.step2.back")}
             </button>
           </div>
         </section>
@@ -277,36 +270,36 @@ function WelcomeInner() {
         <section className="space-y-5">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
-              Tu es prêt 🚀
+              {tp("welcome.step3.title")}
             </h2>
             <p className="mt-1 text-sm text-slate-300">
-              Voilà ce que tu peux faire dès maintenant :
+              {tp("welcome.step3.lead")}
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Card
-              title="Tracker un navire"
-              body="Clique l'icône 📌 sur n'importe quelle ligne de la table Voyages actifs. Il apparaît dans /fleet."
-              cta="Aller au dashboard →"
+              title={tp("welcome.step3.card1.title")}
+              body={tp("welcome.step3.card1.body")}
+              cta={tp("welcome.step3.card1.cta")}
               href="/"
             />
             <Card
-              title="Mesurer la précision"
-              body="La page /precision publie le RMSE 30j vs ETA broadcast — ce qu'aucun concurrent ne fait."
-              cta="Voir /precision →"
+              title={tp("welcome.step3.card2.title")}
+              body={tp("welcome.step3.card2.body")}
+              cta={tp("welcome.step3.card2.cta")}
               href={`/precision?port=${picked.values().next().value ?? "rotterdam"}`}
             />
             <Card
-              title="Évaluer un risque"
-              body="Sur la fiche d'un navire à quai, le score demurrage estime la proba de retard."
-              cta="Comprendre l'algo →"
+              title={tp("welcome.step3.card3.title")}
+              body={tp("welcome.step3.card3.body")}
+              cta={tp("welcome.step3.card3.cta")}
               href="/methodology"
             />
             <Card
-              title="Quand tu seras prêt"
-              body="Plan Starter (129€) débloque alertes Slack/Telegram/email + API + 25 navires watchlist."
-              cta="Voir les tarifs →"
+              title={tp("welcome.step3.card4.title")}
+              body={tp("welcome.step3.card4.body")}
+              cta={tp("welcome.step3.card4.cta")}
               href="/pricing"
             />
           </div>
@@ -316,14 +309,14 @@ function WelcomeInner() {
               onClick={finish}
               className="rounded bg-sky-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-sky-400"
             >
-              Lancer le dashboard →
+              {tp("welcome.step3.cta")}
             </button>
           </div>
         </section>
       ) : null}
 
       {skipped ? (
-        <p className="text-[11px] text-slate-500">Setup ignoré.</p>
+        <p className="text-[11px] text-slate-500">{tp("welcome.skipped")}</p>
       ) : null}
     </main>
   );

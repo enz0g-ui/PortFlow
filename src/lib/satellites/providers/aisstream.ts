@@ -6,7 +6,7 @@ export const aisstreamSource: SatelliteSource = {
   tier: "ais-terrestrial",
   tariff: "free-with-key",
   description:
-    "Community-fed terrestrial AIS websocket feed. Excellent coverage Europe / US, weak in Persian Gulf and parts of the Mediterranean.",
+    "Community-fed terrestrial AIS websocket feed. Excellent coverage Europe / US, weaker in Persian Gulf and parts of the Mediterranean. Open beta — no SLA published by the upstream operator.",
   homepage: "https://aisstream.io",
   envKeys: ["AISSTREAM_API_KEY"],
   integration: "live",
@@ -15,7 +15,7 @@ export const aisstreamSource: SatelliteSource = {
     return {
       active: ok,
       configured: ok,
-      reason: ok ? "primary live feed" : "set AISSTREAM_API_KEY in .env.local",
+      reason: ok ? "Primary live feed" : "Feed temporarily unavailable",
     };
   },
 };

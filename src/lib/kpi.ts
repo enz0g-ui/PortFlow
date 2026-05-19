@@ -1,4 +1,4 @@
-import { getFlowEvents, getVessels, pushKpi } from "./store";
+import { getFlowEvents, getVessels, pruneStaleVessels, pushKpi } from "./store";
 import type { KpiSnapshot, VesselClass } from "./types";
 import { findZone, getPort, PORTS } from "./ports";
 import { persistKpi } from "./db";
@@ -69,6 +69,11 @@ let interval: NodeJS.Timeout | undefined;
 export function startKpiSampler(intervalMs = 60_000) {
   if (interval) return;
   const tick = () => {
+    try {
+      pruneStaleVessels();
+    } catch (err) {
+      console.error("[store] pruneStaleVessels failed", err);
+    }
     for (const port of PORTS) {
       try {
         const snap = computeKpiSnapshot(port.id);

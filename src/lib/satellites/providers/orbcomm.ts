@@ -6,18 +6,17 @@ export const orbcommSource: SatelliteSource = {
   tier: "ais-satellite",
   tariff: "paid",
   description:
-    "Historic S-AIS leader, complementary to Spire. Useful as a redundancy feed for critical zones (Hormuz, Bab el-Mandeb, Gulf of Mexico).",
+    "Historic S-AIS leader, now operated by S&P Global (Maritime AIS division acquired November 2025). Useful as a redundancy feed for critical zones (Hormuz, Bab el-Mandeb, Gulf of Mexico). Connector planned — activation on contracted client request.",
   homepage: "https://www.orbcomm.com/en/networks/satellite-ais",
   envKeys: ["ORBCOMM_API_TOKEN"],
   integration: "planned",
-  integrationEta: "sur demande client",
   status(): SourceStatus {
     const configured = !!process.env.ORBCOMM_API_TOKEN;
     return {
       active: false,
       configured,
       reason:
-        "Aucune intégration vendor codée à ce jour. Documentation vendor en cours d'analyse — implémentation sur demande client signataire.",
+        "Connector not yet implemented. Available on contracted client request — BYO key required.",
     };
   },
 };

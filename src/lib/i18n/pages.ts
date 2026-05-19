@@ -16,8 +16,10 @@ const fr: PageMessages = {
   "pricing.subtitle":
     "AIS multi-port · ETA prédite · fusion SAR · screening sanctions · 51 ports stratégiques",
   "pricing.note":
-    "Les paiements sont opérationnels uniquement quand STRIPE_SECRET_KEY et STRIPE_PRICE_* sont définis. Sinon le bouton renvoie une erreur 503.",
-  "pricing.note.label": "Note technique :",
+    "Sécurisés via Stripe. Cycle mensuel ou annuel, annulation possible à tout moment depuis ton espace facturation.",
+  "pricing.note.label": "Paiements :",
+  "pricing.vatNotice":
+    "Prix nets. TVA non applicable — art. 293 B du CGI (franchise en base).",
   "pricing.checkout.error": "Stripe Checkout indisponible",
   "pricing.tier.free.name": "Free",
   "pricing.tier.free.price": "0 €",
@@ -101,9 +103,9 @@ const fr: PageMessages = {
   "precision.method.b1":
     "Source : flux AIS aisstream.io filtré sur la bbox du port (incluant les zones de mouillage offshore).",
   "precision.method.b2":
-    "Voyage = première observation en approche/mouillage → arrivée à quai (NavStatus moored ou SOG < 0,3 kn dans une zone de quai).",
+    "Voyage = première observation en approche/mouillage → arrivée à quai, dérivée du statut de navigation et du mouvement.",
   "precision.method.b3":
-    "Modèle ETA v2 : distance / SOG corrigé par médiane (port × jour × heure × cargo) avec fallback hiérarchique + pénalité congestion live (anchored count). Recalculé toutes les 5 minutes. Roadmap : modèle tidal + tirant d'eau.",
+    "Modèle ETA : distance / SOG corrigé par médiane glissante (calibration multi-axes) avec fallback hiérarchique + pénalité congestion live. Rafraîchi en continu. Roadmap : modèle tidal + tirant d'eau.",
   "precision.method.b4":
     "Référence : champ ETA broadcast extrait des messages ShipStaticData (saisi par l'équipage).",
   "precision.method.b5":
@@ -150,6 +152,58 @@ const fr: PageMessages = {
   "darkEvents.silenceFrom": "Silence AIS depuis {age}",
   "darkEvents.tooltipClick": "clic pour centrer la carte",
 
+  // /welcome (onboarding 3-step)
+  "welcome.skip": "Passer →",
+  "welcome.setup": "Setup · {step}/3",
+  "welcome.step1.title": "Bienvenue sur Port Flow 👋",
+  "welcome.step1.lead":
+    "En 90 secondes, on configure ton dashboard pour qu'il te soit utile dès aujourd'hui.",
+  "welcome.step1.b1":
+    "Choisis tes 3 ports prioritaires (Free) — ils seront tes favoris dès le dashboard",
+  "welcome.step1.b2":
+    "Découvre les features clés — précision ETA, demurrage risk, alertes",
+  "welcome.step1.b3":
+    "Tu saisiras une API key + alerte dès que tu upgrade",
+  "welcome.step1.cta": "Démarrer →",
+  "welcome.step1.skip": "Aller direct au dashboard",
+  "welcome.step2.title": "Tes 3 ports prioritaires",
+  "welcome.step2.lead":
+    "Le plan Free te donne accès à 3 ports. Choisis les plus pertinents pour ton activité — tu pourras les modifier à tout moment depuis le sélecteur de port.",
+  "welcome.step2.selection": "Sélection : {n}/3",
+  "welcome.step2.suggestionsTitle": "Suggestions stratégiques",
+  "welcome.step2.allPortsToggle": "Voir les 51 ports disponibles",
+  "welcome.step2.ctaEmpty": "Choisis au moins 1 port",
+  "welcome.step2.ctaNext": "Suivant — {n} port{s} →",
+  "welcome.step2.back": "← Retour",
+  "welcome.step3.title": "Tu es prêt 🚀",
+  "welcome.step3.lead": "Voilà ce que tu peux faire dès maintenant :",
+  "welcome.step3.card1.title": "Tracker un navire",
+  "welcome.step3.card1.body":
+    "Clique l'icône 📌 sur n'importe quelle ligne de la table Voyages actifs. Il apparaît dans /fleet.",
+  "welcome.step3.card1.cta": "Aller au dashboard →",
+  "welcome.step3.card2.title": "Mesurer la précision",
+  "welcome.step3.card2.body":
+    "La page /precision publie le RMSE 30j vs ETA broadcast — ce qu'aucun concurrent ne fait.",
+  "welcome.step3.card2.cta": "Voir /precision →",
+  "welcome.step3.card3.title": "Évaluer un risque",
+  "welcome.step3.card3.body":
+    "Sur la fiche d'un navire à quai, le score demurrage estime la proba de retard.",
+  "welcome.step3.card3.cta": "Comprendre l'algo →",
+  "welcome.step3.card4.title": "Quand tu seras prêt",
+  "welcome.step3.card4.body":
+    "Plan Starter (129 €) débloque alertes Slack/Telegram/email + API + 25 navires watchlist.",
+  "welcome.step3.card4.cta": "Voir les tarifs →",
+  "welcome.step3.cta": "Lancer le dashboard →",
+  "welcome.skipped": "Setup ignoré.",
+  "welcome.suggest.rotterdam": "Hub ARA n°1 — pétrochimie + LNG",
+  "welcome.suggest.antwerp": "Hub ARA — chemicals + container",
+  "welcome.suggest.hormuz": "Chokepoint pétrolier critique",
+  "welcome.suggest.singapore": "Hub bunkering + transbordement Asie",
+  "welcome.suggest.fujairah": "Bunkering Moyen-Orient + STS zone",
+  "welcome.suggest.rasLaffan": "Export LNG n°1 mondial",
+  "welcome.suggest.houston": "Crude + product US Gulf",
+  "welcome.suggest.shanghai": "Container n°1 mondial",
+
   // /methodology
   "methodology.backLink": "← Retour précision",
   "methodology.title": "Méthodologie & SLA",
@@ -166,44 +220,45 @@ const fr: PageMessages = {
     "Pas de données propriétaires intégrées en v1 — la plateforme s'appuie uniquement sur AIS publique. Des sources premium (Spire, Orbcomm) sont sur la roadmap pour combler les zones de couverture faible.",
   "methodology.cargoClass.title": "Classification de cargaison",
   "methodology.cargoClass.body":
-    "Combinaison du shipType AIS (codes 70-89) et d'une heuristique mots-clés (nom, destination) pour assigner une classe parmi : crude, product, chemical, LNG, LPG, container, dry-bulk, general-cargo, ro-ro, passenger, fishing, tug, other. Limitations connues : un navire mal nommé ou avec destination vide tombe sur le shipType générique. Précision attendue ~85 % sur tankers et ~95 % sur containers.",
+    "Combinaison des signaux shipType AIS et d'une heuristique textuelle (nom, destination déclarée) pour assigner une classe de cargaison — calibrée par port et profil de flotte. Cas limite : métadonnées AIS minimales → classe générique en fallback.",
   "methodology.voyages.title": "Détection de voyages",
   "methodology.voyages.open":
-    "Ouverture : un voyage s'ouvre quand un navire (de classe trackable : tanker / container / bulk / general / RoRo) est observé en approche/mouillage avec SOG ≥ 1 kn, après la grace period de 60 s suivant le démarrage du worker.",
+    "Ouverture : un voyage s'ouvre quand un navire de classe trackable (tanker / container / bulk / general / RoRo) est observé en approche ou mouillage avec mouvement mesurable, après une grace period au démarrage du worker.",
   "methodology.voyages.arrival":
-    "Arrivée : transition vers state = moored dans une zone de quai (NavStatus 5 ou SOG < 0,3 kn dans la zone berth).",
+    "Arrivée : transition vers l'état moored dans une zone de quai, dérivée du statut de navigation et du mouvement.",
   "methodology.voyages.departure":
-    "Départ : après l'arrivée, le navire repasse à state = underway et distance > 8 nm du centre du port.",
+    "Départ : après l'arrivée, retour à l'état underway combiné à un seuil de distance du centre du port.",
   "methodology.voyages.falsePositives":
     "Faux positifs : tugs, pilotes et fishing exclus du tracking — la classe cargaison sert de filtre.",
   "methodology.eta.title": "Modèle ETA",
   "methodology.eta.naive":
-    "Estimation naïve : distance / SOG où distance est le grand cercle entre la position courante et le centre du port. Recalculée toutes les 5 minutes par voyage actif.",
+    "Estimation naïve : distance / SOG où distance est le grand cercle entre la position courante et le centre du port. Rafraîchie en continu par voyage actif.",
   "methodology.eta.seasonal":
-    "Correction saisonnière : médiane de l'erreur (predicted − actual) calculée sur les 90 jours glissants, par heure d'arrivée UTC. Fallback sur la médiane globale si le bucket horaire a moins de 3 échantillons. Recompute toutes les 30 min.",
+    "Correction saisonnière : médiane glissante de l'erreur (predicted − actual) bucketée par heure d'arrivée. Fallback sur la médiane globale si le bucket est trop maigre. Recompute régulier.",
   "methodology.eta.broadcast":
     "Référence comparée : champ ETA broadcast extrait des messages ShipStaticData (saisi manuellement par l'équipage du navire — souvent imprécis et tardif).",
   "methodology.eta.metrics":
-    "Métriques : RMSE et MAE en heures, sur les voyages clos avec ETA prédit ET ETA broadcast disponibles. Mises à jour à chaque voyage clos. Fenêtre par défaut : 30 jours.",
+    "Métriques : RMSE et MAE en heures, sur les voyages clos avec ETA prédit ET ETA broadcast disponibles. Mises à jour à chaque voyage clos.",
   "methodology.eta.roadmap":
     "Roadmap modèle : intégration congestion, marées, météo, vitesse moyenne historique du navire spécifique.",
   "methodology.anomalies.title": "Détection d'anomalies",
   "methodology.anomalies.intro":
     "v1 : seuils absolus de dwell au mouillage, ajustés par classe de cargaison.",
   "methodology.anomalies.tanker":
-    "Tankers (crude/product/chemical/LNG/LPG) : warn ≥ 12 h, critical ≥ 48 h.",
+    "Tankers (crude/product/chemical/LNG/LPG) — fenêtre de dwell la plus longue acceptable.",
   "methodology.anomalies.container":
-    "Containers : warn ≥ 6 h, critical ≥ 24 h.",
-  "methodology.anomalies.other": "Autres : warn ≥ 18 h, critical ≥ 72 h.",
+    "Containers — fenêtre de dwell la plus serrée (classe critique à la rotation).",
+  "methodology.anomalies.other":
+    "Autres classes — fenêtre de dwell intermédiaire.",
   "methodology.anomalies.roadmap":
     "Roadmap : seuils dérivés de la distribution historique par (port, cargo) ; détection de déviation de route filée ; détection de loitering hors zone connue (signal « dark fleet »).",
   "methodology.persistence.title": "Persistance & lineage",
   "methodology.persistence.storage":
-    "Stockage SQLite via node:sqlite (built-in Node 22+). Tables : kpi_snapshots, static_ships, positions, voyages, webhook_subscriptions, webhook_deliveries.",
+    "Stockage SQL relationnel avec lignage horodaté. Chaque métrique est traçable à ses positions sources.",
   "methodology.persistence.timestamps":
-    "Chaque ligne kpi_snapshots et voyages porte le port et le timestamp. Reproductibilité totale d'une métrique à un instant donné.",
+    "Chaque ligne métrique et voyage porte le port et le timestamp. Reproductibilité totale d'une métrique à un instant donné.",
   "methodology.persistence.snapshot":
-    "Snapshot des positions : 1 entrée par minute par navire (rate limited). Permet le backtesting et la rejouabilité du modèle.",
+    "Snapshot des positions : écritures rate-limitées par navire. Permet le backtesting et la rejouabilité du modèle.",
   "methodology.persistence.export":
     "Roadmap : export Parquet quotidien vers S3 / GCS pour les data scientists clients.",
   "methodology.sla.title": "Engagements de service (SLA v1)",
@@ -248,22 +303,24 @@ const fr: PageMessages = {
   "methodology.chokepoints.intro":
     "12 zones suivies en continu : Suez, Hormuz, Bab el-Mandeb, Malacca, Singapour, Bosphore-Dardanelles, Gibraltar, Skagerrak-Kattegat, Détroit du Pas-de-Calais, Panama, Cap de Bonne-Espérance, Magellan.",
   "methodology.chokepoints.detection":
-    "Détection point-in-bbox toutes les 5 minutes sur la fenêtre glissante des 10 dernières minutes de positions AIS reçues.",
+    "Détection point-in-bbox en continu sur une fenêtre glissante de positions AIS.",
   "methodology.chokepoints.dedup":
-    "Dédup par cooldown 6 h pour absorber le jitter GPS sans doubler les transits.",
+    "Dédup via cooldown pour absorber le jitter GPS sans doubler les transits.",
   "methodology.chokepoints.snapshot":
     "Snapshot de l'état sanctionné au moment de l'entrée — un navire radié ultérieurement reste forensiquement marqué pour ce transit-là.",
+  "methodology.chokepoints.coverage":
+    "Couverture par AIS terrestre — fiabilité optimale sur les chokepoints côtiers (Hormuz, Bab el-Mandeb, Malacca, Singapour, Bosphore, Pas-de-Calais, Gibraltar, Suez, Panama). Zones plus offshore (Cap de Bonne-Espérance, Magellan, Méditerranée centrale) : détection au passage des stations côtières. Couverture satellite continue via BYO key Spire / Orbcomm (Pro+).",
   "methodology.chokepoints.alertPrefix": "Alerte composable",
   "methodology.chokepoints.alertSuffix":
     ": déclenchée au moment exact où un navire sous sanctions entre dans une de ces zones.",
   "methodology.emissions.title":
     "Estimation des émissions CO₂ — méthode in-house",
   "methodology.emissions.intro":
-    "Approche bottom-up dérivée de l'IMO Fourth GHG Study (2020), intégrée sur le flux AIS sans dépendance externe. Pour chaque paire de positions consécutives :",
+    "Approche bottom-up dérivée de l'IMO Fourth GHG Study (2020), intégrée sur le flux AIS sans dépendance externe.",
   "methodology.emissions.power":
     "Puissance installée et vitesse de service par défaut tirées des tables IMO Annex 1, par classe de cargaison (tanker / container / LNG / vrac …).",
   "methodology.emissions.skip":
-    "Pas de comptage des paires en gap >6 h ou à vitesse <0.5 kn (navire à quai ou ancré — la consommation auxiliaire stationnaire n'est pas modélisée en v1).",
+    "Périodes à quai ou au mouillage exclues du comptage (la consommation auxiliaire stationnaire n'est pas modélisée en v1). Les segments hors couverture AIS terrestre sont également exclus — voir limitations de couverture.",
   "methodology.emissions.precision":
     "Précision indicative ±25 % — suffisant pour ranking flotte, comparaison voyages, dépistage chartering. Pour reporting réglementaire, croiser avec EU MRV (à venir).",
   "methodology.emissions.endpointPrefix": "Endpoint",
@@ -406,8 +463,18 @@ const fr: PageMessages = {
   "legal.tos.b4":
     "Tout usage commercial nécessite respect des termes des fournisseurs sources (notamment paiement Spire / MarineTraffic / Orbcomm si activés).",
   "legal.privacy.title": "Politique de confidentialité (RGPD)",
-  "legal.privacy.controller": "Responsable de traitement :",
-  "legal.privacy.contactPrefix": "Port Flow — contact :",
+  "legal.privacy.controller": "Responsable de traitement",
+  "legal.privacy.entityName":
+    "Laurent Guglielmetti — entrepreneur individuel (micro-entreprise)",
+  "legal.privacy.entityTrade":
+    "Nom commercial : octopodus · Marque exploitée : Port Flow",
+  "legal.privacy.entityAddress":
+    "Siège : 21 rue Hippolyte Noiret, 08300 Rethel, France",
+  "legal.privacy.entityIds":
+    "SIREN 491 489 654 · SIRET 491 489 654 00047 · APE 6201Z",
+  "legal.privacy.entityVat":
+    "TVA non applicable — art. 293 B du CGI (franchise en base)",
+  "legal.privacy.contactLine": "Contact :",
   "legal.privacy.intro":
     "Cette section décrit les données personnelles collectées, leurs finalités et les droits de l'utilisateur conformément au RGPD (UE) 2016/679. Pour les clients EU, un DPA signable est disponible sur demande à privacy@portflow.uk.",
   "legal.privacy.dpaBold": "DPA signable",
@@ -582,8 +649,10 @@ const en: PageMessages = {
   "pricing.subtitle":
     "Multi-port AIS · predicted ETA · SAR fusion · sanctions screening · 51 strategic ports",
   "pricing.note":
-    "Payments only work once STRIPE_SECRET_KEY and STRIPE_PRICE_* are set. Otherwise the button returns a 503 error.",
-  "pricing.note.label": "Tech note:",
+    "Secured via Stripe. Monthly or yearly cycle, cancel anytime from your billing portal.",
+  "pricing.note.label": "Billing:",
+  "pricing.vatNotice":
+    "Net prices. VAT not applicable — French CGI art. 293 B (small-business exemption).",
   "pricing.checkout.error": "Stripe Checkout unavailable",
   "pricing.tier.free.name": "Free",
   "pricing.tier.free.price": "€0",
@@ -667,9 +736,9 @@ const en: PageMessages = {
   "precision.method.b1":
     "Source: aisstream.io AIS feed filtered to the port bbox (including offshore anchorages).",
   "precision.method.b2":
-    "Voyage = first observation in approach/anchorage → moored at berth (NavStatus moored or SOG < 0.3 kn in a berth zone).",
+    "Voyage = first observation in approach/anchorage → moored at berth, derived from navigation state and motion.",
   "precision.method.b3":
-    "ETA model v2: distance / SOG corrected by median (port × day × hour × cargo) with hierarchical fallback + live congestion penalty (anchored count). Recomputed every 5 minutes. Roadmap: tide-aware + draught-aware refinement.",
+    "ETA model: distance / SOG corrected by rolling median (multi-axis calibration) with hierarchical fallback + live congestion penalty. Refreshed continuously. Roadmap: tide-aware + draught-aware refinement.",
   "precision.method.b4":
     "Reference: broadcast ETA field extracted from ShipStaticData messages (entered by the crew).",
   "precision.method.b5":
@@ -716,6 +785,58 @@ const en: PageMessages = {
   "darkEvents.silenceFrom": "AIS silent for {age}",
   "darkEvents.tooltipClick": "click to recenter map",
 
+  // /welcome (onboarding 3-step)
+  "welcome.skip": "Skip →",
+  "welcome.setup": "Setup · {step}/3",
+  "welcome.step1.title": "Welcome to Port Flow 👋",
+  "welcome.step1.lead":
+    "In 90 seconds, we'll configure your dashboard to make it useful from day one.",
+  "welcome.step1.b1":
+    "Pick your 3 priority ports (Free) — they'll be your dashboard favourites",
+  "welcome.step1.b2":
+    "Discover key features — ETA precision, demurrage risk, alerts",
+  "welcome.step1.b3":
+    "Add an API key + alerts when you upgrade",
+  "welcome.step1.cta": "Start →",
+  "welcome.step1.skip": "Go straight to dashboard",
+  "welcome.step2.title": "Your 3 priority ports",
+  "welcome.step2.lead":
+    "The Free plan gives you access to 3 ports. Pick the most relevant to your activity — you can change them anytime from the port selector.",
+  "welcome.step2.selection": "Selection: {n}/3",
+  "welcome.step2.suggestionsTitle": "Strategic suggestions",
+  "welcome.step2.allPortsToggle": "See all 51 available ports",
+  "welcome.step2.ctaEmpty": "Pick at least 1 port",
+  "welcome.step2.ctaNext": "Next — {n} port{s} →",
+  "welcome.step2.back": "← Back",
+  "welcome.step3.title": "You're set 🚀",
+  "welcome.step3.lead": "Here's what you can do right now:",
+  "welcome.step3.card1.title": "Track a vessel",
+  "welcome.step3.card1.body":
+    "Click the 📌 icon on any row of the Active Voyages table. It will appear in /fleet.",
+  "welcome.step3.card1.cta": "Go to dashboard →",
+  "welcome.step3.card2.title": "Measure precision",
+  "welcome.step3.card2.body":
+    "The /precision page publishes the 30-day RMSE vs broadcast ETA — something no competitor does.",
+  "welcome.step3.card2.cta": "See /precision →",
+  "welcome.step3.card3.title": "Score a risk",
+  "welcome.step3.card3.body":
+    "On a moored vessel's detail card, the demurrage score estimates delay probability.",
+  "welcome.step3.card3.cta": "Understand the algo →",
+  "welcome.step3.card4.title": "When you're ready",
+  "welcome.step3.card4.body":
+    "Starter plan (€129) unlocks Slack/Telegram/email alerts + API + 25-vessel watchlist.",
+  "welcome.step3.card4.cta": "See pricing →",
+  "welcome.step3.cta": "Launch dashboard →",
+  "welcome.skipped": "Setup skipped.",
+  "welcome.suggest.rotterdam": "ARA hub #1 — petrochemicals + LNG",
+  "welcome.suggest.antwerp": "ARA hub — chemicals + container",
+  "welcome.suggest.hormuz": "Critical oil chokepoint",
+  "welcome.suggest.singapore": "Bunkering hub + Asia transshipment",
+  "welcome.suggest.fujairah": "Middle East bunkering + STS zone",
+  "welcome.suggest.rasLaffan": "World #1 LNG export",
+  "welcome.suggest.houston": "US Gulf crude + product",
+  "welcome.suggest.shanghai": "World #1 container",
+
   // /methodology
   "methodology.backLink": "← Back to precision",
   "methodology.title": "Methodology & SLA",
@@ -732,44 +853,45 @@ const en: PageMessages = {
     "No proprietary data integrated in v1 — the platform relies solely on public AIS. Premium sources (Spire, Orbcomm) are on the roadmap to fill low-coverage zones.",
   "methodology.cargoClass.title": "Cargo classification",
   "methodology.cargoClass.body":
-    "Combination of AIS shipType (codes 70-89) and a keyword heuristic (name, destination) to assign a class from: crude, product, chemical, LNG, LPG, container, dry-bulk, general-cargo, ro-ro, passenger, fishing, tug, other. Known limitations: a poorly named vessel or one with empty destination falls back to generic shipType. Expected accuracy ~85% on tankers and ~95% on containers.",
+    "Combination of AIS shipType signals and a textual heuristic (vessel name, declared destination) to assign a cargo class — tuned per port and fleet profile. Edge case: minimal AIS metadata falls back to a generic class.",
   "methodology.voyages.title": "Voyage detection",
   "methodology.voyages.open":
-    "Open: a voyage opens when a vessel (of trackable class: tanker / container / bulk / general / RoRo) is observed approaching or anchoring with SOG ≥ 1 kn, after the 60-second grace period following worker startup.",
+    "Open: a voyage opens when a trackable-class vessel (tanker / container / bulk / general / RoRo) is observed approaching or anchoring with measurable motion, after a worker startup grace period.",
   "methodology.voyages.arrival":
-    "Arrival: transition to state = moored within a berth zone (NavStatus 5 or SOG < 0.3 kn within the berth zone).",
+    "Arrival: transition to the moored state within a berth zone, derived from navigation status and motion.",
   "methodology.voyages.departure":
-    "Departure: after arrival, the vessel transitions back to state = underway and distance > 8 nm from the port center.",
+    "Departure: after arrival, transition back to underway combined with a distance threshold from port center.",
   "methodology.voyages.falsePositives":
     "False positives: tugs, pilots and fishing vessels excluded from tracking — cargo class acts as a filter.",
   "methodology.eta.title": "ETA model",
   "methodology.eta.naive":
-    "Naive estimate: distance / SOG where distance is the great circle between current position and port center. Recomputed every 5 minutes per active voyage.",
+    "Naive estimate: distance / SOG where distance is the great circle between current position and port center. Refreshed continuously per active voyage.",
   "methodology.eta.seasonal":
-    "Seasonal correction: median error (predicted − actual) computed over a 90-day rolling window, bucketed by UTC arrival hour. Falls back to the global median if the hour bucket has fewer than 3 samples. Recomputed every 30 min.",
+    "Seasonal correction: rolling median of error (predicted − actual) bucketed by arrival hour. Falls back to the global median when the bucket sample is too thin. Recomputed regularly.",
   "methodology.eta.broadcast":
     "Comparison reference: ETA broadcast field extracted from ShipStaticData messages (entered manually by the vessel's crew — often imprecise and late).",
   "methodology.eta.metrics":
-    "Metrics: RMSE and MAE in hours, computed over closed voyages with both predicted ETA AND broadcast ETA available. Updated on each closed voyage. Default window: 30 days.",
+    "Metrics: RMSE and MAE in hours, computed over closed voyages with both predicted ETA AND broadcast ETA available. Updated on each closed voyage.",
   "methodology.eta.roadmap":
     "Model roadmap: congestion integration, tides, weather, vessel-specific historical average speed.",
   "methodology.anomalies.title": "Anomaly detection",
   "methodology.anomalies.intro":
     "v1: absolute dwell-at-anchor thresholds, tuned by cargo class.",
   "methodology.anomalies.tanker":
-    "Tankers (crude/product/chemical/LNG/LPG): warn ≥ 12h, critical ≥ 48h.",
+    "Tankers (crude/product/chemical/LNG/LPG) — longest acceptable dwell window.",
   "methodology.anomalies.container":
-    "Containers: warn ≥ 6h, critical ≥ 24h.",
-  "methodology.anomalies.other": "Other: warn ≥ 18h, critical ≥ 72h.",
+    "Containers — tightest dwell window (turnover-critical class).",
+  "methodology.anomalies.other":
+    "Other classes — intermediate dwell window.",
   "methodology.anomalies.roadmap":
     "Roadmap: thresholds derived from the historical (port, cargo) distribution; route-deviation detection; out-of-zone loitering detection (\"dark fleet\" signal).",
   "methodology.persistence.title": "Persistence & lineage",
   "methodology.persistence.storage":
-    "SQLite storage via node:sqlite (built-in Node 22+). Tables: kpi_snapshots, static_ships, positions, voyages, webhook_subscriptions, webhook_deliveries.",
+    "Relational SQL storage with timestamped lineage. Every metric is traceable to its source positions.",
   "methodology.persistence.timestamps":
-    "Every kpi_snapshots and voyages row carries the port id and a timestamp. Full reproducibility of any metric at a given instant.",
+    "Every metric and voyage row carries the port id and a timestamp. Full reproducibility of any metric at a given instant.",
   "methodology.persistence.snapshot":
-    "Position snapshots: 1 entry per minute per vessel (rate limited). Enables backtesting and replayability of the model.",
+    "Position snapshots: per-vessel rate-limited writes. Enables backtesting and replayability of the model.",
   "methodology.persistence.export":
     "Roadmap: daily Parquet export to S3 / GCS for clients' data scientists.",
   "methodology.sla.title": "Service commitments (SLA v1)",
@@ -816,22 +938,24 @@ const en: PageMessages = {
   "methodology.chokepoints.intro":
     "12 zones tracked continuously: Suez, Hormuz, Bab el-Mandeb, Malacca, Singapore, Bosphorus-Dardanelles, Gibraltar, Skagerrak-Kattegat, Dover Strait, Panama, Cape of Good Hope, Magellan.",
   "methodology.chokepoints.detection":
-    "Point-in-bbox detection every 5 minutes over the trailing 10-minute window of received AIS positions.",
+    "Continuous point-in-bbox detection over a rolling AIS window.",
   "methodology.chokepoints.dedup":
-    "Dedup via 6-hour cooldown to absorb GPS jitter without doubling transits.",
+    "Dedup via a cooldown window to absorb GPS jitter without doubling transits.",
   "methodology.chokepoints.snapshot":
     "Sanctioned-state snapshot at entry — a vessel later delisted remains forensically marked for that transit.",
+  "methodology.chokepoints.coverage":
+    "Coverage via terrestrial AIS — best reliability on coastal chokepoints (Hormuz, Bab el-Mandeb, Malacca, Singapore, Bosphorus, Dover, Gibraltar, Suez, Panama). Deeper-ocean zones (Cape of Good Hope, Magellan, central Mediterranean) rely on coastal-station passes. Continuous satellite coverage via BYO Spire / Orbcomm key (Pro+).",
   "methodology.chokepoints.alertPrefix": "Composable alert",
   "methodology.chokepoints.alertSuffix":
     ": fired the moment a sanctioned vessel enters one of these zones.",
   "methodology.emissions.title":
     "CO₂ emissions estimation — in-house method",
   "methodology.emissions.intro":
-    "Bottom-up approach derived from the IMO Fourth GHG Study (2020), integrated over the AIS feed with no external dependency. For each consecutive position pair:",
+    "Bottom-up approach derived from the IMO Fourth GHG Study (2020), integrated over the AIS feed with no external dependency.",
   "methodology.emissions.power":
     "Installed power and design service speed defaults from IMO Annex 1 tables, by cargo class (tanker / container / LNG / bulk / etc.).",
   "methodology.emissions.skip":
-    "Pairs with gap >6h or speed <0.5kn skipped (vessel at berth or anchored — stationary auxiliary load is not modelled in v1).",
+    "Periods at berth or at anchor are excluded from the count (stationary auxiliary load is not modelled in v1). Segments outside terrestrial AIS coverage are also excluded — see coverage limits.",
   "methodology.emissions.precision":
     "Indicative precision ±25% — sufficient for fleet ranking, voyage comparison, chartering screening. For regulatory reporting, cross with EU MRV (upcoming).",
   "methodology.emissions.endpointPrefix": "Endpoint",
@@ -972,8 +1096,18 @@ const en: PageMessages = {
   "legal.tos.b4":
     "Any commercial use requires compliance with the source providers' terms (in particular Spire / MarineTraffic / Orbcomm subscriptions if enabled).",
   "legal.privacy.title": "Privacy policy (GDPR)",
-  "legal.privacy.controller": "Data controller:",
-  "legal.privacy.contactPrefix": "Port Flow — contact:",
+  "legal.privacy.controller": "Data controller",
+  "legal.privacy.entityName":
+    "Laurent Guglielmetti — French sole proprietorship (entrepreneur individuel, micro-entreprise regime)",
+  "legal.privacy.entityTrade":
+    "Trade name: octopodus · Operating brand: Port Flow",
+  "legal.privacy.entityAddress":
+    "Registered office: 21 rue Hippolyte Noiret, 08300 Rethel, France",
+  "legal.privacy.entityIds":
+    "SIREN 491 489 654 · SIRET 491 489 654 00047 · NAF/APE 6201Z",
+  "legal.privacy.entityVat":
+    "VAT not applicable — French CGI art. 293 B (small-business exemption)",
+  "legal.privacy.contactLine": "Contact:",
   "legal.privacy.intro":
     "This section describes the personal data collected, its purposes and the user's rights pursuant to GDPR (EU) 2016/679. For EU customers, a signable DPA is available on request at privacy@portflow.uk.",
   "legal.privacy.dpaBold": "signable DPA",
@@ -1149,8 +1283,10 @@ const nl: PageMessages = {
   "pricing.subtitle":
     "Multi-haven AIS · voorspelde ETA · SAR-fusie · sanctie-screening · 51 strategische havens",
   "pricing.note":
-    "Betalingen werken alleen wanneer STRIPE_SECRET_KEY en STRIPE_PRICE_* zijn ingesteld. Anders geeft de knop een 503-fout.",
-  "pricing.note.label": "Technische noot:",
+    "Beveiligd via Stripe. Maandelijkse of jaarlijkse cyclus, opzegging op elk moment vanuit je facturatieportaal.",
+  "pricing.note.label": "Facturatie:",
+  "pricing.vatNotice":
+    "Netto prijzen. Btw niet van toepassing — Franse CGI art. 293 B (kleinondernemersregeling).",
   "pricing.checkout.error": "Stripe Checkout niet beschikbaar",
   "pricing.tier.free.name": "Free",
   "pricing.tier.free.price": "€0",
@@ -1210,9 +1346,9 @@ const nl: PageMessages = {
   "precision.method.b1":
     "Bron: aisstream.io AIS-feed gefilterd op de havenbbox (incl. offshore-ankerages).",
   "precision.method.b2":
-    "Reis = eerste observatie in nadering/ankerage → afgemeerd aan kade (NavStatus moored of SOG < 0,3 kn in een kadezone).",
+    "Reis = eerste observatie in nadering/ankerage → afgemeerd aan kade, afgeleid uit navigatiestatus en beweging.",
   "precision.method.b3":
-    "ETA-model v1: afstand / SOG herberekend elke 5 minuten. Roadmap: seizoens-, congestie- en tij-bewuste modellen.",
+    "ETA-model: afstand / SOG met glijdende mediaan-correctie + live congestie-penalty. Continu ververst. Roadmap: tij- en diepgang-bewuste verfijning.",
   "precision.method.b4":
     "Referentie: broadcast-ETA-veld uit ShipStaticData-berichten (door bemanning ingevoerd).",
   "precision.method.b5":
@@ -1265,44 +1401,45 @@ const nl: PageMessages = {
     "Geen geïntegreerde proprietary data in v1 — het platform leunt uitsluitend op publieke AIS. Premium bronnen (Spire, Orbcomm) staan op de roadmap voor zwakke dekkingszones.",
   "methodology.cargoClass.title": "Lading-classificatie",
   "methodology.cargoClass.body":
-    "Combinatie van AIS shipType (codes 70-89) en trefwoord-heuristiek (naam, bestemming) om een klasse toe te wijzen uit: crude, product, chemical, LNG, LPG, container, dry-bulk, general-cargo, ro-ro, passenger, fishing, tug, other. Bekende beperkingen: een slecht benoemd schip of met lege bestemming valt terug op de generieke shipType. Verwachte precisie ~85% op tankers en ~95% op containers.",
+    "Combinatie van AIS shipType-signalen en een tekstuele heuristiek (naam, gedeclareerde bestemming) om een lading-klasse toe te wijzen — gekalibreerd per haven en vlootprofiel. Randgeval: minimale AIS-metadata valt terug op een generieke klasse.",
   "methodology.voyages.title": "Reizen-detectie",
   "methodology.voyages.open":
-    "Opening: een reis opent wanneer een schip (van trackbare klasse: tanker / container / bulk / general / RoRo) waargenomen wordt in nadering/ankering met SOG ≥ 1 kn, na de grace-periode van 60s na worker-start.",
+    "Opening: een reis opent wanneer een schip van trackbare klasse (tanker / container / bulk / general / RoRo) waargenomen wordt in nadering of ankering met meetbare beweging, na een grace-periode na worker-start.",
   "methodology.voyages.arrival":
-    "Aankomst: overgang naar state = moored in een ligplaats-zone (NavStatus 5 of SOG < 0,3 kn in de berth-zone).",
+    "Aankomst: overgang naar de moored-staat in een ligplaats-zone, afgeleid van navigatie-status en beweging.",
   "methodology.voyages.departure":
-    "Vertrek: na aankomst gaat het schip terug naar state = underway en afstand > 8 nm van het havencentrum.",
+    "Vertrek: na aankomst, terugkeer naar underway gecombineerd met een afstandsdrempel vanaf het havencentrum.",
   "methodology.voyages.falsePositives":
     "Valse positieven: tugs, loodsen en visserij uitgesloten van tracking — de cargo-klasse dient als filter.",
   "methodology.eta.title": "ETA-model",
   "methodology.eta.naive":
-    "Naïeve schatting: afstand / SOG waar afstand de groothoek is tussen huidige positie en havencentrum. Herberekend elke 5 minuten per actieve reis.",
+    "Naïeve schatting: afstand / SOG waar afstand de groothoek is tussen huidige positie en havencentrum. Continu ververst per actieve reis.",
   "methodology.eta.seasonal":
-    "Seizoenscorrectie: mediaan van de fout (predicted − actual) berekend over de laatste 90 dagen, per UTC-aankomstuur. Fallback op globale mediaan als de uur-bucket minder dan 3 samples heeft. Recompute elke 30 min.",
+    "Seizoenscorrectie: glijdende mediaan van de fout (predicted − actual) gebucketeerd per aankomstuur. Fallback op globale mediaan als de bucket te dun is. Regelmatige recompute.",
   "methodology.eta.broadcast":
     "Vergeleken referentie: ETA-broadcast veld geëxtraheerd uit ShipStaticData berichten (handmatig ingevoerd door bemanning — vaak onnauwkeurig en verlaat).",
   "methodology.eta.metrics":
-    "Metrieken: RMSE en MAE in uren, op afgesloten reizen met zowel voorspelde als broadcast ETA beschikbaar. Bijgewerkt bij elke afgesloten reis. Standaard venster: 30 dagen.",
+    "Metrieken: RMSE en MAE in uren, op afgesloten reizen met zowel voorspelde als broadcast ETA beschikbaar. Bijgewerkt bij elke afgesloten reis.",
   "methodology.eta.roadmap":
     "Model-roadmap: integratie congestie, getijden, weer, historische gemiddelde snelheid van het specifieke schip.",
   "methodology.anomalies.title": "Anomalie-detectie",
   "methodology.anomalies.intro":
     "v1: absolute drempels van dwell op anker, aangepast per cargo-klasse.",
   "methodology.anomalies.tanker":
-    "Tankers (crude/product/chemical/LNG/LPG): warn ≥ 12 u, critical ≥ 48 u.",
+    "Tankers (crude/product/chemical/LNG/LPG) — langste aanvaardbare dwell-venster.",
   "methodology.anomalies.container":
-    "Containers: warn ≥ 6 u, critical ≥ 24 u.",
-  "methodology.anomalies.other": "Andere: warn ≥ 18 u, critical ≥ 72 u.",
+    "Containers — strakste dwell-venster (klasse kritiek voor turnover).",
+  "methodology.anomalies.other":
+    "Andere klassen — tussenliggend dwell-venster.",
   "methodology.anomalies.roadmap":
     "Roadmap: drempels afgeleid van historische verdeling per (haven, cargo); detectie van koersafwijking; loitering-detectie buiten bekende zones (\"dark fleet\" signaal).",
   "methodology.persistence.title": "Persistentie & lineage",
   "methodology.persistence.storage":
-    "SQLite-opslag via node:sqlite (built-in Node 22+). Tabellen: kpi_snapshots, static_ships, positions, voyages, webhook_subscriptions, webhook_deliveries.",
+    "Relationele SQL-opslag met getimestampte lineage. Elke metric is traceerbaar naar zijn bronposities.",
   "methodology.persistence.timestamps":
-    "Elke kpi_snapshots- en voyages-rij draagt de haven en het tijdstempel. Volledige reproduceerbaarheid van een metric op een gegeven moment.",
+    "Elke metric- en reis-rij draagt de haven en het tijdstempel. Volledige reproduceerbaarheid van een metric op een gegeven moment.",
   "methodology.persistence.snapshot":
-    "Positie-snapshot: 1 entry per minuut per schip (rate-limited). Maakt backtesting en model-replay mogelijk.",
+    "Positie-snapshot: rate-limited schrijfacties per schip. Maakt backtesting en model-replay mogelijk.",
   "methodology.persistence.export":
     "Roadmap: dagelijkse Parquet-export naar S3 / GCS voor klant data scientists.",
   "methodology.sla.title": "Service-toezeggingen (SLA v1)",
@@ -1346,22 +1483,24 @@ const nl: PageMessages = {
   "methodology.chokepoints.intro":
     "12 zones continu gevolgd: Suez, Hormuz, Bab el-Mandeb, Malacca, Singapore, Bosporus-Dardanellen, Gibraltar, Skagerrak-Kattegat, Nauw van Calais, Panama, Kaap de Goede Hoop, Magellaan.",
   "methodology.chokepoints.detection":
-    "Point-in-bbox detectie elke 5 minuten over het glijdend venster van de laatste 10 minuten ontvangen AIS-posities.",
+    "Continue point-in-bbox detectie over een glijdend AIS-venster.",
   "methodology.chokepoints.dedup":
-    "Dedup via 6-uur cooldown om GPS-jitter te absorberen zonder transits te verdubbelen.",
+    "Dedup via een cooldown-venster om GPS-jitter te absorberen zonder transits te verdubbelen.",
   "methodology.chokepoints.snapshot":
     "Sanctie-status snapshot bij binnenkomst — een schip dat later van de lijst wordt gehaald blijft forensisch gemarkeerd voor die transit.",
+  "methodology.chokepoints.coverage":
+    "Dekking via terrestrische AIS — beste betrouwbaarheid op kust-chokepoints (Hormuz, Bab el-Mandeb, Malacca, Singapore, Bosporus, Nauw van Calais, Gibraltar, Suez, Panama). Diepere-oceaan zones (Kaap de Goede Hoop, Magellaan, centrale Middellandse Zee): detectie bij passage van kuststations. Continue satellietdekking via BYO Spire/Orbcomm-sleutel (Pro+).",
   "methodology.chokepoints.alertPrefix": "Composeerbare alert",
   "methodology.chokepoints.alertSuffix":
     ": geactiveerd op het moment dat een gesanctioneerd schip een van deze zones binnenkomt.",
   "methodology.emissions.title":
     "CO₂-emissieschatting — in-house methode",
   "methodology.emissions.intro":
-    "Bottom-up benadering afgeleid van IMO Fourth GHG Study (2020), geïntegreerd over de AIS-feed zonder externe afhankelijkheid. Voor elk paar opeenvolgende posities:",
+    "Bottom-up benadering afgeleid van IMO Fourth GHG Study (2020), geïntegreerd over de AIS-feed zonder externe afhankelijkheid.",
   "methodology.emissions.power":
     "Geïnstalleerd vermogen en design-snelheid standaard uit IMO Annex 1 tabellen, per cargo-klasse (tanker / container / LNG / bulk …).",
   "methodology.emissions.skip":
-    "Paren met gap >6u of snelheid <0,5 kn worden overgeslagen (schip aan ligplaats of verankerd — stationaire hulpbelasting wordt in v1 niet gemodelleerd).",
+    "Periodes aan ligplaats of voor anker worden uitgesloten van de telling (stationaire hulpbelasting wordt in v1 niet gemodelleerd). Segmenten buiten terrestrische AIS-dekking worden eveneens uitgesloten — zie dekkingsbeperkingen.",
   "methodology.emissions.precision":
     "Indicatieve precisie ±25% — voldoende voor vloot-ranking, reisvergelijking, chartering screening. Voor regelgeving rapportage, kruis met EU MRV (toekomstig).",
   "methodology.emissions.endpointPrefix": "Endpoint",
@@ -1391,8 +1530,18 @@ const nl: PageMessages = {
   "legal.tos.b4":
     "Elk commercieel gebruik vereist naleving van de voorwaarden van bronleveranciers (met name betaling Spire / MarineTraffic / Orbcomm indien geactiveerd).",
   "legal.privacy.title": "Privacybeleid (AVG)",
-  "legal.privacy.controller": "Verwerkingsverantwoordelijke:",
-  "legal.privacy.contactPrefix": "Port Flow — contact:",
+  "legal.privacy.controller": "Verwerkingsverantwoordelijke",
+  "legal.privacy.entityName":
+    "Laurent Guglielmetti — Franse eenmanszaak (entrepreneur individuel, micro-entreprise-regime)",
+  "legal.privacy.entityTrade":
+    "Handelsnaam: octopodus · Geëxploiteerd merk: Port Flow",
+  "legal.privacy.entityAddress":
+    "Statutaire zetel: 21 rue Hippolyte Noiret, 08300 Rethel, Frankrijk",
+  "legal.privacy.entityIds":
+    "SIREN 491 489 654 · SIRET 491 489 654 00047 · APE 6201Z",
+  "legal.privacy.entityVat":
+    "Btw niet van toepassing — Franse CGI art. 293 B (kleinondernemersregeling)",
+  "legal.privacy.contactLine": "Contact:",
   "legal.privacy.intro":
     "Deze sectie beschrijft de verzamelde persoonsgegevens, hun doeleinden en de rechten van de gebruiker conform de AVG (EU) 2016/679. Voor EU-klanten is een ondertekenbaar DPA beschikbaar op aanvraag bij privacy@portflow.uk.",
   "legal.privacy.dpaBold": "Ondertekenbaar DPA",
@@ -1575,8 +1724,10 @@ const de: PageMessages = {
   "pricing.subtitle":
     "Multi-Hafen-AIS · vorhergesagte ETA · SAR-Fusion · Sanktions-Screening · 51 strategische Häfen",
   "pricing.note":
-    "Zahlungen funktionieren nur, wenn STRIPE_SECRET_KEY und STRIPE_PRICE_* gesetzt sind. Andernfalls gibt der Button einen 503-Fehler zurück.",
-  "pricing.note.label": "Technischer Hinweis:",
+    "Sicher via Stripe. Monats- oder Jahreszyklus, jederzeit über das Abrechnungsportal kündbar.",
+  "pricing.note.label": "Zahlungen:",
+  "pricing.vatNotice":
+    "Nettopreise. Umsatzsteuer nicht anwendbar — französ. CGI Art. 293 B (Kleinunternehmerregelung).",
   "pricing.checkout.error": "Stripe Checkout nicht verfügbar",
   "pricing.tier.free.name": "Free",
   "pricing.tier.free.price": "0 €",
@@ -1636,9 +1787,9 @@ const de: PageMessages = {
   "precision.method.b1":
     "Quelle: aisstream.io AIS-Feed gefiltert auf die Hafen-Bbox (inkl. Offshore-Ankerplätze).",
   "precision.method.b2":
-    "Reise = erste Beobachtung im Anlauf/Ankerplatz → festgemacht am Liegeplatz (NavStatus moored oder SOG < 0,3 kn in einer Liegeplatzzone).",
+    "Reise = erste Beobachtung im Anlauf/Ankerplatz → festgemacht am Liegeplatz, abgeleitet aus Navigationsstatus und Bewegung.",
   "precision.method.b3":
-    "ETA-Modell v1: Distanz / SOG alle 5 Minuten neu berechnet. Roadmap: saisonale, stau-bewusste, gezeiten-bewusste Modelle.",
+    "ETA-Modell: Distanz / SOG mit gleitender Median-Korrektur + Live-Staupönale. Kontinuierlich aktualisiert. Roadmap: gezeiten- und tiefgang-bewusste Verfeinerung.",
   "precision.method.b4":
     "Referenz: Broadcast-ETA-Feld aus ShipStaticData-Nachrichten (von der Crew eingegeben).",
   "precision.method.b5":
@@ -1691,44 +1842,45 @@ const de: PageMessages = {
     "Keine integrierten proprietären Daten in v1 — die Plattform stützt sich ausschließlich auf öffentliches AIS. Premium-Quellen (Spire, Orbcomm) stehen auf der Roadmap für Zonen mit schwacher Abdeckung.",
   "methodology.cargoClass.title": "Frachtklassifizierung",
   "methodology.cargoClass.body":
-    "Kombination aus AIS shipType (Codes 70-89) und Schlüsselwort-Heuristik (Name, Bestimmungsort) zur Zuordnung einer Klasse aus: crude, product, chemical, LNG, LPG, container, dry-bulk, general-cargo, ro-ro, passenger, fishing, tug, other. Bekannte Einschränkungen: ein schlecht benanntes Schiff oder mit leerem Bestimmungsort fällt auf den generischen shipType zurück. Erwartete Präzision ~85% bei Tankern und ~95% bei Containern.",
+    "Kombination aus AIS-shipType-Signalen und einer textuellen Heuristik (Name, deklarierter Bestimmungsort) zur Zuordnung einer Frachtklasse — kalibriert pro Hafen und Flottenprofil. Randfall: minimale AIS-Metadaten fallen auf eine generische Klasse zurück.",
   "methodology.voyages.title": "Reisenerkennung",
   "methodology.voyages.open":
-    "Öffnung: eine Reise öffnet sich, wenn ein Schiff (verfolgbarer Klasse: tanker / container / bulk / general / RoRo) im Anflug/Ankern mit SOG ≥ 1 kn beobachtet wird, nach der 60s-Karenzzeit nach Worker-Start.",
+    "Öffnung: eine Reise öffnet sich, wenn ein Schiff verfolgbarer Klasse (tanker / container / bulk / general / RoRo) im Anflug oder Ankern mit messbarer Bewegung beobachtet wird, nach einer Karenzzeit nach Worker-Start.",
   "methodology.voyages.arrival":
-    "Ankunft: Übergang zu state = moored in einer Liegeplatzzone (NavStatus 5 oder SOG < 0,3 kn in der berth-Zone).",
+    "Ankunft: Übergang zum moored-Status in einer Liegeplatzzone, abgeleitet aus Navigationsstatus und Bewegung.",
   "methodology.voyages.departure":
-    "Abfahrt: nach der Ankunft kehrt das Schiff zu state = underway zurück und Distanz > 8 nm vom Hafenzentrum.",
+    "Abfahrt: nach Ankunft, Rückkehr zu underway kombiniert mit einer Distanzschwelle vom Hafenzentrum.",
   "methodology.voyages.falsePositives":
     "Falsch-Positive: Tugs, Lotsen und Fischerei vom Tracking ausgeschlossen — die Frachtklasse dient als Filter.",
   "methodology.eta.title": "ETA-Modell",
   "methodology.eta.naive":
-    "Naive Schätzung: Distanz / SOG, wobei Distanz der Großkreis zwischen aktueller Position und Hafenzentrum ist. Alle 5 Minuten pro aktiver Reise neu berechnet.",
+    "Naive Schätzung: Distanz / SOG, wobei Distanz der Großkreis zwischen aktueller Position und Hafenzentrum ist. Kontinuierlich pro aktiver Reise aktualisiert.",
   "methodology.eta.seasonal":
-    "Saisonkorrektur: Median des Fehlers (predicted − actual) berechnet über 90 gleitende Tage, pro UTC-Ankunftsstunde. Fallback auf globalen Median, wenn der Stunden-Bucket weniger als 3 Samples hat. Recompute alle 30 Min.",
+    "Saisonkorrektur: gleitender Median des Fehlers (predicted − actual) gebucketed nach Ankunftsstunde. Fallback auf globalen Median, wenn der Bucket zu dünn ist. Regelmäßige Recompute.",
   "methodology.eta.broadcast":
     "Vergleichsreferenz: ETA-Broadcast-Feld aus ShipStaticData-Nachrichten (manuell von der Schiffsbesatzung eingegeben — oft ungenau und verspätet).",
   "methodology.eta.metrics":
-    "Metriken: RMSE und MAE in Stunden, auf abgeschlossenen Reisen mit verfügbaren prognostizierten UND Broadcast-ETAs. Bei jeder abgeschlossenen Reise aktualisiert. Standardfenster: 30 Tage.",
+    "Metriken: RMSE und MAE in Stunden, auf abgeschlossenen Reisen mit verfügbaren prognostizierten UND Broadcast-ETAs. Bei jeder abgeschlossenen Reise aktualisiert.",
   "methodology.eta.roadmap":
     "Modell-Roadmap: Integration Stau, Gezeiten, Wetter, historische durchschnittliche Geschwindigkeit des spezifischen Schiffs.",
   "methodology.anomalies.title": "Anomalieerkennung",
   "methodology.anomalies.intro":
     "v1: absolute Schwellenwerte für Dwell beim Ankern, angepasst nach Frachtklasse.",
   "methodology.anomalies.tanker":
-    "Tanker (crude/product/chemical/LNG/LPG): warn ≥ 12 h, critical ≥ 48 h.",
+    "Tanker (crude/product/chemical/LNG/LPG) — längstes akzeptables Dwell-Fenster.",
   "methodology.anomalies.container":
-    "Container: warn ≥ 6 h, critical ≥ 24 h.",
-  "methodology.anomalies.other": "Andere: warn ≥ 18 h, critical ≥ 72 h.",
+    "Container — engstes Dwell-Fenster (umschlagskritische Klasse).",
+  "methodology.anomalies.other":
+    "Andere Klassen — mittleres Dwell-Fenster.",
   "methodology.anomalies.roadmap":
     "Roadmap: Schwellenwerte abgeleitet aus historischer Verteilung pro (Hafen, Fracht); Erkennung von Routenabweichungen; Loitering-Erkennung außerhalb bekannter Zonen (\"dark fleet\"-Signal).",
   "methodology.persistence.title": "Persistenz & Lineage",
   "methodology.persistence.storage":
-    "SQLite-Speicherung via node:sqlite (built-in Node 22+). Tabellen: kpi_snapshots, static_ships, positions, voyages, webhook_subscriptions, webhook_deliveries.",
+    "Relationale SQL-Speicherung mit zeitgestempelter Lineage. Jede Metrik ist auf ihre Quellpositionen rückverfolgbar.",
   "methodology.persistence.timestamps":
-    "Jede kpi_snapshots- und voyages-Zeile trägt den Hafen und den Zeitstempel. Vollständige Reproduzierbarkeit einer Metrik zu einem gegebenen Zeitpunkt.",
+    "Jede Metrik- und Reisen-Zeile trägt den Hafen und den Zeitstempel. Vollständige Reproduzierbarkeit einer Metrik zu einem gegebenen Zeitpunkt.",
   "methodology.persistence.snapshot":
-    "Positionen-Snapshot: 1 Eintrag pro Minute pro Schiff (rate-limited). Ermöglicht Backtesting und Modell-Replay.",
+    "Positionen-Snapshot: rate-limitierte Schreibvorgänge pro Schiff. Ermöglicht Backtesting und Modell-Replay.",
   "methodology.persistence.export":
     "Roadmap: täglicher Parquet-Export nach S3 / GCS für Kunden-Datenwissenschaftler.",
   "methodology.sla.title": "Service-Verpflichtungen (SLA v1)",
@@ -1772,22 +1924,24 @@ const de: PageMessages = {
   "methodology.chokepoints.intro":
     "12 Zonen kontinuierlich verfolgt: Suez, Hormuz, Bab el-Mandeb, Malakka, Singapur, Bosporus-Dardanellen, Gibraltar, Skagerrak-Kattegat, Straße von Dover, Panama, Kap der Guten Hoffnung, Magellan.",
   "methodology.chokepoints.detection":
-    "Point-in-bbox-Erkennung alle 5 Minuten über das gleitende Fenster der letzten 10 Minuten empfangener AIS-Positionen.",
+    "Kontinuierliche Point-in-bbox-Erkennung über ein gleitendes AIS-Fenster.",
   "methodology.chokepoints.dedup":
-    "Dedup via 6-Stunden-Cooldown zur Absorption von GPS-Jitter ohne Transits zu verdoppeln.",
+    "Dedup via Cooldown-Fenster zur Absorption von GPS-Jitter ohne Transits zu verdoppeln.",
   "methodology.chokepoints.snapshot":
     "Sanktions-Status-Snapshot bei Eintritt — ein später delistetes Schiff bleibt forensisch für diesen Transit markiert.",
+  "methodology.chokepoints.coverage":
+    "Abdeckung über terrestrisches AIS — beste Zuverlässigkeit an küstennahen Chokepoints (Hormuz, Bab el-Mandeb, Malakka, Singapur, Bosporus, Dover, Gibraltar, Suez, Panama). Tieferen Ozean-Zonen (Kap der Guten Hoffnung, Magellan, zentrales Mittelmeer): Erkennung bei Passage von Küstenstationen. Kontinuierliche Satellitenabdeckung via BYO Spire/Orbcomm-Schlüssel (Pro+).",
   "methodology.chokepoints.alertPrefix": "Composable Alert",
   "methodology.chokepoints.alertSuffix":
     ": ausgelöst in dem Moment, in dem ein sanktioniertes Schiff eine dieser Zonen betritt.",
   "methodology.emissions.title":
     "CO₂-Emissionsschätzung — In-House-Methode",
   "methodology.emissions.intro":
-    "Bottom-up-Ansatz abgeleitet aus IMO Fourth GHG Study (2020), integriert über den AIS-Feed ohne externe Abhängigkeit. Für jedes Paar aufeinanderfolgender Positionen:",
+    "Bottom-up-Ansatz abgeleitet aus IMO Fourth GHG Study (2020), integriert über den AIS-Feed ohne externe Abhängigkeit.",
   "methodology.emissions.power":
     "Installierte Leistung und Design-Geschwindigkeit Defaults aus IMO Annex 1 Tabellen, pro Frachtklasse (tanker / container / LNG / bulk …).",
   "methodology.emissions.skip":
-    "Paare mit Gap >6h oder Geschwindigkeit <0,5 kn übersprungen (Schiff am Liegeplatz oder verankert — stationäre Hilfslast wird in v1 nicht modelliert).",
+    "Zeiten am Liegeplatz oder vor Anker werden von der Zählung ausgenommen (stationäre Hilfslast wird in v1 nicht modelliert). Segmente außerhalb der terrestrischen AIS-Abdeckung werden ebenfalls ausgeschlossen — siehe Abdeckungsgrenzen.",
   "methodology.emissions.precision":
     "Indikative Präzision ±25% — ausreichend für Flotten-Ranking, Reisenvergleich, Chartering-Screening. Für regulatorisches Reporting, mit EU MRV abgleichen (kommend).",
   "methodology.emissions.endpointPrefix": "Endpoint",
@@ -1817,8 +1971,18 @@ const de: PageMessages = {
   "legal.tos.b4":
     "Jede kommerzielle Nutzung erfordert die Einhaltung der Bedingungen der Quelllieferanten (insbesondere Zahlung Spire / MarineTraffic / Orbcomm bei Aktivierung).",
   "legal.privacy.title": "Datenschutzrichtlinie (DSGVO)",
-  "legal.privacy.controller": "Verantwortlicher:",
-  "legal.privacy.contactPrefix": "Port Flow — Kontakt:",
+  "legal.privacy.controller": "Verantwortlicher",
+  "legal.privacy.entityName":
+    "Laurent Guglielmetti — französisches Einzelunternehmen (entrepreneur individuel, micro-entreprise-Regime)",
+  "legal.privacy.entityTrade":
+    "Handelsname: octopodus · Betriebene Marke: Port Flow",
+  "legal.privacy.entityAddress":
+    "Sitz: 21 rue Hippolyte Noiret, 08300 Rethel, Frankreich",
+  "legal.privacy.entityIds":
+    "SIREN 491 489 654 · SIRET 491 489 654 00047 · APE 6201Z",
+  "legal.privacy.entityVat":
+    "Umsatzsteuer nicht anwendbar — französ. CGI Art. 293 B (Kleinunternehmerregelung)",
+  "legal.privacy.contactLine": "Kontakt:",
   "legal.privacy.intro":
     "Dieser Abschnitt beschreibt die erhobenen personenbezogenen Daten, ihre Zwecke und die Rechte des Nutzers gemäß DSGVO (EU) 2016/679. Für EU-Kunden ist ein unterschriftsfähiges DPA auf Anfrage unter privacy@portflow.uk verfügbar.",
   "legal.privacy.dpaBold": "Unterschriftsfähiges DPA",
@@ -2001,8 +2165,10 @@ const es: PageMessages = {
   "pricing.subtitle":
     "AIS multipuerto · ETA predicha · fusión SAR · screening de sanciones · 51 puertos estratégicos",
   "pricing.note":
-    "Los pagos solo funcionan cuando STRIPE_SECRET_KEY y STRIPE_PRICE_* están definidos. De lo contrario, el botón devuelve un error 503.",
-  "pricing.note.label": "Nota técnica:",
+    "Asegurados vía Stripe. Ciclo mensual o anual, cancelable en cualquier momento desde el portal de facturación.",
+  "pricing.note.label": "Facturación:",
+  "pricing.vatNotice":
+    "Precios netos. IVA no aplicable — art. 293 B del CGI francés (régimen de franquicia).",
   "pricing.checkout.error": "Stripe Checkout no disponible",
   "pricing.tier.free.name": "Free",
   "pricing.tier.free.price": "0 €",
@@ -2062,9 +2228,9 @@ const es: PageMessages = {
   "precision.method.b1":
     "Fuente: feed AIS aisstream.io filtrado en la bbox del puerto (incl. fondeaderos offshore).",
   "precision.method.b2":
-    "Travesía = primera observación en aproximación/fondeo → atracado (NavStatus moored o SOG < 0,3 kn en zona de muelle).",
+    "Travesía = primera observación en aproximación/fondeo → atracado, derivado del estado de navegación y movimiento.",
   "precision.method.b3":
-    "Modelo ETA v1: distancia / SOG recalculado cada 5 minutos. Roadmap: modelos estacional, congestión y mareas.",
+    "Modelo ETA: distancia / SOG corregido por mediana móvil + penalización de congestión en vivo. Refrescado en continuo. Roadmap: refinamiento sensible a mareas y calado.",
   "precision.method.b4":
     "Referencia: campo ETA broadcast extraído de los mensajes ShipStaticData (introducidos por la tripulación).",
   "precision.method.b5":
@@ -2117,44 +2283,45 @@ const es: PageMessages = {
     "Sin datos propietarios integrados en v1 — la plataforma se basa exclusivamente en AIS público. Fuentes premium (Spire, Orbcomm) en la roadmap para zonas de baja cobertura.",
   "methodology.cargoClass.title": "Clasificación de carga",
   "methodology.cargoClass.body":
-    "Combinación del shipType AIS (códigos 70-89) y heurística de palabras clave (nombre, destino) para asignar una clase entre: crude, product, chemical, LNG, LPG, container, dry-bulk, general-cargo, ro-ro, passenger, fishing, tug, other. Limitaciones conocidas: un buque mal nombrado o con destino vacío recae en el shipType genérico. Precisión esperada ~85% en tankers y ~95% en containers.",
+    "Combinación de señales shipType AIS y una heurística textual (nombre, destino declarado) para asignar una clase de carga — calibrada por puerto y perfil de flota. Caso límite: metadatos AIS mínimos → clase genérica como fallback.",
   "methodology.voyages.title": "Detección de viajes",
   "methodology.voyages.open":
-    "Apertura: un viaje se abre cuando un buque (de clase trackeable: tanker / container / bulk / general / RoRo) es observado en aproximación/fondeo con SOG ≥ 1 kn, después del periodo de gracia de 60s tras el inicio del worker.",
+    "Apertura: un viaje se abre cuando un buque de clase trackeable (tanker / container / bulk / general / RoRo) es observado en aproximación o fondeo con movimiento medible, después de un periodo de gracia tras el inicio del worker.",
   "methodology.voyages.arrival":
-    "Llegada: transición a state = moored en una zona de muelle (NavStatus 5 o SOG < 0,3 kn en la zona berth).",
+    "Llegada: transición al estado moored en una zona de muelle, derivada del estado de navegación y el movimiento.",
   "methodology.voyages.departure":
-    "Salida: tras la llegada, el buque vuelve a state = underway y distancia > 8 nm del centro del puerto.",
+    "Salida: tras la llegada, retorno al estado underway combinado con un umbral de distancia del centro del puerto.",
   "methodology.voyages.falsePositives":
     "Falsos positivos: tugs, prácticos y pesca excluidos del tracking — la clase de carga sirve de filtro.",
   "methodology.eta.title": "Modelo ETA",
   "methodology.eta.naive":
-    "Estimación naive: distancia / SOG donde distancia es el círculo máximo entre la posición actual y el centro del puerto. Recalculado cada 5 minutos por viaje activo.",
+    "Estimación naive: distancia / SOG donde distancia es el círculo máximo entre la posición actual y el centro del puerto. Refrescado en continuo por viaje activo.",
   "methodology.eta.seasonal":
-    "Corrección estacional: mediana del error (predicted − actual) calculada sobre los últimos 90 días, por hora UTC de llegada. Fallback a la mediana global si el bucket horario tiene menos de 3 muestras. Recompute cada 30 min.",
+    "Corrección estacional: mediana móvil del error (predicted − actual) bucketeada por hora de llegada. Fallback a la mediana global cuando el bucket es demasiado fino. Recompute regular.",
   "methodology.eta.broadcast":
     "Referencia comparada: campo ETA broadcast extraído de los mensajes ShipStaticData (introducido manualmente por la tripulación — frecuentemente impreciso y tardío).",
   "methodology.eta.metrics":
-    "Métricas: RMSE y MAE en horas, sobre viajes cerrados con ETA prevista Y broadcast disponibles. Actualizado en cada viaje cerrado. Ventana por defecto: 30 días.",
+    "Métricas: RMSE y MAE en horas, sobre viajes cerrados con ETA prevista Y broadcast disponibles. Actualizado en cada viaje cerrado.",
   "methodology.eta.roadmap":
     "Roadmap del modelo: integración congestión, mareas, meteorología, velocidad media histórica del buque específico.",
   "methodology.anomalies.title": "Detección de anomalías",
   "methodology.anomalies.intro":
     "v1: umbrales absolutos de dwell en fondeo, ajustados por clase de carga.",
   "methodology.anomalies.tanker":
-    "Tankers (crude/product/chemical/LNG/LPG): warn ≥ 12 h, critical ≥ 48 h.",
+    "Tankers (crude/product/chemical/LNG/LPG) — ventana de dwell más larga aceptable.",
   "methodology.anomalies.container":
-    "Containers: warn ≥ 6 h, critical ≥ 24 h.",
-  "methodology.anomalies.other": "Otros: warn ≥ 18 h, critical ≥ 72 h.",
+    "Containers — ventana de dwell más estrecha (clase crítica para rotación).",
+  "methodology.anomalies.other":
+    "Otras clases — ventana de dwell intermedia.",
   "methodology.anomalies.roadmap":
     "Roadmap: umbrales derivados de la distribución histórica por (puerto, carga); detección de desviación de ruta; detección de loitering fuera de zonas conocidas (señal \"dark fleet\").",
   "methodology.persistence.title": "Persistencia y lineage",
   "methodology.persistence.storage":
-    "Almacenamiento SQLite vía node:sqlite (built-in Node 22+). Tablas: kpi_snapshots, static_ships, positions, voyages, webhook_subscriptions, webhook_deliveries.",
+    "Almacenamiento SQL relacional con lineage horodatado. Cada métrica es trazable hasta sus posiciones fuente.",
   "methodology.persistence.timestamps":
-    "Cada fila kpi_snapshots y voyages lleva el puerto y el timestamp. Reproducibilidad total de una métrica en un instante dado.",
+    "Cada fila de métrica y viaje lleva el puerto y el timestamp. Reproducibilidad total de una métrica en un instante dado.",
   "methodology.persistence.snapshot":
-    "Snapshot de posiciones: 1 entrada por minuto por buque (rate-limited). Permite backtesting y replay del modelo.",
+    "Snapshot de posiciones: escrituras rate-limited por buque. Permite backtesting y replay del modelo.",
   "methodology.persistence.export":
     "Roadmap: export Parquet diario a S3 / GCS para los data scientists del cliente.",
   "methodology.sla.title": "Compromisos de servicio (SLA v1)",
@@ -2198,22 +2365,24 @@ const es: PageMessages = {
   "methodology.chokepoints.intro":
     "12 zonas vigiladas continuamente: Suez, Hormuz, Bab el-Mandeb, Malaca, Singapur, Bósforo-Dardanelos, Gibraltar, Skagerrak-Kattegat, Estrecho de Dover, Panamá, Cabo de Buena Esperanza, Magallanes.",
   "methodology.chokepoints.detection":
-    "Detección point-in-bbox cada 5 minutos sobre la ventana deslizante de los últimos 10 minutos de posiciones AIS recibidas.",
+    "Detección point-in-bbox en continuo sobre una ventana deslizante de posiciones AIS.",
   "methodology.chokepoints.dedup":
-    "Dedup vía cooldown de 6 h para absorber el jitter GPS sin duplicar tránsitos.",
+    "Dedup vía una ventana de cooldown para absorber el jitter GPS sin duplicar tránsitos.",
   "methodology.chokepoints.snapshot":
     "Snapshot del estado sancionado al momento de la entrada — un buque retirado posteriormente queda forensicamente marcado para ese tránsito.",
+  "methodology.chokepoints.coverage":
+    "Cobertura por AIS terrestre — fiabilidad óptima en chokepoints costeros (Hormuz, Bab el-Mandeb, Malaca, Singapur, Bósforo, Estrecho de Dover, Gibraltar, Suez, Panamá). Zonas más oceánicas (Cabo de Buena Esperanza, Magallanes, Mediterráneo central): detección al paso de estaciones costeras. Cobertura satelital continua vía clave BYO Spire/Orbcomm (Pro+).",
   "methodology.chokepoints.alertPrefix": "Alerta composable",
   "methodology.chokepoints.alertSuffix":
     ": disparada en el momento exacto en que un buque sancionado entra en una de estas zonas.",
   "methodology.emissions.title":
     "Estimación de emisiones CO₂ — método in-house",
   "methodology.emissions.intro":
-    "Enfoque bottom-up derivado del IMO Fourth GHG Study (2020), integrado sobre el feed AIS sin dependencia externa. Para cada par de posiciones consecutivas:",
+    "Enfoque bottom-up derivado del IMO Fourth GHG Study (2020), integrado sobre el feed AIS sin dependencia externa.",
   "methodology.emissions.power":
     "Potencia instalada y velocidad de servicio default tomadas de las tablas IMO Annex 1, por clase de carga (tanker / container / LNG / bulk …).",
   "methodology.emissions.skip":
-    "Pares con gap >6 h o velocidad <0,5 kn omitidos (buque atracado o fondeado — la consumo auxiliar estacionario no se modela en v1).",
+    "Periodos atracado o fondeado excluidos del conteo (el consumo auxiliar estacionario no se modela en v1). Los segmentos fuera de cobertura AIS terrestre también se excluyen — ver límites de cobertura.",
   "methodology.emissions.precision":
     "Precisión indicativa ±25% — suficiente para ranking de flota, comparación de viajes, screening de chartering. Para reporting regulatorio, cruzar con EU MRV (próximo).",
   "methodology.emissions.endpointPrefix": "Endpoint",
@@ -2243,8 +2412,18 @@ const es: PageMessages = {
   "legal.tos.b4":
     "Cualquier uso comercial requiere el cumplimiento de los términos de los proveedores fuente (en particular pago Spire / MarineTraffic / Orbcomm si están activados).",
   "legal.privacy.title": "Política de privacidad (RGPD)",
-  "legal.privacy.controller": "Responsable del tratamiento:",
-  "legal.privacy.contactPrefix": "Port Flow — contacto:",
+  "legal.privacy.controller": "Responsable del tratamiento",
+  "legal.privacy.entityName":
+    "Laurent Guglielmetti — empresario individual francés (entrepreneur individuel, régimen micro-entreprise)",
+  "legal.privacy.entityTrade":
+    "Nombre comercial: octopodus · Marca explotada: Port Flow",
+  "legal.privacy.entityAddress":
+    "Domicilio: 21 rue Hippolyte Noiret, 08300 Rethel, Francia",
+  "legal.privacy.entityIds":
+    "SIREN 491 489 654 · SIRET 491 489 654 00047 · APE 6201Z",
+  "legal.privacy.entityVat":
+    "IVA no aplicable — art. 293 B del CGI francés (régimen de franquicia)",
+  "legal.privacy.contactLine": "Contacto:",
   "legal.privacy.intro":
     "Esta sección describe los datos personales recopilados, sus finalidades y los derechos del usuario conforme al RGPD (UE) 2016/679. Para clientes UE, un DPA firmable está disponible bajo solicitud a privacy@portflow.uk.",
   "legal.privacy.dpaBold": "DPA firmable",
@@ -2427,8 +2606,10 @@ const ar: PageMessages = {
   "pricing.subtitle":
     "AIS متعدد الموانئ · ETA متوقع · دمج SAR · فحص العقوبات · 51 ميناءً استراتيجياً",
   "pricing.note":
-    "تعمل المدفوعات فقط عند تعيين STRIPE_SECRET_KEY و STRIPE_PRICE_*. وإلا يُرجع الزر خطأ 503.",
-  "pricing.note.label": "ملاحظة تقنية:",
+    "آمنة عبر Stripe. دورة شهرية أو سنوية، يمكن الإلغاء في أي وقت من بوابة الفوترة.",
+  "pricing.note.label": "الدفع:",
+  "pricing.vatNotice":
+    "أسعار صافية. ضريبة القيمة المضافة غير مطبَّقة — المادة 293 B من قانون الضرائب العام الفرنسي (نظام الإعفاء الأساسي).",
   "pricing.checkout.error": "Stripe Checkout غير متاح",
   "pricing.tier.free.name": "Free",
   "pricing.tier.free.price": "0 €",
@@ -2488,9 +2669,9 @@ const ar: PageMessages = {
   "precision.method.b1":
     "المصدر: تدفق AIS من aisstream.io مُصفى على bbox الميناء (بما يشمل المراسي البحرية).",
   "precision.method.b2":
-    "الرحلة = أول رصد في الاقتراب/المرسى → الرسو على الرصيف (NavStatus moored أو SOG < 0.3 عقدة في منطقة رصيف).",
+    "الرحلة = أول رصد في الاقتراب/المرسى → الرسو على الرصيف، مُستنتَجاً من حالة الملاحة والحركة.",
   "precision.method.b3":
-    "نموذج ETA v1: المسافة / SOG يُعاد حسابه كل 5 دقائق. خارطة الطريق: نماذج موسمية، تتفاعل مع الازدحام والمدّ.",
+    "نموذج ETA: المسافة / SOG مع تصحيح بالوسيط المتحرك + عقوبة الازدحام الحية. يُحدَّث باستمرار. خارطة الطريق: تحسين يراعي المدّ والغاطس.",
   "precision.method.b4":
     "المرجع: حقل ETA المُعلن المستخرج من رسائل ShipStaticData (يُدخله الطاقم).",
   "precision.method.b5":
@@ -2543,44 +2724,45 @@ const ar: PageMessages = {
     "لا توجد بيانات حصرية مدمجة في v1 — تعتمد المنصة فقط على AIS العام. مصادر premium (Spire، Orbcomm) في خارطة الطريق لمناطق التغطية الضعيفة.",
   "methodology.cargoClass.title": "تصنيف الحمولة",
   "methodology.cargoClass.body":
-    "مزيج من shipType الخاص بـ AIS (الرموز 70-89) واستدلال بالكلمات المفتاحية (الاسم، الوجهة) لتعيين فئة من بين: crude, product, chemical, LNG, LPG, container, dry-bulk, general-cargo, ro-ro, passenger, fishing, tug, other. القيود المعروفة: سفينة بتسمية سيئة أو وجهة فارغة تعود إلى shipType العام. الدقة المتوقعة ~85% للناقلات و~95% للحاويات.",
+    "مزيج من إشارات shipType الخاصة بـ AIS واستدلال نصّي (الاسم، الوجهة المعلنة) لتعيين فئة الحمولة — معايَر حسب الميناء وملف الأسطول. حالة حدّيّة: بيانات وصفية AIS شحيحة → تراجع إلى فئة عامة.",
   "methodology.voyages.title": "اكتشاف الرحلات",
   "methodology.voyages.open":
-    "الفتح: تُفتَح رحلة عند رصد سفينة (من فئة قابلة للتتبع: ناقلة / حاوية / صب / عام / RoRo) في الاقتراب/الرسو بسرعة SOG ≥ 1 عقدة، بعد فترة السماح 60 ث من بدء الـworker.",
+    "الفتح: تُفتَح رحلة عند رصد سفينة من فئة قابلة للتتبع (ناقلة / حاوية / صب / عام / RoRo) في الاقتراب أو الرسو مع حركة قابلة للقياس، بعد فترة سماح عقب بدء الـworker.",
   "methodology.voyages.arrival":
-    "الوصول: انتقال إلى state = moored في منطقة رصيف (NavStatus 5 أو SOG < 0.3 عقدة في منطقة الرصيف).",
+    "الوصول: انتقال إلى حالة moored في منطقة رصيف، مُستنتَجاً من حالة الملاحة والحركة.",
   "methodology.voyages.departure":
-    "المغادرة: بعد الوصول، تعود السفينة إلى state = underway ومسافة > 8 ميل بحري من مركز الميناء.",
+    "المغادرة: بعد الوصول، العودة إلى حالة underway مع تجاوز عتبة المسافة من مركز الميناء.",
   "methodology.voyages.falsePositives":
     "الإيجابيات الكاذبة: القاطرات والمرشدون والصيد مستبعدة من التتبع — فئة الحمولة تعمل كمرشّح.",
   "methodology.eta.title": "نموذج ETA",
   "methodology.eta.naive":
-    "تقدير ساذج: المسافة / SOG حيث المسافة هي الدائرة العظمى بين الموضع الحالي ومركز الميناء. يُعاد حسابها كل 5 دقائق لكل رحلة نشطة.",
+    "تقدير ساذج: المسافة / SOG حيث المسافة هي الدائرة العظمى بين الموضع الحالي ومركز الميناء. يُحدَّث باستمرار لكل رحلة نشطة.",
   "methodology.eta.seasonal":
-    "تصحيح موسمي: وسيط الخطأ (predicted − actual) محسوب على مدى 90 يوماً متحركاً، حسب ساعة الوصول UTC. fallback إلى الوسيط العام إذا كان دلو الساعة يحتوي على أقل من 3 عينات. recompute كل 30 دقيقة.",
+    "تصحيح موسمي: وسيط متحرك للخطأ (predicted − actual) مجمَّع حسب ساعة الوصول. fallback إلى الوسيط العام عندما تكون العيّنة في الدلو ضحلة جداً. recompute منتظم.",
   "methodology.eta.broadcast":
     "المرجع المقارَن: حقل ETA broadcast المستخرج من رسائل ShipStaticData (يُدخَل يدوياً من قبل طاقم السفينة — غالباً غير دقيق ومتأخر).",
   "methodology.eta.metrics":
-    "المقاييس: RMSE وMAE بالساعات، على الرحلات المغلقة التي تتوفر فيها ETA متوقعة وbroadcast. تُحدَّث عند كل رحلة مغلقة. النافذة الافتراضية: 30 يوماً.",
+    "المقاييس: RMSE وMAE بالساعات، على الرحلات المغلقة التي تتوفر فيها ETA متوقعة وbroadcast. تُحدَّث عند كل رحلة مغلقة.",
   "methodology.eta.roadmap":
     "خارطة طريق النموذج: دمج الازدحام، المد والجزر، الطقس، متوسط السرعة التاريخية للسفينة المحددة.",
   "methodology.anomalies.title": "اكتشاف الشذوذ",
   "methodology.anomalies.intro":
     "v1: عتبات مطلقة لـdwell عند الرسو، معدّلة حسب فئة الحمولة.",
   "methodology.anomalies.tanker":
-    "الناقلات (crude/product/chemical/LNG/LPG): warn ≥ 12 س، critical ≥ 48 س.",
+    "الناقلات (crude/product/chemical/LNG/LPG) — أوسع نافذة dwell مقبولة.",
   "methodology.anomalies.container":
-    "الحاويات: warn ≥ 6 س، critical ≥ 24 س.",
-  "methodology.anomalies.other": "أخرى: warn ≥ 18 س، critical ≥ 72 س.",
+    "الحاويات — أضيق نافذة dwell (فئة حرجة لدوران المخزون).",
+  "methodology.anomalies.other":
+    "الفئات الأخرى — نافذة dwell متوسطة.",
   "methodology.anomalies.roadmap":
     "خارطة الطريق: عتبات مشتقّة من التوزيع التاريخي حسب (الميناء، الحمولة)؛ اكتشاف انحراف المسار؛ اكتشاف loitering خارج المناطق المعروفة (إشارة \"dark fleet\").",
   "methodology.persistence.title": "الاحتفاظ والـlineage",
   "methodology.persistence.storage":
-    "تخزين SQLite عبر node:sqlite (مدمج في Node 22+). الجداول: kpi_snapshots، static_ships، positions، voyages، webhook_subscriptions، webhook_deliveries.",
+    "تخزين SQL علائقي مع lineage موَّقَّت زمنياً. كل مقياس قابل للتتبع وصولاً إلى مواقعه المصدر.",
   "methodology.persistence.timestamps":
-    "كل سطر kpi_snapshots وvoyages يحمل الميناء والـtimestamp. قابلية إعادة إنتاج كاملة لمقياس في لحظة معطاة.",
+    "كل سطر مقياس ورحلة يحمل الميناء والـtimestamp. قابلية إعادة إنتاج كاملة لمقياس في لحظة معطاة.",
   "methodology.persistence.snapshot":
-    "snapshot المواقع: مدخل واحد في الدقيقة لكل سفينة (rate-limited). يسمح بـbacktesting وإعادة تشغيل النموذج.",
+    "snapshot المواقع: كتابات rate-limited لكل سفينة. يسمح بـbacktesting وإعادة تشغيل النموذج.",
   "methodology.persistence.export":
     "خارطة الطريق: تصدير Parquet يومي إلى S3 / GCS لعلماء بيانات العميل.",
   "methodology.sla.title": "التزامات الخدمة (SLA v1)",
@@ -2624,22 +2806,24 @@ const ar: PageMessages = {
   "methodology.chokepoints.intro":
     "12 منطقة مراقَبة باستمرار: السويس، هرمز، باب المندب، ملقا، سنغافورة، البوسفور-الدردنيل، جبل طارق، Skagerrak-Kattegat، مضيق دوفر، بنما، رأس الرجاء الصالح، ماجلان.",
   "methodology.chokepoints.detection":
-    "اكتشاف point-in-bbox كل 5 دقائق على نافذة منزلقة من آخر 10 دقائق من مواقع AIS المستلمة.",
+    "اكتشاف point-in-bbox باستمرار على نافذة منزلقة من مواقع AIS.",
   "methodology.chokepoints.dedup":
-    "Dedup عبر cooldown لمدة 6 ساعات لاستيعاب jitter GPS دون مضاعفة الانتقالات.",
+    "Dedup عبر نافذة cooldown لاستيعاب jitter GPS دون مضاعفة الانتقالات.",
   "methodology.chokepoints.snapshot":
     "snapshot لحالة العقوبات عند الدخول — سفينة تُحذَف لاحقاً تظل موسومة جنائياً لذلك العبور.",
+  "methodology.chokepoints.coverage":
+    "التغطية عبر AIS الأرضي — موثوقية مثلى على نقاط الاختناق الساحلية (هرمز، باب المندب، ملقا، سنغافورة، البوسفور، مضيق دوفر، جبل طارق، السويس، بنما). المناطق الأبعد عن السواحل (رأس الرجاء الصالح، ماجلان، وسط البحر المتوسط): الكشف عند مرور المحطات الساحلية. تغطية ساتلية مستمرة عبر مفتاح BYO من Spire/Orbcomm (Pro+).",
   "methodology.chokepoints.alertPrefix": "تنبيه قابل للتركيب",
   "methodology.chokepoints.alertSuffix":
     ": يُطلَق في اللحظة التي تدخل فيها سفينة خاضعة للعقوبات إحدى هذه المناطق.",
   "methodology.emissions.title":
     "تقدير انبعاثات CO₂ — منهج داخلي",
   "methodology.emissions.intro":
-    "نهج bottom-up مستمد من IMO Fourth GHG Study (2020)، مدمج على تدفق AIS بدون تبعية خارجية. لكل زوج من المواقع المتتالية:",
+    "نهج bottom-up مستمد من IMO Fourth GHG Study (2020)، مدمج على تدفق AIS بدون تبعية خارجية.",
   "methodology.emissions.power":
     "الطاقة المثبَّتة وسرعة الخدمة الافتراضية مستمدة من جداول IMO Annex 1، حسب فئة الحمولة (tanker / container / LNG / bulk …).",
   "methodology.emissions.skip":
-    "الأزواج بفجوة >6 س أو سرعة <0.5 عقدة تُتخطى (سفينة عند الرصيف أو راسية — الحمل الإضافي الثابت غير مُنمذَج في v1).",
+    "تُستثنى فترات الرسو عند الرصيف أو على المرساة من الحساب (الحمل الإضافي الثابت غير مُنمذَج في v1). كما تُستثنى الأجزاء خارج تغطية AIS الأرضي — راجع حدود التغطية.",
   "methodology.emissions.precision":
     "دقة إرشادية ±25% — كافية لترتيب الأسطول، مقارنة الرحلات، فحص الـchartering. للتقارير التنظيمية، تقاطع مع EU MRV (قادم).",
   "methodology.emissions.endpointPrefix": "Endpoint",
@@ -2656,8 +2840,10 @@ const zh: PageMessages = {
   "pricing.subtitle":
     "多港口 AIS · ETA 预测 · SAR 融合 · 制裁筛查 · 51 个战略港口",
   "pricing.note":
-    "只有在设置了 STRIPE_SECRET_KEY 和 STRIPE_PRICE_* 时,付款才会运行。否则按钮返回 503 错误。",
-  "pricing.note.label": "技术说明:",
+    "通过 Stripe 安全支付。按月或按年计费，可随时从账单门户取消。",
+  "pricing.note.label": "支付：",
+  "pricing.vatNotice":
+    "价格为净额。增值税不适用 — 法国《税法通则》第 293 B 条（小企业免税制度）。",
   "pricing.checkout.error": "Stripe Checkout 不可用",
   "pricing.tier.free.name": "Free",
   "pricing.tier.free.price": "€0",
@@ -2717,9 +2903,9 @@ const zh: PageMessages = {
   "precision.method.b1":
     "数据源:aisstream.io AIS 流,按港口 bbox 过滤(含海上锚地)。",
   "precision.method.b2":
-    "航次 = 首次进入接近区/锚地 → 靠泊(NavStatus moored 或在泊位区域 SOG < 0.3 节)。",
+    "航次 = 首次进入接近区/锚地 → 靠泊，由导航状态和运动派生。",
   "precision.method.b3":
-    "ETA 模型 v1:每 5 分钟重新计算的距离 / SOG。路线图:季节、拥堵感知、潮汐感知模型。",
+    "ETA 模型：距离 / SOG，带滑动中位数校正和实时拥堵惩罚，持续刷新。路线图：潮汐与吃水感知优化。",
   "precision.method.b4":
     "参考:从 ShipStaticData 报文中提取的广播 ETA(船员录入)。",
   "precision.method.b5":
@@ -2771,44 +2957,45 @@ const zh: PageMessages = {
     "v1 中无集成的专有数据 — 平台仅依赖公共 AIS。高级数据源（Spire、Orbcomm）在路线图中，用于覆盖薄弱区域。",
   "methodology.cargoClass.title": "货物分类",
   "methodology.cargoClass.body":
-    "结合 AIS shipType（代码 70-89）和关键词启发式（名称、目的地）来分配以下类别之一：crude、product、chemical、LNG、LPG、container、dry-bulk、general-cargo、ro-ro、passenger、fishing、tug、other。已知限制：命名不当或目的地为空的船舶会回退到通用 shipType。预期精度：油轮约 85%，集装箱约 95%。",
+    "结合 AIS shipType 信号和文本启发式（船名、声明目的地）来分配货物类别 — 按港口和船队结构进行校准。边界情况：AIS 元数据稀少时回退到通用类别。",
   "methodology.voyages.title": "航次检测",
   "methodology.voyages.open":
-    "开启：当一艘船（可跟踪类别：tanker / container / bulk / general / RoRo）在 worker 启动后 60 秒宽限期之后，被观察到以 SOG ≥ 1 节接近/锚泊时，航次开启。",
+    "开启：当一艘可跟踪类别船舶（tanker / container / bulk / general / RoRo）在 worker 启动宽限期之后，被观察到以可测量运动接近或锚泊时，航次开启。",
   "methodology.voyages.arrival":
-    "到达：在泊位区域过渡到 state = moored（NavStatus 5 或 berth 区域内 SOG < 0.3 节）。",
+    "到达：在泊位区域过渡到 moored 状态，由导航状态和运动派生。",
   "methodology.voyages.departure":
-    "离开：到达后，船舶返回 state = underway 且距港口中心 > 8 海里。",
+    "离开：到达后，返回 underway 状态并结合距港口中心的距离阈值。",
   "methodology.voyages.falsePositives":
     "误报：拖船、引航员和渔船排除在跟踪之外 — 货物类别用作过滤器。",
   "methodology.eta.title": "ETA 模型",
   "methodology.eta.naive":
-    "朴素估算：距离 / SOG，其中距离是当前位置与港口中心之间的大圆距离。每个活跃航次每 5 分钟重新计算。",
+    "朴素估算：距离 / SOG，其中距离是当前位置与港口中心之间的大圆距离。每个活跃航次持续刷新。",
   "methodology.eta.seasonal":
-    "季节性校正：在过去 90 天滑动窗口内按 UTC 到达小时计算的误差中位数（predicted − actual）。如果小时桶样本少于 3 个，则回退到全局中位数。每 30 分钟重新计算。",
+    "季节性校正：按到达小时分桶的误差（predicted − actual）滑动中位数。当桶内样本过少时回退到全局中位数。定期重算。",
   "methodology.eta.broadcast":
     "比较参考：从 ShipStaticData 消息中提取的 ETA broadcast 字段（由船员手动输入 — 通常不准确且滞后）。",
   "methodology.eta.metrics":
-    "指标：以小时为单位的 RMSE 和 MAE，针对同时具有预测 ETA 和 broadcast ETA 的已关闭航次。每个已关闭航次更新。默认窗口：30 天。",
+    "指标：以小时为单位的 RMSE 和 MAE，针对同时具有预测 ETA 和 broadcast ETA 的已关闭航次。每个已关闭航次更新。",
   "methodology.eta.roadmap":
     "模型路线图：集成拥堵、潮汐、天气、特定船舶的历史平均速度。",
   "methodology.anomalies.title": "异常检测",
   "methodology.anomalies.intro":
     "v1：锚泊停留的绝对阈值，按货物类别调整。",
   "methodology.anomalies.tanker":
-    "油轮（crude/product/chemical/LNG/LPG）：warn ≥ 12 小时，critical ≥ 48 小时。",
+    "油轮（crude/product/chemical/LNG/LPG）— 可接受的最长停留窗口。",
   "methodology.anomalies.container":
-    "集装箱：warn ≥ 6 小时，critical ≥ 24 小时。",
-  "methodology.anomalies.other": "其他：warn ≥ 18 小时，critical ≥ 72 小时。",
+    "集装箱 — 最紧的停留窗口（周转关键类别）。",
+  "methodology.anomalies.other":
+    "其他类别 — 中等停留窗口。",
   "methodology.anomalies.roadmap":
     "路线图：从 (港口, 货物) 历史分布派生的阈值；航线偏离检测；已知区域外的徘徊检测（\"dark fleet\" 信号）。",
   "methodology.persistence.title": "持久化与谱系",
   "methodology.persistence.storage":
-    "通过 node:sqlite（Node 22+ 内置）的 SQLite 存储。表：kpi_snapshots、static_ships、positions、voyages、webhook_subscriptions、webhook_deliveries。",
+    "带时间戳谱系的关系型 SQL 存储。每个指标都可追溯到其源位置。",
   "methodology.persistence.timestamps":
-    "每条 kpi_snapshots 和 voyages 行都携带港口和时间戳。给定时刻的指标完全可重现。",
+    "每条指标和航次行都携带港口和时间戳。给定时刻的指标完全可重现。",
   "methodology.persistence.snapshot":
-    "位置快照：每艘船每分钟一条记录（速率限制）。允许回测和模型重放。",
+    "位置快照：按船舶的速率限制写入。允许回测和模型重放。",
   "methodology.persistence.export":
     "路线图：每日 Parquet 导出到 S3 / GCS，供客户数据科学家使用。",
   "methodology.sla.title": "服务承诺（SLA v1）",
@@ -2852,22 +3039,24 @@ const zh: PageMessages = {
   "methodology.chokepoints.intro":
     "持续跟踪 12 个区域：苏伊士、霍尔木兹、曼德海峡、马六甲、新加坡、博斯普鲁斯-达达尼尔、直布罗陀、Skagerrak-Kattegat、多佛海峡、巴拿马、好望角、麦哲伦。",
   "methodology.chokepoints.detection":
-    "每 5 分钟在最近 10 分钟接收的 AIS 位置滑动窗口上进行 point-in-bbox 检测。",
+    "在滑动 AIS 窗口上持续进行 point-in-bbox 检测。",
   "methodology.chokepoints.dedup":
-    "通过 6 小时冷却期去重，吸收 GPS 抖动而不重复过境。",
+    "通过冷却窗口去重，吸收 GPS 抖动而不重复过境。",
   "methodology.chokepoints.snapshot":
     "进入时的制裁状态快照 — 之后被取消列表的船舶仍为该次过境保留法证标记。",
+  "methodology.chokepoints.coverage":
+    "通过陆基 AIS 覆盖 — 在沿海咽喉点（霍尔木兹、曼德海峡、马六甲、新加坡、博斯普鲁斯、多佛海峡、直布罗陀、苏伊士、巴拿马）可靠性最佳。更深远洋区域（好望角、麦哲伦、地中海中部）：依赖沿海站点过境时检测。通过 BYO Spire/Orbcomm 密钥（Pro+）获得连续卫星覆盖。",
   "methodology.chokepoints.alertPrefix": "可组合警报",
   "methodology.chokepoints.alertSuffix":
     "：在制裁船舶进入这些区域之一的瞬间触发。",
   "methodology.emissions.title":
     "CO₂ 排放估算 — 内部方法",
   "methodology.emissions.intro":
-    "源自 IMO Fourth GHG Study (2020) 的 bottom-up 方法，集成在 AIS 数据流上，无外部依赖。对于每对连续位置：",
+    "源自 IMO Fourth GHG Study (2020) 的 bottom-up 方法，集成在 AIS 数据流上，无外部依赖。",
   "methodology.emissions.power":
     "默认安装功率和服务速度取自 IMO Annex 1 表格，按货物类别（tanker / container / LNG / bulk …）。",
   "methodology.emissions.skip":
-    "间隔 >6 小时或速度 <0.5 节的对被跳过（船舶停泊或锚泊 — v1 中不建模静态辅助负载）。",
+    "停泊或锚泊期间从计算中排除（v1 中不建模静态辅助负载）。陆基 AIS 覆盖范围之外的段也被排除 — 参见覆盖范围限制。",
   "methodology.emissions.precision":
     "指示性精度 ±25% — 足以用于船队排名、航次比较、租船筛查。监管报告请与 EU MRV 交叉验证（即将推出）。",
   "methodology.emissions.endpointPrefix": "Endpoint",
@@ -2884,8 +3073,10 @@ const ja: PageMessages = {
   "pricing.subtitle":
     "マルチポート AIS · 予測 ETA · SAR 融合 · 制裁スクリーニング · 51 戦略港",
   "pricing.note":
-    "STRIPE_SECRET_KEY と STRIPE_PRICE_* が設定されている場合のみ支払いが機能します。それ以外の場合、ボタンは 503 エラーを返します。",
-  "pricing.note.label": "技術メモ:",
+    "Stripe 経由でセキュア。月次または年次サイクル、請求ポータルからいつでもキャンセル可能。",
+  "pricing.note.label": "請求：",
+  "pricing.vatNotice":
+    "表示価格は税抜です。VAT 不適用 — フランス CGI 第 293 B 条（小規模事業者免税）。",
   "pricing.checkout.error": "Stripe Checkout 利用不可",
   "pricing.tier.free.name": "Free",
   "pricing.tier.free.price": "€0",
@@ -2945,9 +3136,9 @@ const ja: PageMessages = {
   "precision.method.b1":
     "ソース: aisstream.io の AIS フィードを港の bbox(沖合錨地含む)でフィルタ。",
   "precision.method.b2":
-    "航海 = 接近域/錨地への初観測 → 岸壁係留(NavStatus moored または岸壁ゾーンで SOG < 0.3 ノット)。",
+    "航海 = 接近域/錨地への初観測 → 岸壁係留、航行ステータスと動きから導出。",
   "precision.method.b3":
-    "ETA モデル v1: 5 分ごとに再計算する 距離 / SOG。ロードマップ: 季節・混雑・潮汐モデル。",
+    "ETA モデル：距離 / SOG をローリング中央値で補正し、ライブ混雑ペナルティを加算。継続的に更新。ロードマップ：潮汐・喫水を考慮した精緻化。",
   "precision.method.b4":
     "参照: ShipStaticData メッセージから抽出したブロードキャスト ETA(乗組員入力)。",
   "precision.method.b5":
@@ -3000,44 +3191,45 @@ const ja: PageMessages = {
     "v1 では独自データの統合なし — プラットフォームは公開 AIS のみに依存。プレミアムソース（Spire、Orbcomm）はカバレッジ薄弱地域用にロードマップ上にあります。",
   "methodology.cargoClass.title": "カーゴ分類",
   "methodology.cargoClass.body":
-    "AIS shipType（コード 70-89）とキーワードヒューリスティック（名前、目的地）を組み合わせて、次のいずれかのクラスを割り当てます：crude、product、chemical、LNG、LPG、container、dry-bulk、general-cargo、ro-ro、passenger、fishing、tug、other。既知の制限：命名が悪いか目的地が空の船舶は汎用 shipType にフォールバックします。期待精度：タンカー約 85%、コンテナ約 95%。",
+    "AIS shipType シグナルとテキストヒューリスティック（船名、申告された目的地）を組み合わせてカーゴクラスを割り当て — 港と船隊構成に応じて校正。エッジケース：AIS メタデータが乏しい場合は汎用クラスにフォールバック。",
   "methodology.voyages.title": "航海検出",
   "methodology.voyages.open":
-    "オープン：船舶（追跡可能クラス：tanker / container / bulk / general / RoRo）が SOG ≥ 1 ノットでアプローチ/錨泊中に観測されたとき、worker 起動後 60 秒の猶予期間後に航海がオープンします。",
+    "オープン：追跡可能クラスの船舶（tanker / container / bulk / general / RoRo）が、worker 起動後の猶予期間を経て、計測可能な動きでアプローチまたは錨泊している様子が観測されたとき、航海がオープンします。",
   "methodology.voyages.arrival":
-    "到着：バースゾーン内で state = moored への遷移（NavStatus 5 または berth ゾーン内 SOG < 0.3 ノット）。",
+    "到着：バースゾーン内で moored 状態への遷移、航行ステータスと動きから導出。",
   "methodology.voyages.departure":
-    "出発：到着後、船舶が state = underway に戻り、港中心から距離 > 8 海里。",
+    "出発：到着後、underway 状態への復帰と港中心からの距離閾値の組み合わせ。",
   "methodology.voyages.falsePositives":
     "誤検出：タグ、パイロット、漁業は追跡から除外 — カーゴクラスがフィルターとして機能。",
   "methodology.eta.title": "ETA モデル",
   "methodology.eta.naive":
-    "ナイーブ推定：距離 / SOG（距離は現在位置と港中心間の大圏距離）。アクティブ航海ごとに 5 分ごとに再計算。",
+    "ナイーブ推定：距離 / SOG（距離は現在位置と港中心間の大圏距離）。アクティブ航海ごとに継続的に更新。",
   "methodology.eta.seasonal":
-    "季節補正：UTC 到着時刻ごとに、過去 90 日間のスライディングウィンドウで計算された誤差中央値（predicted − actual）。時間バケットのサンプルが 3 未満の場合、グローバル中央値にフォールバック。30 分ごとに再計算。",
+    "季節補正：到着時刻ごとにバケット化された誤差（predicted − actual）のローリング中央値。バケットのサンプルが薄い場合はグローバル中央値にフォールバック。定期的に再計算。",
   "methodology.eta.broadcast":
     "比較参照：ShipStaticData メッセージから抽出された ETA broadcast フィールド（船員が手動入力 — しばしば不正確で遅延）。",
   "methodology.eta.metrics":
-    "メトリクス：時間単位の RMSE と MAE、予測 ETA と broadcast ETA の両方が利用可能なクローズ済み航海について。クローズ済み航海ごとに更新。デフォルトウィンドウ：30 日。",
+    "メトリクス：時間単位の RMSE と MAE、予測 ETA と broadcast ETA の両方が利用可能なクローズ済み航海について。クローズ済み航海ごとに更新。",
   "methodology.eta.roadmap":
     "モデルロードマップ：混雑、潮汐、天候、特定船舶の履歴平均速度の統合。",
   "methodology.anomalies.title": "異常検出",
   "methodology.anomalies.intro":
     "v1：錨泊での絶対 dwell 閾値、カーゴクラスごとに調整。",
   "methodology.anomalies.tanker":
-    "タンカー（crude/product/chemical/LNG/LPG）：warn ≥ 12 時間、critical ≥ 48 時間。",
+    "タンカー（crude/product/chemical/LNG/LPG）— 許容される最長の dwell ウィンドウ。",
   "methodology.anomalies.container":
-    "コンテナ：warn ≥ 6 時間、critical ≥ 24 時間。",
-  "methodology.anomalies.other": "その他：warn ≥ 18 時間、critical ≥ 72 時間。",
+    "コンテナ — 最も厳しい dwell ウィンドウ（回転率重要クラス）。",
+  "methodology.anomalies.other":
+    "その他のクラス — 中間の dwell ウィンドウ。",
   "methodology.anomalies.roadmap":
     "ロードマップ：(港、カーゴ) ごとの履歴分布から導出された閾値；ルート逸脱検出；既知ゾーン外のロイタリング検出（\"dark fleet\" シグナル）。",
   "methodology.persistence.title": "永続化と系統",
   "methodology.persistence.storage":
-    "node:sqlite（Node 22+ 内蔵）経由の SQLite ストレージ。テーブル：kpi_snapshots、static_ships、positions、voyages、webhook_subscriptions、webhook_deliveries。",
+    "タイムスタンプ付き系統を備えたリレーショナル SQL ストレージ。すべてのメトリクスはソースポジションまで遡及可能。",
   "methodology.persistence.timestamps":
-    "各 kpi_snapshots と voyages 行は港とタイムスタンプを保持。特定時点のメトリクスの完全な再現性。",
+    "各メトリクスと航海行は港とタイムスタンプを保持。特定時点のメトリクスの完全な再現性。",
   "methodology.persistence.snapshot":
-    "ポジションスナップショット：船舶ごとに 1 分間に 1 エントリ（レート制限）。バックテストとモデル再生を可能にします。",
+    "ポジションスナップショット：船舶ごとのレート制限された書き込み。バックテストとモデル再生を可能にします。",
   "methodology.persistence.export":
     "ロードマップ：S3 / GCS への日次 Parquet エクスポート、クライアントデータサイエンティスト用。",
   "methodology.sla.title": "サービスコミットメント（SLA v1）",
@@ -3081,22 +3273,24 @@ const ja: PageMessages = {
   "methodology.chokepoints.intro":
     "12 ゾーンを継続的に追跡：スエズ、ホルムズ、バブ・エル・マンデブ、マラッカ、シンガポール、ボスポラス・ダーダネルス、ジブラルタル、Skagerrak-Kattegat、ドーバー海峡、パナマ、喜望峰、マゼラン。",
   "methodology.chokepoints.detection":
-    "受信した AIS ポジションの直近 10 分のスライディングウィンドウで、5 分ごとの point-in-bbox 検出。",
+    "AIS ポジションのスライディングウィンドウで、point-in-bbox 検出を継続的に実施。",
   "methodology.chokepoints.dedup":
-    "GPS ジッターを吸収しながら通過を二重化しないよう、6 時間のクールダウンによる重複排除。",
+    "GPS ジッターを吸収しながら通過を二重化しないよう、クールダウンウィンドウによる重複排除。",
   "methodology.chokepoints.snapshot":
     "エントリ時の制裁状態スナップショット — 後にリストから外された船舶もその通過に対しては法医学的にマークされたままです。",
+  "methodology.chokepoints.coverage":
+    "陸上 AIS によるカバレッジ — 沿岸チョークポイント（ホルムズ、バブ・エル・マンデブ、マラッカ、シンガポール、ボスポラス、ドーバー、ジブラルタル、スエズ、パナマ）で最高の信頼性。より深い大洋域（喜望峰、マゼラン、地中海中央部）：沿岸局通過時の検出に依存。BYO Spire/Orbcomm キー（Pro+）で連続衛星カバレッジを実現。",
   "methodology.chokepoints.alertPrefix": "コンポーザブルアラート",
   "methodology.chokepoints.alertSuffix":
     "：制裁対象船舶がこれらのゾーンの 1 つに入った瞬間にトリガーされます。",
   "methodology.emissions.title":
     "CO₂ 排出量推定 — 自社メソッド",
   "methodology.emissions.intro":
-    "IMO Fourth GHG Study (2020) から派生したボトムアップアプローチ、外部依存なしで AIS フィード上で統合。連続するポジションの各ペアについて：",
+    "IMO Fourth GHG Study (2020) から派生したボトムアップアプローチ、外部依存なしで AIS フィード上で統合。",
   "methodology.emissions.power":
     "デフォルトの取付出力とサービス速度は IMO Annex 1 テーブルから、カーゴクラスごと（tanker / container / LNG / bulk …）。",
   "methodology.emissions.skip":
-    "ギャップ >6 時間または速度 <0.5 ノットのペアはスキップ（バースまたは錨泊中の船舶 — 静止補助負荷は v1 ではモデル化されていません）。",
+    "バースまたは錨泊中の期間はカウントから除外（静止補助負荷は v1 ではモデル化されていません）。陸上 AIS カバレッジ範囲外のセグメントも除外 — カバレッジ制限を参照。",
   "methodology.emissions.precision":
     "指示精度 ±25% — フリートランキング、航海比較、チャーターリングスクリーニングに十分。規制報告には EU MRV と相互参照（近日提供）。",
   "methodology.emissions.endpointPrefix": "Endpoint",

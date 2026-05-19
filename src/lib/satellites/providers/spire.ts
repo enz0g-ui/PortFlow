@@ -15,11 +15,10 @@ export const spireSource: SatelliteSource = {
   tier: "ais-satellite",
   tariff: "paid",
   description:
-    "Premium S-AIS provider with global coverage, 1-3 min latency. Recommended for Persian Gulf, Strait of Hormuz, Mediterranean dead zones. Geofenced subscriptions available.",
+    "Premium S-AIS provider (Kpler group since April 2025) with global satellite coverage. Connector available for BYO key on Pro+ tiers — bring your own Spire subscription to complement terrestrial AIS in deep-ocean and chokepoint dead zones.",
   homepage: "https://spire.com/maritime/",
   envKeys: ["SPIRE_API_TOKEN"],
-  integration: "in-progress",
-  integrationEta: "Q2 2026",
+  integration: "planned",
   status(): SourceStatus {
     const configured = !!process.env.SPIRE_API_TOKEN;
     const last = lastSync.get("global");
@@ -27,7 +26,7 @@ export const spireSource: SatelliteSource = {
       active: false,
       configured,
       reason:
-        "Connecteur REST codé mais pas encore branché au worker — la donnée Spire n'est pas encore mergée dans le dashboard. Tracking : intégration finale Q2 2026.",
+        "BYO key only — bring your own Spire subscription on Pro+ tier to activate this feed.",
       lastSyncAt: last?.ts,
       lastError: last?.error,
     };

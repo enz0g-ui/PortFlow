@@ -69,18 +69,27 @@ export default function LegalPage() {
         <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-200">
           {tp("legal.privacy.title")}
         </h3>
-        <p className="mb-2 text-sm text-slate-400">
-          <strong className="text-slate-200">
-            {tp("legal.privacy.controller")}
-          </strong>{" "}
-          {tp("legal.privacy.contactPrefix")}{" "}
-          <a
-            href="mailto:privacy@portflow.uk"
-            className="text-sky-400 hover:underline"
-          >
-            privacy@portflow.uk
-          </a>
-        </p>
+        <div className="mb-3 space-y-0.5 text-sm text-slate-400">
+          <p>
+            <strong className="text-slate-200">
+              {tp("legal.privacy.controller")}
+            </strong>
+          </p>
+          <p>{tp("legal.privacy.entityName")}</p>
+          <p>{tp("legal.privacy.entityTrade")}</p>
+          <p>{tp("legal.privacy.entityAddress")}</p>
+          <p className="tabular-nums">{tp("legal.privacy.entityIds")}</p>
+          <p>{tp("legal.privacy.entityVat")}</p>
+          <p>
+            {tp("legal.privacy.contactLine")}{" "}
+            <a
+              href="mailto:privacy@portflow.uk"
+              className="text-sky-400 hover:underline"
+            >
+              privacy@portflow.uk
+            </a>
+          </p>
+        </div>
         <p className="mb-3 text-sm text-slate-400">
           {tp("legal.privacy.intro")}
         </p>

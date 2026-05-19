@@ -1,10 +1,51 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
+const SECURITY_HEADERS_BASE = [
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=31536000; includeSubDomains; preload",
+  },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+  },
+];
+
 const nextConfig: NextConfig = {
   // Generate sourcemaps for production builds so they can be uploaded to Sentry.
   // Without this, Sentry shows minified stack traces.
   productionBrowserSourceMaps: true,
+  async headers() {
+    // Header rules are applied in order, last match wins per key. So the
+    // catch-all comes first with frame-ancestors 'none' (clickjacking
+    // protection), then /widget/:path* overrides only the CSP key to permit
+    // partner-site embedding. Other security headers carry over from the
+    // catch-all since they don't have a competing entry.
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          ...SECURITY_HEADERS_BASE,
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'none';",
+          },
+        ],
+      },
+      {
+        source: "/widget/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors *;",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 // Wrap with Sentry only when an auth token + org/project are present, so the

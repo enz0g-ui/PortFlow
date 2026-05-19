@@ -16,11 +16,10 @@ export const marineTrafficSource: SatelliteSource = {
   tier: "ais-satellite",
   tariff: "paid",
   description:
-    "Mainstream commercial AIS provider — terrestrial + satellite combined. Easier entry pricing than Spire. Good fallback for Mediterranean and Asia.",
+    "Mainstream commercial AIS provider (Kpler group since 2023) — terrestrial + satellite combined. Connector available for BYO key on Pro+ tiers — bring your own MarineTraffic subscription to complement the default terrestrial feed.",
   homepage: "https://www.marinetraffic.com/en/p/api-services",
   envKeys: ["MARINETRAFFIC_API_KEY"],
-  integration: "in-progress",
-  integrationEta: "Q3 2026",
+  integration: "planned",
   status(): SourceStatus {
     const configured = !!process.env.MARINETRAFFIC_API_KEY;
     const last = lastSync.get("global");
@@ -28,7 +27,7 @@ export const marineTrafficSource: SatelliteSource = {
       active: false,
       configured,
       reason:
-        "Connecteur exportvessels codé mais pas encore mergé au flux dashboard — intégration finale Q3 2026.",
+        "BYO key only — bring your own MarineTraffic subscription on Pro+ tier to activate this feed.",
       lastSyncAt: last?.ts,
       lastError: last?.error,
     };

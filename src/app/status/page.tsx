@@ -20,7 +20,7 @@ interface StatusResp {
       authAvailable: boolean;
       demoEnabled: boolean;
       lastScanAgeSeconds: number | null;
-      lastError?: string;
+      degraded: boolean;
     };
     sanctions: {
       healthy: boolean;
@@ -28,7 +28,7 @@ interface StatusResp {
       countByImo: number;
       countByMmsi: number;
       ageSeconds: number | null;
-      errors: string[];
+      errorCount: number;
     };
   };
   coverage: { portsTracked: number; portsActive: number };
@@ -187,7 +187,7 @@ export default function StatusPage() {
                     : "—",
                 ],
               ]}
-              footer={data.services.sar.lastError}
+              footer={data.services.sar.degraded ? "degraded" : undefined}
             />
             <ServiceCard
               title={tp("status.sanctions.title")}
@@ -212,7 +212,11 @@ export default function StatusPage() {
                     : "—",
                 ],
               ]}
-              footer={data.services.sanctions.errors.join("; ")}
+              footer={
+                data.services.sanctions.errorCount > 0
+                  ? `${data.services.sanctions.errorCount} source(s) degraded`
+                  : undefined
+              }
             />
             <ServiceCard
               title={tp("status.coverage.title")}
