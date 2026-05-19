@@ -291,6 +291,14 @@ export function loadAllStatic(): StaticRow[] {
   return db().selectStaticAll.all() as unknown as StaticRow[];
 }
 
+const POSITIONS_RETENTION_DAYS = 7;
+
+export function pruneOldPositions(now = Date.now()): number {
+  const cutoff = now - POSITIONS_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  const r = db().raw.prepare("DELETE FROM positions WHERE ts < ?").run(cutoff);
+  return Number(r.changes ?? 0);
+}
+
 export function loadKpisSince(
   portId: string,
   sinceMs: number,

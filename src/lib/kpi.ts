@@ -1,7 +1,7 @@
 import { getFlowEvents, getVessels, pruneStaleVessels, pushKpi } from "./store";
 import type { KpiSnapshot, VesselClass } from "./types";
 import { findZone, getPort, PORTS } from "./ports";
-import { persistKpi } from "./db";
+import { persistKpi, pruneOldPositions } from "./db";
 import { computeAnomalies } from "./anomaly";
 import { dispatchAnomalies, dispatchCongestion } from "./webhooks";
 
@@ -65,6 +65,24 @@ export function computeKpiSnapshot(
 }
 
 let interval: NodeJS.Timeout | undefined;
+let prunePositionsInterval: NodeJS.Timeout | undefined;
+
+const POSITIONS_PRUNE_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const POSITIONS_PRUNE_INITIAL_DELAY_MS = 10 * 60 * 1000;
+
+function runPositionsPrune() {
+  try {
+    const t0 = Date.now();
+    const removed = pruneOldPositions();
+    if (removed > 0) {
+      console.log(
+        `[db] pruneOldPositions removed=${removed} in ${Date.now() - t0}ms`,
+      );
+    }
+  } catch (err) {
+    console.error("[db] pruneOldPositions failed", err);
+  }
+}
 
 export function startKpiSampler(intervalMs = 60_000) {
   if (interval) return;
@@ -101,4 +119,14 @@ export function startKpiSampler(intervalMs = 60_000) {
   };
   tick();
   interval = setInterval(tick, intervalMs);
+
+  // Daily DB maintenance: prune positions older than 7 days. Deferred 10 min
+  // after boot so the warm-up sanctions / chokepoint fetches finish first.
+  setTimeout(runPositionsPrune, POSITIONS_PRUNE_INITIAL_DELAY_MS);
+  prunePositionsInterval = setInterval(
+    runPositionsPrune,
+    POSITIONS_PRUNE_INTERVAL_MS,
+  );
 }
+
+void prunePositionsInterval;
