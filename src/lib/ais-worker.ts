@@ -290,7 +290,17 @@ export function startAisWorker(apiKey: string) {
   let reconnectMs = MIN_RECONNECT_MS;
 
   const connect = () => {
-    const ws = new WebSocket(STREAM_URL);
+    // TEMPORARY (2026-05-20): AISStream.io's TLS certificate expired at
+    // 10:59 UTC and was not auto-renewed for many hours. rejectUnauthorized:
+    // false lets the WebSocket complete the handshake despite the expired
+    // cert so live data keeps flowing during the upstream incident. Revert
+    // this flag the moment AISStream renews — track via:
+    //   echo | openssl s_client -connect stream.aisstream.io:443 \
+    //     -servername stream.aisstream.io 2>&1 | grep notAfter
+    // Threat is bounded: the API key only grants subscribe access to AIS,
+    // and worst case a MITM would inject bogus positions (no credential or
+    // service compromise). See memory project-data-feed-risk for context.
+    const ws = new WebSocket(STREAM_URL, { rejectUnauthorized: false });
 
     ws.on("open", () => {
       meta.recordConnection();
