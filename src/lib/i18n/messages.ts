@@ -41,6 +41,10 @@ const fr: Messages = {
   "app.subtitle": "tanker intelligence",
   "app.tagline":
     "AIS multi-port temps réel · ETA prédite · benchmark vs ETA broadcast",
+  "banner.aisDegraded.title":
+    "Flux AIS temporairement dégradé",
+  "banner.aisDegraded.body":
+    "Notre fournisseur AIS amont (en beta) connaît une interruption. L'historique, le screening sanctions et les autres sources restent opérationnels. Reconnexion automatique en cours.",
   "nav.precision": "ETA precision",
   "nav.methodology": "Méthodologie",
   "nav.guide": "Guide",
@@ -273,6 +277,10 @@ const en: Messages = {
   "app.subtitle": "tanker intelligence",
   "app.tagline":
     "Real-time multi-port AIS · predicted ETA · benchmark vs broadcast ETA",
+  "banner.aisDegraded.title":
+    "AIS feed temporarily degraded",
+  "banner.aisDegraded.body":
+    "Our upstream AIS provider (beta) is experiencing a service interruption. Historical data, sanctions screening and alternative sources remain operational. Reconnection is automatic.",
   "nav.precision": "ETA precision",
   "nav.methodology": "Methodology",
   "nav.guide": "Guide",

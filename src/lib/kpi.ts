@@ -1,4 +1,5 @@
-import { getFlowEvents, getVessels, pruneStaleVessels, pushKpi } from "./store";
+import * as Sentry from "@sentry/nextjs";
+import { getFlowEvents, getVessels, meta, pruneStaleVessels, pushKpi } from "./store";
 import type { KpiSnapshot, VesselClass } from "./types";
 import { findZone, getPort, PORTS } from "./ports";
 import { persistKpi, pruneOldPositions } from "./db";
@@ -84,6 +85,52 @@ function runPositionsPrune() {
   }
 }
 
+// AIS feed outage detection. Captures one Sentry alert when the feed has
+// been silent past the threshold, then a second when it recovers — no spam
+// during an ongoing outage. Threshold deliberately above 60s (the typical
+// reconnect backoff) so single dropped websockets don't page.
+const AIS_FRESH_THRESHOLD_MS = 60_000;
+const AIS_ALERT_AFTER_MS = 5 * 60_000;
+let aisDownSinceMs: number | null = null;
+let aisAlerted = false;
+
+function checkAisHealth(now: number) {
+  const s = meta.status();
+  const age = s.lastMessageAt ? now - s.lastMessageAt : null;
+  const down = !s.started || age === null || age > AIS_FRESH_THRESHOLD_MS;
+
+  if (down) {
+    if (aisDownSinceMs === null) aisDownSinceMs = now;
+    const downFor = now - aisDownSinceMs;
+    if (downFor >= AIS_ALERT_AFTER_MS && !aisAlerted) {
+      const minutes = Math.round(downFor / 60_000);
+      const ageLabel =
+        age === null ? "never connected" : `last msg ${Math.round(age / 1000)}s ago`;
+      console.warn(`[ais] feed silent for ${minutes}min · ${ageLabel}`);
+      try {
+        Sentry.captureMessage(
+          `AIS feed silent for ${minutes} min (likely upstream issue) — ${ageLabel}`,
+          "warning",
+        );
+      } catch {
+        /* sentry not configured — log already printed */
+      }
+      aisAlerted = true;
+    }
+  } else {
+    if (aisAlerted) {
+      console.log("[ais] feed recovered");
+      try {
+        Sentry.captureMessage("AIS feed recovered", "info");
+      } catch {
+        /* sentry not configured */
+      }
+    }
+    aisDownSinceMs = null;
+    aisAlerted = false;
+  }
+}
+
 export function startKpiSampler(intervalMs = 60_000) {
   if (interval) return;
   const tick = () => {
@@ -91,6 +138,11 @@ export function startKpiSampler(intervalMs = 60_000) {
       pruneStaleVessels();
     } catch (err) {
       console.error("[store] pruneStaleVessels failed", err);
+    }
+    try {
+      checkAisHealth(Date.now());
+    } catch (err) {
+      console.error("[ais] health check failed", err);
     }
     for (const port of PORTS) {
       try {

@@ -22,6 +22,7 @@ import { PortSelector, type PortInfo } from "./components/PortSelector";
 import { LanguageSwitcher } from "./components/LanguageSwitcher";
 import { AuthButtons } from "./components/AuthButtons";
 import { Attributions } from "./components/Attributions";
+import { DegradationBanner } from "./components/DegradationBanner";
 import { CARGO_LABELS } from "@/lib/cargo";
 import { useI18n } from "@/lib/i18n/context";
 import type {
@@ -993,6 +994,7 @@ export default function Page() {
 
   return (
     <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-4 p-4">
+      <DegradationBanner />
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
