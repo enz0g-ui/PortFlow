@@ -19,9 +19,15 @@ export interface TierLimits {
   sanctionsScreening: boolean;
 }
 
+// Pricing model decision (2026-05-23): all tiers see all 51 ports
+// (Modèle B). Tanker trader use case requires 15-20 ports minimum
+// (chokepoints + ARA + Middle East + bunkering hubs), so port-count
+// gating just adds friction without strategic value. Differentiation
+// is on workflow features: watchlist size, API/webhooks, SAR fusion,
+// sanctions screening, history depth.
 export const TIER_LIMITS: Record<Tier, TierLimits> = {
   free: {
-    ports: 3,
+    ports: "all",
     rateLimitPerMinute: 30,
     historyDays: 7,
     webhooks: false,
@@ -32,7 +38,7 @@ export const TIER_LIMITS: Record<Tier, TierLimits> = {
     sanctionsScreening: false,
   },
   starter: {
-    ports: 15,
+    ports: "all",
     rateLimitPerMinute: 120,
     historyDays: 30,
     webhooks: true,
@@ -43,7 +49,7 @@ export const TIER_LIMITS: Record<Tier, TierLimits> = {
     sanctionsScreening: false,
   },
   professional: {
-    ports: 30,
+    ports: "all",
     rateLimitPerMinute: 300,
     historyDays: 60,
     webhooks: true,

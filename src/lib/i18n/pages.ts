@@ -25,7 +25,7 @@ const fr: PageMessages = {
   "pricing.tier.free.price": "0 €",
   "pricing.tier.free.period": "",
   "pricing.tier.free.features":
-    "3 ports max (à choisir parmi 51)|Dashboard live · ETA · congestion · sanctions|7 j d'historique voyages|Visualisation seule|Pas de watchlist navires · pas d'alertes · pas d'API · pas d'export CSV",
+    "Les 51 ports accessibles dès l'inscription|Dashboard live · ETA prédit · RMSE public · sanctions visuelles|12 chokepoints monitored|7 j d'historique voyages|Visualisation seule — pas de watchlist · pas d'alertes · pas d'API",
   "pricing.tier.free.cta": "Démarrer",
   "pricing.cycle.monthly": "Mensuel",
   "pricing.cycle.yearly": "Annuel",
@@ -42,7 +42,7 @@ const fr: PageMessages = {
   "pricing.tier.starter.priceYearlyTotal": "Facturé 1 161 €/an",
   "pricing.tier.starter.yearlySavings": "Économisez 387 €",
   "pricing.tier.starter.features":
-    "15 ports|API publique 5 k req/j|Alertes Slack/Telegram/Email/Discord|Export CSV|30 j d'historique|25 navires en watchlist",
+    "Tout le périmètre Free + workflow|Watchlist 25 navires|Alertes Slack · Telegram · Email · Discord · Webhook|API publique 5 k req/j|Export CSV|30 j d'historique",
   "pricing.tier.starter.cta": "Choisir Starter",
   "pricing.tier.professional.name": "Professional",
   "pricing.tier.professional.price": "199 €",
@@ -51,7 +51,7 @@ const fr: PageMessages = {
   "pricing.tier.professional.priceYearlyTotal": "Facturé 1 791 €/an",
   "pricing.tier.professional.yearlySavings": "Économisez 597 €",
   "pricing.tier.professional.features":
-    "30 ports stratégiques|API 18 k req/h|Screening sanctions OFAC + UK OFSI|Alertes multi-canal|Demurrage risk score|Export CSV|60 j d'historique|100 navires en watchlist",
+    "Tout Starter +|Watchlist 100 navires|Screening sanctions multi-régime (UKSL · OFAC · UN-SC · EU FSF)|Demurrage risk score live|API 18 k req/h|60 j d'historique",
   "pricing.tier.professional.cta": "Choisir Professional",
   "pricing.tier.pro.name": "Pro+",
   "pricing.tier.pro.price": "499 €",
@@ -60,7 +60,7 @@ const fr: PageMessages = {
   "pricing.tier.pro.priceYearlyTotal": "Facturé 4 491 €/an",
   "pricing.tier.pro.yearlySavings": "Économisez 1 497 €",
   "pricing.tier.pro.features":
-    "Les 51 ports|API 600 req/min|ETA precision détaillée + attribution des retards|Fusion AIS + SAR Sentinel-1|Détection dark fleet|Screening sanctions OFAC + UK OFSI|Émissions CO2 par voyage|90 j d'historique|250 navires en watchlist",
+    "Tout Professional +|Watchlist 250 navires|Fusion AIS + SAR Sentinel-1|Détection dark fleet (AIS-off vessels)|Attribution détaillée des retards ETA|Émissions CO₂ par voyage|API 600 req/min|90 j d'historique|Support prioritaire",
   "pricing.tier.pro.cta": "Choisir Pro+",
   "pricing.tier.enterprise.name": "Enterprise",
   "pricing.tier.enterprise.price": "Sur devis",
@@ -159,7 +159,7 @@ const fr: PageMessages = {
   "welcome.step1.lead":
     "En 90 secondes, on configure ton dashboard pour qu'il te soit utile dès aujourd'hui.",
   "welcome.step1.b1":
-    "Choisis tes 3 ports prioritaires (Free) — ils seront tes favoris dès le dashboard",
+    "Épingle tes ports prioritaires comme favoris dans le sélecteur — tu accèdes aux 51 ports dès l'inscription",
   "welcome.step1.b2":
     "Découvre les features clés — précision ETA, demurrage risk, alertes",
   "welcome.step1.b3":
@@ -168,7 +168,7 @@ const fr: PageMessages = {
   "welcome.step1.skip": "Aller direct au dashboard",
   "welcome.step2.title": "Tes 3 ports prioritaires",
   "welcome.step2.lead":
-    "Le plan Free te donne accès à 3 ports. Choisis les plus pertinents pour ton activité — tu pourras les modifier à tout moment depuis le sélecteur de port.",
+    "Tu accèdes aux 51 ports immédiatement. Épingle 3 favoris pour les retrouver en un clic dans le sélecteur — tu pourras les modifier à tout moment.",
   "welcome.step2.selection": "Sélection : {n}/3",
   "welcome.step2.suggestionsTitle": "Suggestions stratégiques",
   "welcome.step2.allPortsToggle": "Voir les 51 ports disponibles",
@@ -670,7 +670,7 @@ const en: PageMessages = {
   "pricing.tier.free.price": "€0",
   "pricing.tier.free.period": "",
   "pricing.tier.free.features":
-    "3 ports max (pick from 51)|Live dashboard · ETA · congestion · sanctions|7-day voyage history|Read-only|No vessel watchlist · no alerts · no API · no CSV export",
+    "All 51 ports accessible from day one|Live dashboard · predicted ETA · public RMSE · visual sanctions|12 chokepoints monitored|7-day voyage history|Read-only — no watchlist · no alerts · no API",
   "pricing.tier.free.cta": "Get started",
   "pricing.cycle.monthly": "Monthly",
   "pricing.cycle.yearly": "Yearly",
@@ -687,7 +687,7 @@ const en: PageMessages = {
   "pricing.tier.starter.priceYearlyTotal": "Billed €1,161/year",
   "pricing.tier.starter.yearlySavings": "Save €387",
   "pricing.tier.starter.features":
-    "15 ports|Public API, 5k req/day|Slack/Telegram/Email/Discord alerts|CSV export|30-day history|25 vessels in watchlist",
+    "Everything in Free + workflow|25-vessel watchlist|Slack · Telegram · Email · Discord · Webhook alerts|Public API, 5k req/day|CSV export|30-day history",
   "pricing.tier.starter.cta": "Choose Starter",
   "pricing.tier.professional.name": "Professional",
   "pricing.tier.professional.price": "€199",
@@ -696,7 +696,7 @@ const en: PageMessages = {
   "pricing.tier.professional.priceYearlyTotal": "Billed €1,791/year",
   "pricing.tier.professional.yearlySavings": "Save €597",
   "pricing.tier.professional.features":
-    "30 strategic ports|API 18k req/hour|OFAC + UK OFSI sanctions screening|Multi-channel alerts|Demurrage risk score|CSV export|60-day history|100 vessels in watchlist",
+    "Everything in Starter, plus|100-vessel watchlist|Multi-regime sanctions screening (UKSL · OFAC · UN-SC · EU FSF)|Live demurrage risk score|API 18k req/hour|60-day history",
   "pricing.tier.professional.cta": "Choose Professional",
   "pricing.tier.pro.name": "Pro+",
   "pricing.tier.pro.price": "€499",
@@ -705,7 +705,7 @@ const en: PageMessages = {
   "pricing.tier.pro.priceYearlyTotal": "Billed €4,491/year",
   "pricing.tier.pro.yearlySavings": "Save €1,497",
   "pricing.tier.pro.features":
-    "All 51 ports|API 600 req/min|Detailed ETA precision + delay attribution|AIS + SAR Sentinel-1 fusion|Dark fleet detection|OFAC + UK OFSI sanctions screening|CO2 emissions per voyage|90-day history|250 vessels in watchlist",
+    "Everything in Professional, plus|250-vessel watchlist|AIS + SAR Sentinel-1 fusion|Dark fleet detection (AIS-off vessels)|Detailed delay attribution|CO₂ emissions per voyage|API 600 req/min|90-day history|Priority support",
   "pricing.tier.pro.cta": "Choose Pro+",
   "pricing.tier.enterprise.name": "Enterprise",
   "pricing.tier.enterprise.price": "On request",
@@ -804,7 +804,7 @@ const en: PageMessages = {
   "welcome.step1.lead":
     "In 90 seconds, we'll configure your dashboard to make it useful from day one.",
   "welcome.step1.b1":
-    "Pick your 3 priority ports (Free) — they'll be your dashboard favourites",
+    "Pin your priority ports as favourites in the selector — all 51 ports are accessible from sign-up",
   "welcome.step1.b2":
     "Discover key features — ETA precision, demurrage risk, alerts",
   "welcome.step1.b3":
@@ -813,7 +813,7 @@ const en: PageMessages = {
   "welcome.step1.skip": "Go straight to dashboard",
   "welcome.step2.title": "Your 3 priority ports",
   "welcome.step2.lead":
-    "The Free plan gives you access to 3 ports. Pick the most relevant to your activity — you can change them anytime from the port selector.",
+    "All 51 ports are accessible from now. Pin 3 favourites for quick access in the selector — you can change them anytime.",
   "welcome.step2.selection": "Selection: {n}/3",
   "welcome.step2.suggestionsTitle": "Strategic suggestions",
   "welcome.step2.allPortsToggle": "See all 51 available ports",
