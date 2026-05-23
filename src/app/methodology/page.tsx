@@ -172,6 +172,21 @@ export default function MethodologyPage() {
 
       <section className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/60 p-4">
         <h2 className="text-lg font-semibold">
+          {tp("methodology.transparency.title")}
+        </h2>
+        <p className="text-sm text-slate-300">
+          {tp("methodology.transparency.body")}
+        </p>
+        <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
+          <li>{tp("methodology.transparency.bullet1")}</li>
+          <li>{tp("methodology.transparency.bullet2")}</li>
+          <li>{tp("methodology.transparency.bullet3")}</li>
+          <li>{tp("methodology.transparency.bullet4")}</li>
+        </ul>
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+        <h2 className="text-lg font-semibold">
           {tp("methodology.sanctionsScreening.title")}
         </h2>
         <p className="text-sm text-slate-300">

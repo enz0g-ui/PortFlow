@@ -276,6 +276,18 @@ const fr: PageMessages = {
   "methodology.sla.backfill": "Backfill",
   "methodology.sla.backfillValue":
     "Sur demande contractuelle (rejouage des positions persistées)",
+  "methodology.transparency.title":
+    "Transparence sur les feeds & dégradations",
+  "methodology.transparency.body":
+    "Aucun fournisseur AIS au monde n'a 100 % d'uptime. Notre engagement n'est pas de cacher les dégradations, mais de les détecter et de te les communiquer en temps réel.",
+  "methodology.transparency.bullet1":
+    "Bannière de dégradation automatique en haut du dashboard quand un feed devient indisponible — visible par les visiteurs avant même qu'ils ne s'inscrivent.",
+  "methodology.transparency.bullet2":
+    "Sources documentées sur portflow.uk/sources avec leur statut (actif / planifié), tier (gratuit / clé client / payant) et licence — pas de boîte noire.",
+  "methodology.transparency.bullet3":
+    "Watchdog côté serveur : détection automatique des connexions zombies (ouvertes mais sans message), reconnexion forcée en moins de 90 secondes.",
+  "methodology.transparency.bullet4":
+    "Roadmap multi-source en cours — réduction progressive de la dépendance à une source unique, avec ajout d'un 2e feed régional Asie.",
   "methodology.compliance.title": "Conformité",
   "methodology.compliance.solas":
     "Données AIS : ouvertes, transmises par les navires en respect de la convention SOLAS. Aucune donnée personnelle de l'équipage.",
@@ -909,6 +921,18 @@ const en: PageMessages = {
   "methodology.sla.backfill": "Backfill",
   "methodology.sla.backfillValue":
     "On contractual request (replay of persisted positions)",
+  "methodology.transparency.title":
+    "Feed transparency & degradation",
+  "methodology.transparency.body":
+    "No AIS provider in the world has 100 % uptime. Our commitment is not to hide degradations but to detect and communicate them in real time.",
+  "methodology.transparency.bullet1":
+    "Automatic degradation banner at the top of the dashboard when a feed becomes unavailable — visible to visitors before they even sign up.",
+  "methodology.transparency.bullet2":
+    "Sources documented at portflow.uk/sources with their status (active / planned), tier (free / customer-key / paid) and licence — no black box.",
+  "methodology.transparency.bullet3":
+    "Server-side watchdog: automatic detection of zombie connections (open but receiving no messages), forced reconnect within 90 seconds.",
+  "methodology.transparency.bullet4":
+    "Multi-source roadmap in progress — gradual reduction of single-source dependency, including a second regional Asia feed.",
   "methodology.compliance.title": "Compliance",
   "methodology.compliance.solas":
     "AIS data: open, transmitted by vessels per the SOLAS convention. No crew personal data.",

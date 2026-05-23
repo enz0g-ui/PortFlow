@@ -19,8 +19,9 @@ lacune réelle des incumbents documentée publiquement.
 Bonjour [Prénom], j'ai vu que vous suivez le marché tanker depuis [TradingDesk].
 
 Beaucoup de desks paient 55k$/an à Kpler pour ce qu'ils n'utilisent qu'à 30%.
-Port Flow donne l'ETA corrigé par cargo×heure×jour pour 51 ports stratégiques
-(Hormuz, Fujairah, Rotterdam, Singapore…) à 499 €/mo, avec alertes Slack.
+Port Flow donne l'ETA prédit calibré par classe de cargaison avec pénalité
+congestion live pour 51 ports stratégiques (Hormuz, Fujairah, Rotterdam,
+Singapore…) à 499 €/mo, avec alertes Slack. RMSE publié sur /precision.
 
 Ça vous intéresse de comparer 5 minutes ?
 ```
@@ -30,8 +31,9 @@ Port Flow donne l'ETA corrigé par cargo×heure×jour pour 51 ports stratégique
 Hi [First Name], saw you trade tanker at [TradingDesk].
 
 Most desks pay 55k$/yr to Kpler for what they only use 30% of. Port Flow
-delivers cargo×hour×day-corrected ETAs for 51 strategic ports (Hormuz,
-Fujairah, Rotterdam, Singapore…) at €499/mo with Slack alerts.
+delivers cargo-class-calibrated predicted ETA with live congestion penalty
+for 51 strategic ports (Hormuz, Fujairah, Rotterdam, Singapore…) at
+€499/mo with Slack alerts. Public RMSE on /precision.
 
 Worth a 5-min compare?
 ```
@@ -50,10 +52,10 @@ a supprimé ses add-ons flexibles. Sinay est orienté container EU.
 
 Port Flow donne :
 · 51 ports stratégiques tanker (incluant chokepoints Moyen-Orient + Asie)
-· ETA corrigé par cargo × heure × jour avec pénalité congestion live
+· ETA prédit calibré par classe de cargaison + pénalité congestion live
 · Alertes Slack/Telegram natives sur ta watchlist
 · Demurrage risk score live
-· 499 €/mois — 100x moins cher que Kpler
+· 499 €/mois — ~10x moins cher que Kpler pour le périmètre tanker
 
 RMSE public mesurable sur portflow.uk/precision (pas du marketing).
 
@@ -77,10 +79,10 @@ stripped flexible add-ons. Sinay is EU container-focused.
 
 Port Flow gives you:
 · 51 strategic tanker ports (Middle East + Asia chokepoints included)
-· Cargo × hour × day-corrected ETA with live congestion penalty
+· Predicted ETA calibrated per cargo class + live congestion penalty
 · Native Slack/Telegram alerts on your watchlist
 · Live demurrage risk score
-· €499/mo — 100x cheaper than Kpler
+· €499/mo — ~10x cheaper than Kpler on the tanker scope
 
 Public measurable RMSE at portflow.uk/precision (not marketing — math).
 
@@ -136,8 +138,8 @@ congestion réelle.
 
 Port Flow Professional (199 €/mo) :
 · Watchlist illimitée navires + ports
-· Demurrage risk score live (probabilité dépassement laytime, basé p50/p75
-  historique du port × cargo + congestion live)
+· Demurrage risk score live (probabilité dépassement laytime, basé sur
+  l'historique du port et de la classe de cargaison + congestion live)
 · Alertes Slack/Telegram sur arrivée et anomalies
 · Export CSV pour ton ERP / Excel
 · Screening sanctions OFAC + UK OFSI inclus
@@ -179,7 +181,7 @@ Port Flow Pro (499 €/mo) :
   propres abonnements existants
 · Fusion AIS + SAR Sentinel-1 (gratuit via Copernicus)
 · Detection AIS gap + STS transfer + flag changes
-· Screening OFAC + UK OFSI live sur 1 987 entrées indexées
+· Screening OFAC + UK OFSI live sur 2 000+ entrées indexées
 · Alertes natives Slack/email
 
 Tu peux tester ta clé Spire en 30 secondes via /sources, c'est en place.
@@ -205,10 +207,10 @@ navires iraniens en est l'illustration la plus récente.
 
 Port Flow t'offre la couche de données pour enrichir ta due diligence
 underwriting :
-· Screening OFAC SDN + UK OFSI (1 987 entrées indexées, refresh 24h)
+· Screening OFAC SDN + UK OFSI (2 000+ entrées indexées, refresh 24h)
 · VIIRS night detection en BYO key (vessels AIS éteints détectés via lights)
 · SAR Sentinel-1 fusion sur les anchorages STS (Hormuz, Strait of
-  Singapore, Hormuz)
+  Singapore, Bab el-Mandeb)
 · API publique pour intégration dans ta stack underwriting
 · DPA RGPD signable pour ton service compliance
 
@@ -289,3 +291,24 @@ comme harcèlement. Espacer minimum 3 jours.
 - LinkedIn Sales Navigator (Pro tier ~80€/mo)
 - Apollo.io ou Hunter.io pour les emails (free tier suffisant au démarrage)
 - Calendly pour booker les démos sans friction
+
+---
+
+## Bloc signature standard (à coller en bas de chaque email)
+
+```
+Laurent Guglielmetti — Founder, Port Flow
+✉  contact@portflow.uk · 🌐 portflow.uk
+Port Flow · octopodus EI · SIREN 491 489 654 · Rethel, France
+```
+
+**Pourquoi le SIREN dans la signature** : signal B2B fort en France. Le
+prospect peut vérifier en 2 clics sur data.inpi.fr/entreprises/491489654 que
+l'entité existe, est récente mais immatriculée proprement. Ça écarte les
+soupçons "scam / shell company" sur un domaine récent (portflow.uk activé
+en 2026).
+
+Pour un prospect EN/non-FR, tu peux remplacer la dernière ligne par :
+```
+Port Flow — French sole proprietorship · BR ID 491489654 · Rethel, France
+```
