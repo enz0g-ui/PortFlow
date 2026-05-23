@@ -283,6 +283,13 @@ function handleMessage(raw: WebSocket.RawData) {
   }
 }
 
+// Watchdog: AISStream sends 50-300 msg/s on a global subscription, so
+// crossing this many seconds with zero traffic means the connection has
+// silently gone zombie (cf. the 2026-05-21 outage: WebSocket "open" but
+// 0 msg for 26h, no close event ever fired). Force-close past the threshold
+// and let the reconnect loop start fresh.
+const STALE_RECONNECT_MS = 90_000;
+
 export function startAisWorker(apiKey: string) {
   if (meta.isStarted()) return;
   meta.markStarted();
@@ -290,17 +297,26 @@ export function startAisWorker(apiKey: string) {
   let reconnectMs = MIN_RECONNECT_MS;
 
   const connect = () => {
-    // TEMPORARY (2026-05-20): AISStream.io's TLS certificate expired at
-    // 10:59 UTC and was not auto-renewed for many hours. rejectUnauthorized:
-    // false lets the WebSocket complete the handshake despite the expired
-    // cert so live data keeps flowing during the upstream incident. Revert
-    // this flag the moment AISStream renews — track via:
-    //   echo | openssl s_client -connect stream.aisstream.io:443 \
-    //     -servername stream.aisstream.io 2>&1 | grep notAfter
-    // Threat is bounded: the API key only grants subscribe access to AIS,
-    // and worst case a MITM would inject bogus positions (no credential or
-    // service compromise). See memory project-data-feed-risk for context.
-    const ws = new WebSocket(STREAM_URL, { rejectUnauthorized: false });
+    const ws = new WebSocket(STREAM_URL);
+    let watchdog: NodeJS.Timeout | undefined;
+    let closedByUs = false;
+
+    const armWatchdog = () => {
+      if (watchdog) clearTimeout(watchdog);
+      watchdog = setTimeout(() => {
+        const last = meta.status().lastMessageAt ?? 0;
+        const ageMs = Date.now() - last;
+        if (ageMs > STALE_RECONNECT_MS) {
+          console.warn(
+            `[ais] watchdog: ${Math.round(ageMs / 1000)}s without messages — force-closing connection`,
+          );
+          closedByUs = true;
+          ws.terminate();
+        } else {
+          armWatchdog();
+        }
+      }, STALE_RECONNECT_MS).unref();
+    };
 
     ws.on("open", () => {
       meta.recordConnection();
@@ -326,6 +342,7 @@ export function startAisWorker(apiKey: string) {
       console.log(
         `[ais] connected, subscribed to ${portBboxes.length} ports + ${chokepointBboxes.length} chokepoints`,
       );
+      armWatchdog();
     });
 
     ws.on("message", handleMessage);
@@ -335,8 +352,10 @@ export function startAisWorker(apiKey: string) {
     });
 
     ws.on("close", (code, reason) => {
+      if (watchdog) clearTimeout(watchdog);
+      const trigger = closedByUs ? "watchdog" : "upstream";
       console.warn(
-        `[ais] closed code=${code} reason=${reason?.toString() || "n/a"}; reconnecting in ${reconnectMs}ms`,
+        `[ais] closed code=${code} reason=${reason?.toString() || "n/a"} trigger=${trigger}; reconnecting in ${reconnectMs}ms`,
       );
       setTimeout(connect, reconnectMs);
       reconnectMs = Math.min(reconnectMs * 2, MAX_RECONNECT_MS);
