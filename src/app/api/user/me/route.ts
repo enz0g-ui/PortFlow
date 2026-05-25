@@ -19,6 +19,8 @@ export async function GET() {
     id: user.id,
     email: user.email ?? null,
     tier: user.tier,
+    isDemo: user.isDemo ?? false,
+    demoExpiresAt: user.demoExpiresAt ?? null,
     portsLimit: limits.ports,
     portsAccessible:
       accessible === "all" ? "all" : Array.from(accessible),

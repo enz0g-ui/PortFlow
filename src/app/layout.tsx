@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { I18nProvider } from "@/lib/i18n/context";
 import { AuthShell } from "./components/AuthShell";
+import { DemoBanner } from "./components/DemoBanner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -55,7 +56,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AuthShell>
-          <I18nProvider>{children}</I18nProvider>
+          <I18nProvider>
+            <DemoBanner />
+            {children}
+          </I18nProvider>
         </AuthShell>
       </body>
     </html>
