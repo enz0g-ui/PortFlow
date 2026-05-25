@@ -4,6 +4,7 @@ import {
   markVoyageDeparted,
   openVoyage,
   recentClosedVoyages,
+  setVoyageBroadcastEta,
   setVoyagePrediction,
   type VoyageRow,
 } from "./db";
@@ -61,20 +62,16 @@ export function observeVoyage(opts: ObserveOpts) {
   const { portId, mmsi, vessel, broadcastEta } = opts;
 
   if (broadcastEta !== undefined && !vessel) {
+    // Type 5 / ShipStaticData arrived (no position update in this tick).
+    // Update the existing open voyage's broadcast_eta if we have one and
+    // it doesn't already carry one. Previously this code called openVoyage,
+    // but openVoyage runs INSERT OR IGNORE keyed on (port, mmsi, startTs)
+    // so re-inserting an existing voyage was a silent no-op — broadcast_eta
+    // was never persisted on an already-open voyage. Hence the dashboard
+    // showed broadcast_eta empty for ~all active voyages.
     const open = findOpenVoyage(portId, mmsi);
     if (open && open.arrived_ts == null && open.broadcast_eta == null) {
-      const stat = getStatic(mmsi);
-      openVoyage({
-        mmsi,
-        port: portId,
-        cargoClass: stat?.cargoClass,
-        startTs: open.start_ts,
-        lat: open.start_lat ?? 0,
-        lon: open.start_lon ?? 0,
-        distanceNm: open.start_distance_nm ?? 0,
-        sog: open.start_sog ?? 0,
-        broadcastEta,
-      });
+      setVoyageBroadcastEta(open.voyage_id, broadcastEta);
     }
     return;
   }

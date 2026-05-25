@@ -140,6 +140,7 @@ interface DbHandle {
   updateVoyageArrived: ReturnType<DatabaseSync["prepare"]>;
   updateVoyageDeparted: ReturnType<DatabaseSync["prepare"]>;
   updateVoyagePrediction: ReturnType<DatabaseSync["prepare"]>;
+  updateVoyageBroadcastEta: ReturnType<DatabaseSync["prepare"]>;
   selectOpenVoyage: ReturnType<DatabaseSync["prepare"]>;
   selectClosedVoyages: ReturnType<DatabaseSync["prepare"]>;
 }
@@ -197,6 +198,10 @@ function open(): DbHandle {
     updateVoyagePrediction: raw.prepare(
       `UPDATE voyages SET predicted_eta = ?, predicted_at = ?
        WHERE voyage_id = ? AND (predicted_eta IS NULL OR predicted_at < ?)`,
+    ),
+    updateVoyageBroadcastEta: raw.prepare(
+      `UPDATE voyages SET broadcast_eta = ?
+       WHERE voyage_id = ? AND arrived_ts IS NULL`,
     ),
     selectOpenVoyage: raw.prepare(
       `SELECT * FROM voyages WHERE mmsi = ? AND port = ? AND arrived_ts IS NULL ORDER BY start_ts DESC LIMIT 1`,
@@ -361,6 +366,14 @@ export function markVoyageArrived(
   draught: number | undefined,
 ) {
   db().updateVoyageArrived.run(arrivedTs, zone ?? null, draught ?? null, voyageId);
+}
+
+export function setVoyageBroadcastEta(
+  voyageId: string,
+  broadcastEta: number,
+): boolean {
+  const r = db().updateVoyageBroadcastEta.run(broadcastEta, voyageId);
+  return r.changes > 0;
 }
 
 export function markVoyageDeparted(voyageId: string, departedTs: number) {
