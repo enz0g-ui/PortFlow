@@ -6,7 +6,9 @@ import { type FormEvent, Suspense, useState } from "react";
 
 function DemoForm() {
   const params = useSearchParams();
-  const expiredReason = params.get("reason") === "demo_expired";
+  const reason = params.get("reason");
+  const expiredReason = reason === "demo_expired";
+  const rateLimitedReason = reason === "rate_limited";
 
   const [code, setCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -25,12 +27,22 @@ function DemoForm() {
     if (!res.ok) {
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
+        retryAfter?: number;
       };
-      setError(
-        data.error === "invalid_code"
-          ? "This code isn't recognized. Check the email you received for the exact code."
-          : "Something went wrong. Try again in a moment.",
-      );
+      let message: string;
+      if (data.error === "invalid_code") {
+        message =
+          "This code isn't recognized. Check the email you received for the exact code.";
+      } else if (data.error === "rate_limited") {
+        const hours =
+          data.retryAfter !== undefined
+            ? Math.ceil(data.retryAfter / 3600)
+            : 24;
+        message = `Free preview already used from this network in the last 24 hours. Come back in ${hours} h, or use the code from your invitation email.`;
+      } else {
+        message = "Something went wrong. Try again in a moment.";
+      }
+      setError(message);
       return false;
     }
     return true;
@@ -73,6 +85,21 @@ function DemoForm() {
             className="text-amber-300 underline hover:text-amber-100"
           >
             /sign-up
+          </Link>{" "}
+          for a permanent free account.
+        </div>
+      ) : null}
+
+      {rateLimitedReason ? (
+        <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-4 text-sm text-rose-200">
+          The free 10-minute preview has already been used from this network
+          in the last 24 hours. You can still enter a personal code below for
+          a 30-minute session, or{" "}
+          <Link
+            href="/sign-up"
+            className="text-rose-300 underline hover:text-rose-100"
+          >
+            sign up
           </Link>{" "}
           for a permanent free account.
         </div>

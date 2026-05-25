@@ -99,9 +99,16 @@ function parseBroadcastEta(payload: any): number | undefined {
     return undefined;
   if (month === 0 || day === 0 || hour > 23 || minute > 59) return undefined;
   const now = new Date();
-  let year = now.getUTCFullYear();
+  const year = now.getUTCFullYear();
   const candidate = Date.UTC(year, month - 1, day, hour, minute);
-  if (candidate < now.getTime() - 7 * 24 * 60 * 60 * 1000) {
+  // Year-wrap heuristic: AIS Type 5 ETA has no year field. If the calendar
+  // date resolves to far in the past, the captain almost certainly means
+  // next year (e.g. broadcasting "Jan 5 ETA" on Dec 20). But within ~60 days
+  // we keep current year so stale ETAs surface as legitimate "vessel late"
+  // signals rather than getting silently rolled +12 months — which was
+  // making the UI show absurd "+8000 h" deltas on overdue vessels.
+  const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
+  if (candidate < now.getTime() - SIXTY_DAYS_MS) {
     return Date.UTC(year + 1, month - 1, day, hour, minute);
   }
   return candidate;

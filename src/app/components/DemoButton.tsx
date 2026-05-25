@@ -17,6 +17,12 @@ function DemoButtonInner() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ anonymous: true }),
       });
+      if (res.status === 429) {
+        // Already used from this IP within 24h. Bounce to /demo where the
+        // friendly message explains rate-limit + offers code entry path.
+        window.location.href = "/demo?reason=rate_limited";
+        return;
+      }
       if (!res.ok) {
         setPending(false);
         return;
@@ -36,7 +42,7 @@ function DemoButtonInner() {
       type="button"
       onClick={onClick}
       disabled={pending}
-      title="10-minute Free-tier preview, no signup required"
+      title="10-minute preview, no signup required (one per network per 24 h)"
       className="rounded border border-emerald-700/60 bg-emerald-950/40 px-2 py-1 text-xs font-medium text-emerald-200 hover:border-emerald-500 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
     >
       {pending ? "Starting…" : "Try demo (10 min)"}
