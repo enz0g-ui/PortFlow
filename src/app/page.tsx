@@ -1538,6 +1538,8 @@ export default function Page() {
             highlightedMmsis={undefined}
             sarDetections={undefined}
             panTo={panTo ?? undefined}
+            selectedVesselClass={selectedVesselClassFilter}
+            onSelectVesselClass={setSelectedVesselClassFilter}
           />
         ) : port ? (
           <MapView
@@ -1560,6 +1562,8 @@ export default function Page() {
             }))}
             trails={trails}
             panTo={panTo ?? undefined}
+            selectedVesselClass={selectedVesselClassFilter}
+            onSelectVesselClass={setSelectedVesselClassFilter}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center rounded-lg border border-slate-800 bg-slate-900/40 text-sm text-slate-500" />

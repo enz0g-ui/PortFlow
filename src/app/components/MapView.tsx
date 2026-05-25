@@ -28,6 +28,10 @@ interface Props {
   sarDetections?: SarDetection[];
   trails?: Record<string, Array<[number, number, number]>>;
   panTo?: { lat: number; lon: number; tick: number };
+  selectedVesselClass?: import("@/lib/types").VesselClass | null;
+  onSelectVesselClass?: (
+    cls: import("@/lib/types").VesselClass | null,
+  ) => void;
 }
 
 export function MapView(props: Props) {
@@ -88,22 +92,42 @@ export function MapView(props: Props) {
               : `⤢ ${t("map.expandShort")}`}
           </button>
         </div>
-        <MapLegend />
+        <MapLegend
+          selected={props.selectedVesselClass ?? null}
+          onSelect={props.onSelectVesselClass}
+        />
       </div>
     </>
   );
 }
 
-function MapLegend() {
+type ClassEntry = {
+  cls: import("@/lib/types").VesselClass;
+  color: string;
+  label: string;
+};
+
+function MapLegend({
+  selected,
+  onSelect,
+}: {
+  selected: import("@/lib/types").VesselClass | null;
+  onSelect?: (cls: import("@/lib/types").VesselClass | null) => void;
+}) {
   const { t } = useI18n();
-  const entries: Array<{ color: string; label: string }> = [
-    { color: "#f87171", label: t("map.legend.tanker") },
-    { color: "#34d399", label: t("map.legend.cargo") },
-    { color: "#a78bfa", label: t("map.legend.passenger") },
-    { color: "#facc15", label: t("map.legend.fishing") },
-    { color: "#38bdf8", label: t("map.legend.tug") },
-    { color: "#94a3b8", label: t("map.legend.other") },
+  const entries: ClassEntry[] = [
+    { cls: "tanker", color: "#f87171", label: t("map.legend.tanker") },
+    { cls: "cargo", color: "#34d399", label: t("map.legend.cargo") },
+    {
+      cls: "passenger",
+      color: "#a78bfa",
+      label: t("map.legend.passenger"),
+    },
+    { cls: "fishing", color: "#facc15", label: t("map.legend.fishing") },
+    { cls: "tug", color: "#38bdf8", label: t("map.legend.tug") },
+    { cls: "other", color: "#94a3b8", label: t("map.legend.other") },
   ];
+  const clickable = !!onSelect;
   return (
     <div
       className="absolute bottom-3 left-3 z-[1700] rounded-md border border-slate-700 bg-slate-900/90 px-2.5 py-2 text-[10px] shadow-lg backdrop-blur-sm"
@@ -113,16 +137,47 @@ function MapLegend() {
         {t("map.legend.title")}
       </div>
       <ul className="space-y-0.5">
-        {entries.map((e) => (
-          <li key={e.label} className="flex items-center gap-1.5">
-            <span
-              className="inline-block h-2 w-2 rounded-full"
-              style={{ background: e.color }}
-              aria-hidden
-            />
-            <span className="text-slate-300">{e.label}</span>
-          </li>
-        ))}
+        {entries.map((e) => {
+          const isActive = selected === e.cls;
+          const isDimmed = selected !== null && !isActive;
+          const onClick = clickable
+            ? () => onSelect!(isActive ? null : e.cls)
+            : undefined;
+          return (
+            <li key={e.cls}>
+              {clickable ? (
+                <button
+                  type="button"
+                  onClick={onClick}
+                  aria-pressed={isActive}
+                  className={`flex w-full items-center gap-1.5 rounded px-1 -mx-1 py-0.5 text-left transition-colors ${
+                    isActive
+                      ? "bg-slate-800 text-slate-100"
+                      : isDimmed
+                        ? "text-slate-500 hover:text-slate-300"
+                        : "text-slate-300 hover:bg-slate-800/60"
+                  }`}
+                >
+                  <span
+                    className="inline-block h-2 w-2 rounded-full"
+                    style={{ background: e.color }}
+                    aria-hidden
+                  />
+                  <span>{e.label}</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="inline-block h-2 w-2 rounded-full"
+                    style={{ background: e.color }}
+                    aria-hidden
+                  />
+                  <span className="text-slate-300">{e.label}</span>
+                </div>
+              )}
+            </li>
+          );
+        })}
         <li className="flex items-center gap-1.5 border-t border-slate-800 pt-1 mt-1">
           <span
             className="inline-block h-3 w-3 rounded-full border-2 border-rose-400"
