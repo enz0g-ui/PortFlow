@@ -33,10 +33,16 @@ export const DEMO_CODES: Record<string, DemoCodeConfig> = {
   },
 };
 
-// Anonymous ticket — homepage "Try Port Flow" button. 10 min, Free tier.
+// Anonymous ticket — homepage "Try Port Flow" button. 10 min, Professional tier.
 // No code required; granted on POST with { anonymous: true }.
+//
+// Tier choice: "professional" (not "free") so visitors can actually test the
+// workflow features that matter on a tanker desk — vessel bookmark, multi-regime
+// sanctions screening, demurrage risk score, CSV export, 60-day history. The
+// niche Pro+ features (SAR fusion + dark fleet detection) stay reserved for
+// per-prospect codes, which keeps a reason for them to redeem one.
 export const ANONYMOUS_DEMO: DemoCodeConfig = {
-  tier: "free",
+  tier: "professional",
   durationMinutes: 10,
   label: "Anonymous homepage demo",
 };

@@ -1018,6 +1018,13 @@ export default function Page() {
           <DemoButton />
           <AuthButtons />
           <Link
+            href="/account"
+            className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-amber-500 hover:text-amber-300"
+            title="Alerts (live or deferred) — Slack · Telegram · Email · Webhook · Discord — configure in Account"
+          >
+            🔔 Alerts
+          </Link>
+          <Link
             href={`/precision?port=${portId}`}
             className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-sky-500 hover:text-sky-300"
           >
