@@ -21,6 +21,7 @@ import { VesselDetailPanel } from "./components/VesselDetailPanel";
 import { PortSelector, type PortInfo } from "./components/PortSelector";
 import { LanguageSwitcher } from "./components/LanguageSwitcher";
 import { AuthButtons } from "./components/AuthButtons";
+import { DemoButton } from "./components/DemoButton";
 import { Attributions } from "./components/Attributions";
 import { DegradationBanner } from "./components/DegradationBanner";
 import { CARGO_LABELS } from "@/lib/cargo";
@@ -1014,6 +1015,7 @@ export default function Page() {
             accessiblePortIds={me?.portsAccessible}
           />
           <LanguageSwitcher />
+          <DemoButton />
           <AuthButtons />
           <Link
             href={`/precision?port=${portId}`}
