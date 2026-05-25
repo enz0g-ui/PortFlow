@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useState } from "react";
 
 function DemoForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const expiredReason = params.get("reason") === "demo_expired";
 
@@ -42,21 +41,25 @@ function DemoForm() {
     if (!code.trim()) return;
     setSubmitting(true);
     const ok = await redeem({ code: code.trim() });
-    setSubmitting(false);
     if (ok) {
-      router.push("/");
-      router.refresh();
+      // Full reload so the dashboard client components re-mount with the
+      // demo cookie present — otherwise vesselBookmarksEnabled never
+      // flips to true (the useEffect that fetches watchlist runs at
+      // mount time, before the cookie was set on this browser).
+      window.location.href = "/";
+      return;
     }
+    setSubmitting(false);
   };
 
   const onAnonymous = async () => {
     setAnonPending(true);
     const ok = await redeem({ anonymous: true });
-    setAnonPending(false);
     if (ok) {
-      router.push("/");
-      router.refresh();
+      window.location.href = "/";
+      return;
     }
+    setAnonPending(false);
   };
 
   return (

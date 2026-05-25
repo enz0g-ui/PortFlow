@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Show } from "@clerk/nextjs";
 
 const clerkEnabled = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 function DemoButtonInner() {
-  const router = useRouter();
   const [pending, setPending] = useState(false);
 
   const onClick = async () => {
@@ -23,7 +21,11 @@ function DemoButtonInner() {
         setPending(false);
         return;
       }
-      router.refresh();
+      // Full reload (not router.refresh) so client components re-mount
+      // and their useEffects re-fetch with the new demo cookie.
+      // Otherwise vesselBookmarksEnabled stays false and the bookmark
+      // icon never appears, even though the session is active.
+      window.location.href = "/";
     } catch {
       setPending(false);
     }
