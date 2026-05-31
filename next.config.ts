@@ -18,6 +18,23 @@ const nextConfig: NextConfig = {
   // Generate sourcemaps for production builds so they can be uploaded to Sentry.
   // Without this, Sentry shows minified stack traces.
   productionBrowserSourceMaps: true,
+  async redirects() {
+    // Canonical host consolidation: both portflow.uk and www.portflow.uk
+    // currently return 200 (Cloudflare proxies both to this origin), so
+    // Google saw them as duplicates and picked www as canonical — the
+    // opposite of the verified (non-www) property. 308 permanent redirect
+    // www → non-www collapses the duplicate and points all link equity at
+    // the apex. Google honours 308 identically to 301 for canonicalisation.
+    // Only the www host matches; clerk.portflow.uk and the apex are untouched.
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.portflow.uk" }],
+        destination: "https://portflow.uk/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     // Header rules are applied in order, last match wins per key. So the
     // catch-all comes first with frame-ancestors 'none' (clickjacking
