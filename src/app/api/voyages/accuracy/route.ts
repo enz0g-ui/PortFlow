@@ -20,7 +20,11 @@ export async function GET(request: NextRequest) {
     rmseHours: result.rmseHours,
     maeHours: result.maeHours,
     baselineRmseHours: result.baselineRmseHours,
+    baselineMaeHours: result.baselineMaeHours,
     baselineCount: result.baselineCount,
+    baselineExcluded: result.baselineExcluded,
+    modelRmseOnBaselineHours: result.modelRmseOnBaselineHours,
+    modelMaeOnBaselineHours: result.modelMaeOnBaselineHours,
     voyages: result.voyages.slice(0, 50).map((v) => ({
       voyageId: v.voyage_id,
       mmsi: v.mmsi,

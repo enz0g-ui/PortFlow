@@ -87,6 +87,8 @@ const fr: PageMessages = {
   "precision.stat.our.hint": "MAE {mae} · {n} voyages",
   "precision.stat.delta.beats": "Plus précis que l'ETA broadcast",
   "precision.stat.delta.behind": "Moins précis que l'ETA broadcast",
+  "precision.baselineNote":
+    "Comparaison tête-à-tête sur les voyages où le navire a diffusé une ETA exploitable. Les ETA broadcast à plus de 7 jours de l'arrivée réelle ({excluded} sur cette fenêtre) sont des valeurs sentinelles AIS (dates par défaut, ETA jamais mises à jour) et sont exclues de la baseline. Modèle et broadcast sont mesurés sur le même ensemble de voyages.",
   "precision.stat.delta.notEnough": "Comparaison disponible après quelques voyages",
   "precision.stat.delta.waiting":
     "Comparaison en attente d'un échantillon broadcast significatif",
@@ -238,7 +240,7 @@ const fr: PageMessages = {
   "methodology.eta.broadcast":
     "Référence comparée : champ ETA broadcast extrait des messages ShipStaticData (saisi manuellement par l'équipage du navire — souvent imprécis et tardif).",
   "methodology.eta.metrics":
-    "Métriques : RMSE et MAE en heures, sur les voyages clos avec ETA prédit ET ETA broadcast disponibles. Mises à jour à chaque voyage clos.",
+    "Métriques : RMSE et MAE en heures, sur les voyages clos avec ETA prédit ET ETA broadcast disponibles. La baseline broadcast exclut les ETA situées à plus de 7 jours de l'arrivée réelle : ce sont des valeurs sentinelles AIS (dates par défaut, ETA jamais mises à jour, placeholders) — pas de vraies estimations — et elles fausseraient le RMSE. Modèle et broadcast sont comparés sur exactement le même ensemble de voyages. Mises à jour à chaque voyage clos.",
   "methodology.eta.roadmap":
     "Roadmap modèle : intégration congestion, marées, météo, vitesse moyenne historique du navire spécifique.",
   "methodology.anomalies.title": "Détection d'anomalies",
@@ -732,6 +734,8 @@ const en: PageMessages = {
   "precision.stat.our.hint": "MAE {mae} · {n} voyages",
   "precision.stat.delta.beats": "More accurate than broadcast ETA",
   "precision.stat.delta.behind": "Less accurate than broadcast ETA",
+  "precision.baselineNote":
+    "Head-to-head on voyages where the vessel broadcast a usable ETA. Broadcast ETAs more than 7 days from actual arrival ({excluded} in this window) are AIS sentinel values (default dates, never-updated ETAs) and are excluded from the baseline. Model and broadcast are measured over the same set of voyages.",
   "precision.stat.delta.notEnough": "Comparison available after a few voyages",
   "precision.stat.delta.waiting":
     "Comparison pending a meaningful broadcast sample",
@@ -883,7 +887,7 @@ const en: PageMessages = {
   "methodology.eta.broadcast":
     "Comparison reference: ETA broadcast field extracted from ShipStaticData messages (entered manually by the vessel's crew — often imprecise and late).",
   "methodology.eta.metrics":
-    "Metrics: RMSE and MAE in hours, computed over closed voyages with both predicted ETA AND broadcast ETA available. Updated on each closed voyage.",
+    "Metrics: RMSE and MAE in hours, computed over closed voyages with both predicted ETA AND broadcast ETA available. The broadcast baseline excludes ETAs more than 7 days from actual arrival: these are AIS sentinel values (default dates, never-updated ETAs, placeholders) — not genuine estimates — and would otherwise distort the RMSE. Model and broadcast are compared over exactly the same set of voyages. Updated on each closed voyage.",
   "methodology.eta.roadmap":
     "Model roadmap: congestion integration, tides, weather, vessel-specific historical average speed.",
   "methodology.anomalies.title": "Anomaly detection",

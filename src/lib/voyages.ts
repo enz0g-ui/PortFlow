@@ -194,6 +194,15 @@ function predictEta(
   return corrected;
 }
 
+// A broadcast ETA more than this far from the actual arrival is treated as a
+// sentinel / never-updated AIS value (default dates, stale ETA carried from a
+// previous leg, year-2099 placeholders), NOT a genuine estimate for the voyage
+// we track over hours-to-days during port approach. Such values are excluded
+// from the broadcast baseline so a handful of ~300-day artefacts don't dominate
+// the RMSE. Disclosed publicly on /methodology. ~37% of broadcasts at Rotterdam
+// fall outside this window and are excluded as artefacts.
+export const BROADCAST_SENTINEL_CUTOFF_H = 7 * 24; // 168h
+
 export function getVoyageAccuracy(
   portId: string,
   sinceMs: number,
@@ -202,38 +211,63 @@ export function getVoyageAccuracy(
   rmseHours: number | null;
   maeHours: number | null;
   count: number;
+  // Broadcast baseline, computed over the comparison set (voyages carrying a
+  // usable broadcast ETA, sentinels excluded).
   baselineRmseHours: number | null;
+  baselineMaeHours: number | null;
   baselineCount: number;
+  // Sentinel/artefact broadcasts excluded from the baseline (for disclosure).
+  baselineExcluded: number;
+  // Our model's error over the SAME comparison set — apples-to-apples vs the
+  // broadcast baseline (distinct from rmse/maeHours above, which cover ALL
+  // predicted voyages regardless of whether they carried a broadcast ETA).
+  modelRmseOnBaselineHours: number | null;
+  modelMaeOnBaselineHours: number | null;
 } {
   const voyages = recentClosedVoyages(portId, sinceMs, 1000).filter(
     (v) => v.predicted_eta != null && v.arrived_ts != null,
   );
 
-  if (voyages.length === 0) {
-    return {
-      voyages: [],
-      rmseHours: null,
-      maeHours: null,
-      count: 0,
-      baselineRmseHours: null,
-      baselineCount: 0,
-    };
-  }
+  const empty = {
+    voyages: [],
+    rmseHours: null,
+    maeHours: null,
+    count: 0,
+    baselineRmseHours: null,
+    baselineMaeHours: null,
+    baselineCount: 0,
+    baselineExcluded: 0,
+    modelRmseOnBaselineHours: null,
+    modelMaeOnBaselineHours: null,
+  };
+  if (voyages.length === 0) return empty;
 
   let sumSq = 0;
   let sumAbs = 0;
+  // Broadcast baseline + model-on-same-set accumulators.
   let baselineSumSq = 0;
+  let baselineSumAbs = 0;
   let baselineCount = 0;
+  let baselineExcluded = 0;
+  let modelOnBaseSumSq = 0;
+  let modelOnBaseSumAbs = 0;
 
   for (const v of voyages) {
-    const errMs = (v.predicted_eta ?? 0) - (v.arrived_ts ?? 0);
-    const errH = errMs / 3_600_000;
+    const errH = ((v.predicted_eta ?? 0) - (v.arrived_ts ?? 0)) / 3_600_000;
     sumSq += errH * errH;
     sumAbs += Math.abs(errH);
     if (v.broadcast_eta != null) {
-      const baselineErr =
+      const baselineErrH =
         ((v.broadcast_eta ?? 0) - (v.arrived_ts ?? 0)) / 3_600_000;
-      baselineSumSq += baselineErr * baselineErr;
+      if (Math.abs(baselineErrH) > BROADCAST_SENTINEL_CUTOFF_H) {
+        baselineExcluded++;
+        continue; // sentinel/artefact — exclude from both broadcast & model-on-set
+      }
+      baselineSumSq += baselineErrH * baselineErrH;
+      baselineSumAbs += Math.abs(baselineErrH);
+      // Same voyage → fold our model's error into the apples-to-apples set.
+      modelOnBaseSumSq += errH * errH;
+      modelOnBaseSumAbs += Math.abs(errH);
       baselineCount++;
     }
   }
@@ -246,6 +280,14 @@ export function getVoyageAccuracy(
     baselineRmseHours: baselineCount
       ? Math.sqrt(baselineSumSq / baselineCount)
       : null,
+    baselineMaeHours: baselineCount ? baselineSumAbs / baselineCount : null,
     baselineCount,
+    baselineExcluded,
+    modelRmseOnBaselineHours: baselineCount
+      ? Math.sqrt(modelOnBaseSumSq / baselineCount)
+      : null,
+    modelMaeOnBaselineHours: baselineCount
+      ? modelOnBaseSumAbs / baselineCount
+      : null,
   };
 }

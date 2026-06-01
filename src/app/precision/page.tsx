@@ -23,7 +23,11 @@ interface AccuracyResp {
   rmseHours: number | null;
   maeHours: number | null;
   baselineRmseHours: number | null;
+  baselineMaeHours: number | null;
   baselineCount: number;
+  baselineExcluded: number;
+  modelRmseOnBaselineHours: number | null;
+  modelMaeOnBaselineHours: number | null;
   voyages: VoyageSample[];
 }
 
@@ -115,10 +119,17 @@ function PrecisionInner() {
   const rmse = data?.rmseHours ?? null;
   const baseline = data?.baselineRmseHours ?? null;
   const baselineN = data?.baselineCount ?? 0;
+  const excluded = data?.baselineExcluded ?? 0;
   const baselineMeaningful = baselineN >= MIN_BASELINE_N;
+  // Head-to-head: our model's RMSE on the SAME voyage set as the broadcast
+  // baseline (sentinels excluded), so the advantage % is apples-to-apples
+  // rather than comparing our all-voyages RMSE against a different subset.
+  const ourOnSet = baselineMeaningful
+    ? (data?.modelRmseOnBaselineHours ?? rmse)
+    : rmse;
   const delta =
-    rmse !== null && baseline !== null && baselineMeaningful
-      ? ((rmse - baseline) / baseline) * 100
+    ourOnSet !== null && baseline !== null && baselineMeaningful
+      ? ((ourOnSet - baseline) / baseline) * 100
       : null;
   const beats = delta !== null && delta < 0;
 
@@ -170,7 +181,7 @@ function PrecisionInner() {
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Stat
           label={tp("precision.stat.our")}
-          value={fmtH(rmse)}
+          value={fmtH(baselineMeaningful ? ourOnSet : rmse)}
           tone={beats ? "good" : "warn"}
           hint={tp("precision.stat.our.hint", {
             mae: fmtH(data?.maeHours ?? null),
@@ -207,6 +218,12 @@ function PrecisionInner() {
           }
         />
       </section>
+
+      {baselineMeaningful ? (
+        <p className="-mt-4 text-xs text-slate-500">
+          {tp("precision.baselineNote", { excluded })}
+        </p>
+      ) : null}
 
       <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
         <div className="mb-3 flex items-baseline justify-between">

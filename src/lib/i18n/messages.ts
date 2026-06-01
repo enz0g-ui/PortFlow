@@ -105,9 +105,14 @@ const fr: Messages = {
   "accuracy.broadcastInsufficient": "Échantillon insuffisant",
   "accuracy.broadcastDisclaimer":
     "{n}/{min} broadcasts — beaucoup d'armateurs ne diffusent pas leur ETA.",
+  "accuracy.ourEta": "Notre ETA",
+  "accuracy.broadcastEta": "ETA broadcast",
   "accuracy.beats": "{pct}% plus précis",
   "accuracy.behind": "{pct}% moins précis",
   "accuracy.suffix": "que l'ETA broadcast",
+  "accuracy.basis": "comparaison sur {n} voyages avec ETA broadcast exploitable",
+  "accuracy.excluded": "{n} valeurs sentinelles exclues",
+  "accuracy.methodologyLink": "méthodologie",
   "accuracy.notEnough":
     "Comparaison disponible après quelques voyages clos avec ETA broadcast.",
   "accuracy.waitingSample":
@@ -341,9 +346,14 @@ const en: Messages = {
   "accuracy.broadcastInsufficient": "Insufficient sample",
   "accuracy.broadcastDisclaimer":
     "{n}/{min} broadcasts — many carriers do not broadcast ETA.",
+  "accuracy.ourEta": "Our ETA",
+  "accuracy.broadcastEta": "Broadcast ETA",
   "accuracy.beats": "{pct}% more accurate",
   "accuracy.behind": "{pct}% less accurate",
   "accuracy.suffix": "than broadcast ETA",
+  "accuracy.basis": "head-to-head on {n} voyages with a usable broadcast ETA",
+  "accuracy.excluded": "{n} sentinel values excluded",
+  "accuracy.methodologyLink": "methodology",
   "accuracy.waitingSample":
     "Comparison pending a meaningful broadcast sample.",
   "accuracy.notEnough":
