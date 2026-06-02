@@ -42,6 +42,9 @@ export function DarkEventsPanel({ events, selectedMmsi, onSelect }: Props) {
       <div className="mb-2 flex items-baseline justify-between text-xs">
         <span className="uppercase tracking-wider text-slate-400">
           🌒 {tp("darkEvents.title")}
+          <span className="ml-1.5 normal-case tracking-normal text-[9px] text-slate-600">
+            · {tp("darkEvents.method")}
+          </span>
         </span>
         <span className="text-slate-500">
           {events.length} {tp("darkEvents.count")}

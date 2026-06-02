@@ -86,6 +86,9 @@ export function EncountersLoiteringPanel({
         <div className="mb-2 flex items-baseline justify-between text-xs">
           <span className="uppercase tracking-wider text-slate-400">
             🛢 {t("encounters.title")}
+            <span className="ml-1.5 normal-case tracking-normal text-[9px] text-slate-600">
+              · {t("encounters.method")}
+            </span>
           </span>
           <span className="text-slate-500">
             {encounters.length} {t("encounters.count")}
@@ -179,6 +182,9 @@ export function EncountersLoiteringPanel({
         <div className="mb-2 flex items-baseline justify-between text-xs">
           <span className="uppercase tracking-wider text-slate-400">
             🐢 {t("loitering.title")}
+            <span className="ml-1.5 normal-case tracking-normal text-[9px] text-slate-600">
+              · {t("loitering.method")}
+            </span>
           </span>
           <span className="text-slate-500">
             {loitering.length} {t("loitering.count")}

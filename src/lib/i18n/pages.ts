@@ -146,6 +146,7 @@ const fr: PageMessages = {
 
   // Dark fleet events panel
   "darkEvents.title": "Dark fleet — coupures AIS suspectes",
+  "darkEvents.method": "extinction du signal AIS",
   "darkEvents.count": "événement(s)",
   "darkEvents.open": "ouvert(s)",
   "darkEvents.empty":
@@ -793,6 +794,7 @@ const en: PageMessages = {
 
   // Dark fleet events panel
   "darkEvents.title": "Dark fleet — suspicious AIS gaps",
+  "darkEvents.method": "AIS signal blackout",
   "darkEvents.count": "event(s)",
   "darkEvents.open": "open",
   "darkEvents.empty":

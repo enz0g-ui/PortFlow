@@ -63,6 +63,9 @@ export function AnomalyPanel({ anomalies, selectedMmsi, onSelect }: Props) {
       <div className="mb-2 flex items-baseline justify-between text-xs">
         <span className="uppercase tracking-wider text-slate-400">
           {t("section.anomalies")}
+          <span className="ml-1.5 normal-case tracking-normal text-[9px] text-slate-600">
+            · {t("anomaly.method")}
+          </span>
         </span>
         <span className="text-slate-500">
           {anomalies.length} {t("anomaly.count")}
