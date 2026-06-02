@@ -1041,7 +1041,11 @@ export default function Page() {
           </h1>
           <p className="text-xs text-slate-400">{t("app.tagline")}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs">
+        {/* min-height reserves the wrapped nav-row height so the Clerk-gated
+            auth/demo buttons mounting after hydration don't add a wrap line
+            and shove the dashboard down — this header row was the RUM-flagged
+            CLS culprit (0.5). content-start keeps rows top-aligned within it. */}
+        <div className="flex min-h-[3.5rem] flex-wrap content-start items-center gap-2 text-xs">
           <PortSelector
             ports={ports}
             selectedId={portId}

@@ -121,6 +121,31 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {/* LCP on the dashboard is a Leaflet basemap tile from CARTO's
+            sharded CDN (a–d.basemaps.cartocdn.com). RUM showed the tile as
+            the largest element with a slow/variable load. Preconnecting the
+            tile hosts removes DNS+TLS+TCP setup from the critical path so the
+            first tiles paint sooner. React 19 hoists these <link>s to <head>. */}
+        <link
+          rel="preconnect"
+          href="https://a.basemaps.cartocdn.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preconnect"
+          href="https://b.basemaps.cartocdn.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preconnect"
+          href="https://c.basemaps.cartocdn.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preconnect"
+          href="https://d.basemaps.cartocdn.com"
+          crossOrigin="anonymous"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
