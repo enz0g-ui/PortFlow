@@ -1,9 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { KpiCard } from "./components/KpiCard";
-import { FlowChart } from "./components/FlowChart";
+// FlowChart pulls in recharts (~150-300KB). It's a below-the-fold panel,
+// so defer it (ssr:false) to keep recharts out of the homepage's critical
+// JS bundle and shorten LCP. Placeholder matches the chart's h-[260px] to
+// avoid layout shift.
+const FlowChart = dynamic(
+  () => import("./components/FlowChart").then((m) => m.FlowChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[260px] w-full animate-pulse rounded-lg border border-slate-800 bg-slate-900/60" />
+    ),
+  },
+);
 import { MapView } from "./components/MapView";
 import { VoyagesTable, type ActiveVoyage } from "./components/VoyagesTable";
 import { FavoritesPanel } from "./components/FavoritesPanel";
