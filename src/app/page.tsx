@@ -21,13 +21,37 @@ import { MapView } from "./components/MapView";
 import { VoyagesTable, type ActiveVoyage } from "./components/VoyagesTable";
 import { FavoritesPanel } from "./components/FavoritesPanel";
 import { AccuracyPanel } from "./components/AccuracyPanel";
-import { AnomalyPanel } from "./components/AnomalyPanel";
-import { DarkEventsPanel, type DarkEventEntry } from "./components/DarkEventsPanel";
-import {
-  EncountersLoiteringPanel,
-  type EncounterEntry,
-  type LoiteringEntry,
+import type { DarkEventEntry } from "./components/DarkEventsPanel";
+import type {
+  EncounterEntry,
+  LoiteringEntry,
 } from "./components/EncountersLoiteringPanel";
+// Below-the-fold detection panels: deferred so their JS leaves the initial
+// bundle (lower TBT) and a reserved-height skeleton with a loading spinner
+// holds their space (lower CLS) instead of the page jumping when they fill.
+function PanelSkeleton() {
+  return (
+    <div className="flex min-h-[160px] items-center justify-center gap-2 rounded-lg border border-slate-800 bg-slate-900/60 text-xs text-slate-500">
+      <span className="inline-block h-3 w-3 animate-spin rounded-full border border-slate-600 border-t-slate-300" />
+      Loading…
+    </div>
+  );
+}
+const AnomalyPanel = dynamic(
+  () => import("./components/AnomalyPanel").then((m) => m.AnomalyPanel),
+  { ssr: false, loading: () => <PanelSkeleton /> },
+);
+const DarkEventsPanel = dynamic(
+  () => import("./components/DarkEventsPanel").then((m) => m.DarkEventsPanel),
+  { ssr: false, loading: () => <PanelSkeleton /> },
+);
+const EncountersLoiteringPanel = dynamic(
+  () =>
+    import("./components/EncountersLoiteringPanel").then(
+      (m) => m.EncountersLoiteringPanel,
+    ),
+  { ssr: false, loading: () => <PanelSkeleton /> },
+);
 import { CongestionGauge } from "./components/CongestionGauge";
 import { WeatherWidget } from "./components/WeatherWidget";
 import { VesselDetailPanel } from "./components/VesselDetailPanel";
