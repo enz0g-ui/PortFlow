@@ -31,6 +31,24 @@ export const DEMO_CODES: Record<string, DemoCodeConfig> = {
     durationMinutes: 30,
     label: "Manish Mathur / Reliance",
   },
+  // V1bis segment codes (LinkedIn 1:1 outreach, 2026-06). One per segment so
+  // pm2 [demo] logs reveal which segment converts, without a per-prospect code
+  // to manage across the merge.
+  "CHARTER-26": {
+    tier: "pro",
+    durationMinutes: 30,
+    label: "V1bis — Chartering managers",
+  },
+  "COMPLY-26": {
+    tier: "pro",
+    durationMinutes: 30,
+    label: "V1bis — Compliance / sanctions officers",
+  },
+  "PANDI-26": {
+    tier: "pro",
+    durationMinutes: 30,
+    label: "V1bis — P&I / marine underwriters",
+  },
 };
 
 // Anonymous ticket — homepage "Try Port Flow" button. 10 min, Professional tier.
