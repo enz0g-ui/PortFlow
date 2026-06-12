@@ -58,6 +58,8 @@ const CHOKEPOINT_LABELS: Record<string, string> = {
   "suez-north": "Suez Canal (north)",
   "suez-south": "Suez Canal (south)",
   malacca: "Strait of Malacca",
+  singapore: "Singapore Strait",
+  skagerrak: "Skagerrak",
   bosphorus: "Bosphorus",
   gibraltar: "Strait of Gibraltar",
   "bab-el-mandeb": "Bab-el-Mandeb",
@@ -68,7 +70,12 @@ const CHOKEPOINT_LABELS: Record<string, string> = {
 };
 
 function labelChokepoint(id: string): string {
-  return CHOKEPOINT_LABELS[id] ?? id.replace(/-/g, " ");
+  // IDs are prefixed "cp_" in the DB (cp_malacca, cp_suez, …).
+  const key = id.replace(/^cp_/, "");
+  return (
+    CHOKEPOINT_LABELS[key] ??
+    key.charAt(0).toUpperCase() + key.slice(1).replace(/-/g, " ")
+  );
 }
 
 const MIN_PORT_VESSELS = 8; // ignore near-empty ports (low AIS coverage) as noise
@@ -150,8 +157,16 @@ export function getNewsSignals(now = Date.now()): NewsSignals {
     /* ignore */
   }
 
-  // --- Factual, copy-paste post lines ---
+  // --- Factual, copy-paste post lines (only the defensible signals) ---
+  // Dark-event / loitering counts are deliberately NOT auto-posted: on public
+  // AIS they conflate intentional gaps with coverage holes, and the raw counts
+  // are capped. They stay on the internal studio with a caveat, not as posts.
   const punchlines: string[] = [];
+  if (benchmark) {
+    punchlines.push(
+      `Predicted ETA error: ${benchmark.ourMaeHours.toFixed(1)}h vs ${benchmark.broadcastMaeHours.toFixed(1)}h for the crew-broadcast ETA, on ${benchmark.voyages} closed voyages (Rotterdam, 30d). We publish the number. portflow.uk/precision`,
+    );
+  }
   const topPort = topCongestion[0];
   if (topPort && topPort.anchored >= 5) {
     punchlines.push(
@@ -162,16 +177,6 @@ export function getNewsSignals(now = Date.now()): NewsSignals {
   if (topChoke && topChoke.transits7d > 0) {
     punchlines.push(
       `${topChoke.label}: ${topChoke.transits7d} vessel transits tracked in the last 7 days. We watch 12 chokepoints live. portflow.uk`,
-    );
-  }
-  if (darkEvents7d > 0) {
-    punchlines.push(
-      `${darkEvents7d} AIS-gap ("dark") events flagged across monitored waters in the last 7 days — transponders going quiet, detected behaviourally. portflow.uk`,
-    );
-  }
-  if (benchmark) {
-    punchlines.push(
-      `Predicted ETA error: ${benchmark.ourMaeHours.toFixed(1)}h vs ${benchmark.broadcastMaeHours.toFixed(1)}h for the crew-broadcast ETA, on ${benchmark.voyages} closed voyages (Rotterdam, 30d). We publish the number. portflow.uk/precision`,
     );
   }
 

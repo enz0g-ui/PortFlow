@@ -123,22 +123,29 @@ export default function SignalsPage() {
         </div>
         <div className="space-y-3">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-sky-400">
-            Behavioural signals · 7 days
+            Behavioural signals · 7 days <span className="text-slate-500">(raw — don&apos;t post as-is)</span>
           </h2>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
               <div className="text-xs text-slate-500">AIS gaps (dark)</div>
               <div className="text-2xl font-semibold text-slate-100">
                 {s.darkEvents7d}
+                {s.darkEvents7d >= 1000 ? "+" : ""}
               </div>
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
               <div className="text-xs text-slate-500">Loitering</div>
               <div className="text-2xl font-semibold text-slate-100">
                 {s.loitering7d}
+                {s.loitering7d >= 1000 ? "+" : ""}
               </div>
             </div>
           </div>
+          <p className="text-[11px] leading-snug text-slate-500">
+            Raw detector counts (capped at 1000). On public AIS these mix
+            intentional gaps with coverage holes — useful as a lead to
+            investigate, not a number to publish.
+          </p>
           {s.benchmark ? (
             <div className="rounded-xl border border-emerald-700/40 bg-emerald-500/5 p-4 text-sm">
               <div className="text-xs text-emerald-300">ETA benchmark · Rotterdam · 30d</div>

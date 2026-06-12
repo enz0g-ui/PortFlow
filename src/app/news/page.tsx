@@ -81,12 +81,10 @@ export default function NewsIndex() {
         </div>
         <div className="bg-slate-950 p-4">
           <div className="text-[10px] uppercase tracking-widest text-sky-400">
-            AIS gaps · 7d
+            Live coverage
           </div>
-          <div className="mt-1 text-lg font-semibold text-slate-100">
-            {s.darkEvents7d}
-          </div>
-          <div className="text-xs text-slate-500">dark events flagged</div>
+          <div className="mt-1 text-lg font-semibold text-slate-100">51 ports</div>
+          <div className="text-xs text-slate-500">+ 12 chokepoints</div>
         </div>
         <div className="bg-slate-950 p-4">
           <div className="text-[10px] uppercase tracking-widest text-sky-400">
