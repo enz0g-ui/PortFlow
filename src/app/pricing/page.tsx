@@ -3,6 +3,34 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/context";
+import { DemoButton } from "../components/DemoButton";
+
+const FAQ: ReadonlyArray<{ q: string; a: string }> = [
+  {
+    q: "Where does the data come from?",
+    a: "Public AIS (vessel transponders), aggregated live across 51 ports and 12 chokepoints. Our methodology and sources are public — limits included.",
+  },
+  {
+    q: "How is this different from MarineTraffic or Kpler?",
+    a: "We focus on decision signals for tanker desks — predicted ETA with a published accuracy benchmark, multi-regime sanctions screening, chokepoint transit and dark-event detection — at a fraction of an enterprise seat. And we publish our ETA accuracy; most don't.",
+  },
+  {
+    q: "Can I try before paying?",
+    a: "Yes — a 10-minute Professional-tier session, no signup and no card, from the \"Try demo\" button. The Free tier then gives read-only access across all 51 ports.",
+  },
+  {
+    q: "What counts as a \"closed voyage\"?",
+    a: "A voyage that has reached its destination port, so we can compare the predicted ETA against the actual arrival. The accuracy benchmark is computed only on these.",
+  },
+  {
+    q: "Can I cancel anytime?",
+    a: "Monthly plans cancel anytime from your account and keep access to the end of the period. Annual plans run to term. Billing is handled by Stripe.",
+  },
+  {
+    q: "Do you add VAT?",
+    a: "No. French micro-entreprise under the VAT franchise (art. 293 B CGI) — the displayed prices are final.",
+  },
+];
 
 type Cycle = "monthly" | "yearly";
 
@@ -78,6 +106,15 @@ export default function PricingPage() {
         <Link href="/" className="text-xs text-slate-400 hover:text-slate-200">
           {tp("nav.back")}
         </Link>
+        <div className="flex items-center gap-2 text-xs">
+          <Link
+            href="/app"
+            className="rounded border border-slate-700 px-3 py-1 text-slate-200 hover:border-sky-500"
+          >
+            Open dashboard
+          </Link>
+          <DemoButton />
+        </div>
       </header>
 
       <section className="space-y-2 text-center">
@@ -232,6 +269,29 @@ export default function PricingPage() {
             {tp("pricing.note.label")}
           </strong>{" "}
           {tp("pricing.note")}
+        </p>
+      </section>
+
+      <section className="mx-auto w-full max-w-3xl">
+        <h2 className="mb-5 text-center text-2xl font-semibold text-slate-100">
+          Questions, answered
+        </h2>
+        <dl className="divide-y divide-slate-800 rounded-xl border border-slate-800 bg-slate-900/40">
+          {FAQ.map((item) => (
+            <div key={item.q} className="p-5">
+              <dt className="text-sm font-semibold text-slate-100">{item.q}</dt>
+              <dd className="mt-1.5 text-sm text-slate-400">{item.a}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-4 text-center text-xs text-slate-500">
+          Another question?{" "}
+          <a
+            href="mailto:contact@portflow.uk"
+            className="text-sky-400 hover:text-sky-300"
+          >
+            contact@portflow.uk
+          </a>
         </p>
       </section>
     </main>

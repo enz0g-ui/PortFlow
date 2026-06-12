@@ -1,50 +1,26 @@
-"use client";
-
-import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Attributions } from "../components/Attributions";
-import { useI18n } from "@/lib/i18n/context";
+import { DemoButton } from "../components/DemoButton";
+import { getVoyageAccuracy } from "@/lib/voyages";
+import { getPort, DEFAULT_PORT_ID } from "@/lib/ports";
 
-interface VoyageSample {
-  voyageId: string;
-  mmsi: number;
-  cargoClass?: string;
-  arrivedTs?: number | null;
-  predictedEta?: number | null;
-  broadcastEta?: number | null;
-  errorHours?: number | null;
-  baselineErrorHours?: number | null;
-}
-
-interface AccuracyResp {
-  windowDays: number;
-  sampleCount: number;
-  rmseHours: number | null;
-  maeHours: number | null;
-  baselineRmseHours: number | null;
-  baselineMaeHours: number | null;
-  baselineCount: number;
-  baselineExcluded: number;
-  modelRmseOnBaselineHours: number | null;
-  modelMaeOnBaselineHours: number | null;
-  voyages: VoyageSample[];
-}
+// Server-rendered so the published benchmark is in the HTML — indexable by
+// Google and visible in link previews. Previously a client component, which
+// meant crawlers saw only the word "RMSE". This is our strongest sales proof;
+// it now ships in the server response.
+export const dynamic = "force-dynamic";
 
 const MIN_BASELINE_N = 20;
+const WINDOWS = [7, 30, 90] as const;
 
-interface PortMini {
-  id: string;
-  name: string;
-  flag?: string;
-  country?: string;
-  names?: Record<string, string>;
-  countryNames?: Record<string, string>;
-}
-
-interface PortsResp {
-  ports: PortMini[];
-}
+export const metadata: Metadata = {
+  title: "ETA accuracy benchmark — predicted vs broadcast",
+  description:
+    "Port Flow publishes the accuracy of its predicted vessel ETAs against the ship's own broadcast ETA, measured on closed voyages (RMSE + MAE). The number, good or bad — not a marketing claim.",
+  alternates: { canonical: "https://portflow.uk/precision" },
+  robots: { index: true, follow: true },
+};
 
 function fmtH(v: number | null | undefined, digits = 2): string {
   if (v === null || v === undefined) return "—";
@@ -53,7 +29,6 @@ function fmtH(v: number | null | undefined, digits = 2): string {
 
 function fmtTs(ts?: number | null): string {
   if (!ts) return "—";
-  // UTC across the platform (see VoyagesTable.fmtEta).
   return (
     new Date(ts).toLocaleString([], {
       day: "2-digit",
@@ -65,288 +40,12 @@ function fmtTs(ts?: number | null): string {
   );
 }
 
-function PrecisionInner() {
-  const searchParams = useSearchParams();
-  const portId = searchParams.get("port") ?? "rotterdam";
-  const { tp, locale } = useI18n();
-  const [data, setData] = useState<AccuracyResp | null>(null);
-  const [days, setDays] = useState(30);
-  const [port, setPort] = useState<PortMini | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const r = await fetch(
-          `/api/voyages/accuracy?port=${portId}&days=${days}`,
-          { cache: "no-store" },
-        );
-        if (!r.ok) return;
-        const json = (await r.json()) as AccuracyResp;
-        if (!cancelled) setData(json);
-      } catch {
-        /* ignore */
-      }
-    };
-    load();
-    const id = setInterval(load, 60_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [days, portId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/ports", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((json: PortsResp | null) => {
-        if (cancelled || !json) return;
-        const p = json.ports.find((x) => x.id === portId) ?? null;
-        setPort(p);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [portId]);
-
-  const portLabel = port
-    ? (port.names?.[locale] ?? port.name)
-    : portId.charAt(0).toUpperCase() + portId.slice(1);
-  const portCountry = port ? (port.countryNames?.[locale] ?? port.country) : "";
-
-  const rmse = data?.rmseHours ?? null;
-  const baseline = data?.baselineRmseHours ?? null;
-  const baselineN = data?.baselineCount ?? 0;
-  const excluded = data?.baselineExcluded ?? 0;
-  const baselineMeaningful = baselineN >= MIN_BASELINE_N;
-  // Head-to-head: our model's RMSE on the SAME voyage set as the broadcast
-  // baseline (sentinels excluded), so the advantage % is apples-to-apples
-  // rather than comparing our all-voyages RMSE against a different subset.
-  const ourOnSet = baselineMeaningful
-    ? (data?.modelRmseOnBaselineHours ?? rmse)
-    : rmse;
-  const delta =
-    ourOnSet !== null && baseline !== null && baselineMeaningful
-      ? ((ourOnSet - baseline) / baseline) * 100
-      : null;
-  const beats = delta !== null && delta < 0;
-
-  return (
-    <main className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-8 p-6">
-      <header className="flex items-center justify-between">
-        <Link
-          href="/"
-          className="text-xs text-slate-400 hover:text-slate-200"
-        >
-          {tp("nav.back")}
-        </Link>
-        <span className="text-xs text-slate-500">
-          {tp("precision.window")} :
-          {[7, 30, 90].map((d) => (
-            <button
-              key={d}
-              onClick={() => setDays(d)}
-              className={`ml-2 rounded px-2 py-0.5 ${
-                days === d
-                  ? "bg-sky-500/20 text-sky-300"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              {d}j
-            </button>
-          ))}
-        </span>
-      </header>
-
-      <section className="space-y-4">
-        <h1 className="text-3xl font-bold tracking-tight">
-          {tp("precision.title")} ·{" "}
-          <span className="text-sky-400">
-            {port?.flag ? `${port.flag} ` : ""}
-            {portLabel}
-          </span>
-          {portCountry ? (
-            <span className="ml-2 text-base font-normal text-slate-500">
-              {portCountry}
-            </span>
-          ) : null}
-        </h1>
-        <p className="max-w-2xl text-base text-slate-300">
-          {tp("precision.lead", { port: portLabel })}
-        </p>
-      </section>
-
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Stat
-          label={tp("precision.stat.our")}
-          value={fmtH(baselineMeaningful ? ourOnSet : rmse)}
-          tone={beats ? "good" : "warn"}
-          hint={tp("precision.stat.our.hint", {
-            mae: fmtH(data?.maeHours ?? null),
-            n: data?.sampleCount ?? 0,
-          })}
-        />
-        <Stat
-          label={tp("precision.stat.broadcast")}
-          value={baselineMeaningful ? fmtH(baseline) : tp("precision.stat.broadcast.insufficient")}
-          tone="default"
-          hint={
-            baselineMeaningful
-              ? tp("precision.stat.broadcast.hintN", { n: baselineN })
-              : tp("precision.stat.broadcast.disclaimer", {
-                  n: baselineN,
-                  min: MIN_BASELINE_N,
-                })
-          }
-        />
-        <Stat
-          label={
-            beats ? tp("precision.stat.advantage") : tp("precision.stat.gap")
-          }
-          value={delta !== null ? `${Math.abs(delta).toFixed(1)} %` : "—"}
-          tone={delta === null ? "default" : beats ? "good" : "warn"}
-          hint={
-            delta === null
-              ? !baselineMeaningful
-                ? tp("precision.stat.delta.waiting")
-                : tp("precision.stat.delta.notEnough")
-              : beats
-                ? tp("precision.stat.delta.beats")
-                : tp("precision.stat.delta.behind")
-          }
-        />
-      </section>
-
-      {baselineMeaningful ? (
-        <p className="-mt-4 text-xs text-slate-500">
-          {tp("precision.baselineNote", { excluded })}
-        </p>
-      ) : null}
-
-      <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-        <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
-            {tp("precision.table.title")}
-          </h2>
-          <span className="text-xs text-slate-500">
-            {tp("precision.table.errHelp")}
-          </span>
-        </div>
-        {data && data.voyages.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="text-slate-500">
-                <tr className="text-left">
-                  <th className="py-1 pr-3 font-normal">
-                    {tp("precision.table.col.mmsi")}
-                  </th>
-                  <th className="py-1 pr-3 font-normal">
-                    {tp("precision.table.col.cargo")}
-                  </th>
-                  <th className="py-1 pr-3 font-normal">
-                    {tp("precision.table.col.arrival")}
-                  </th>
-                  <th className="py-1 pr-3 font-normal text-right">
-                    {tp("precision.table.col.errModel")}
-                  </th>
-                  <th className="py-1 pr-3 font-normal text-right">
-                    {tp("precision.table.col.errBroadcast")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.voyages.map((v) => (
-                  <tr key={v.voyageId} className="border-t border-slate-800">
-                    <td className="py-1.5 pr-3 tabular-nums text-slate-300">
-                      {v.mmsi}
-                    </td>
-                    <td className="py-1.5 pr-3 text-slate-300">
-                      {v.cargoClass ?? "—"}
-                    </td>
-                    <td className="py-1.5 pr-3 tabular-nums text-slate-400">
-                      {fmtTs(v.arrivedTs)}
-                    </td>
-                    <td
-                      className={`py-1.5 pr-3 tabular-nums text-right ${errTone(v.errorHours)}`}
-                    >
-                      {fmtH(v.errorHours)}
-                    </td>
-                    <td className="py-1.5 pr-3 tabular-nums text-right text-slate-400">
-                      {fmtH(v.baselineErrorHours)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="text-sm text-slate-500">
-            {tp("precision.table.empty")}
-          </p>
-        )}
-      </section>
-
-      <section className="rounded-lg border border-sky-700/40 bg-gradient-to-br from-sky-500/10 to-slate-900/40 p-5">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-100">
-              {tp("precision.cta.title")}
-            </h2>
-            <p className="mt-1 max-w-xl text-sm text-slate-300">
-              {tp("precision.cta.lead")}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/?port=${portId}`}
-              className="rounded border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:border-sky-500"
-            >
-              {tp("precision.cta.dashboard")}
-            </Link>
-            <Link
-              href="/pricing"
-              className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400"
-            >
-              {tp("precision.cta.button")} →
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-300">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-200">
-          {tp("precision.method.title")}
-        </h2>
-        <ul className="list-disc space-y-1 pl-5 text-slate-400">
-          <li>{tp("precision.method.b1")}</li>
-          <li>{tp("precision.method.b2")}</li>
-          <li>{tp("precision.method.b3")}</li>
-          <li>{tp("precision.method.b4")}</li>
-          <li>{tp("precision.method.b5")}</li>
-        </ul>
-      </section>
-
-      <footer className="border-t border-slate-800 pt-3">
-        <Attributions compact />
-      </footer>
-    </main>
-  );
-}
-
-export default function PrecisionPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">
-          …
-        </div>
-      }
-    >
-      <PrecisionInner />
-    </Suspense>
-  );
+function errTone(err: number | null | undefined): string {
+  if (err === null || err === undefined) return "text-slate-500";
+  const a = Math.abs(err);
+  if (a < 1) return "text-emerald-300";
+  if (a < 3) return "text-amber-300";
+  return "text-rose-300";
 }
 
 function Stat({
@@ -368,23 +67,249 @@ function Stat({
         : "text-slate-100";
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900/60 px-5 py-4">
-      <div className="text-xs uppercase tracking-wider text-slate-500">
-        {label}
-      </div>
-      <div className={`text-3xl font-semibold tabular-nums ${color}`}>
-        {value}
-      </div>
-      {hint ? (
-        <div className="mt-1 text-xs text-slate-500">{hint}</div>
-      ) : null}
+      <div className="text-xs uppercase tracking-wider text-slate-500">{label}</div>
+      <div className={`text-3xl font-semibold tabular-nums ${color}`}>{value}</div>
+      {hint ? <div className="mt-1 text-xs text-slate-500">{hint}</div> : null}
     </div>
   );
 }
 
-function errTone(err: number | null | undefined): string {
-  if (err === null || err === undefined) return "text-slate-500";
-  const a = Math.abs(err);
-  if (a < 1) return "text-emerald-300";
-  if (a < 3) return "text-amber-300";
-  return "text-rose-300";
+export default async function PrecisionPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const portParam = typeof sp.port === "string" ? sp.port : "";
+  const portId = getPort(portParam) ? portParam : DEFAULT_PORT_ID;
+  const daysParam = typeof sp.days === "string" ? Number(sp.days) : 30;
+  const days = (WINDOWS as readonly number[]).includes(daysParam) ? daysParam : 30;
+
+  const since = Date.now() - days * 24 * 60 * 60 * 1000;
+  const data = getVoyageAccuracy(portId, since);
+  const port = getPort(portId);
+  const portLabel = port?.name ?? portId.charAt(0).toUpperCase() + portId.slice(1);
+
+  const rmse = data.rmseHours;
+  const baseline = data.baselineRmseHours;
+  const baselineN = data.baselineCount ?? 0;
+  const excluded = data.baselineExcluded ?? 0;
+  const baselineMeaningful = baselineN >= MIN_BASELINE_N;
+  const ourOnSet = baselineMeaningful
+    ? (data.modelRmseOnBaselineHours ?? rmse)
+    : rmse;
+  const delta =
+    ourOnSet !== null && baseline !== null && baselineMeaningful
+      ? ((ourOnSet - baseline) / baseline) * 100
+      : null;
+  const beats = delta !== null && delta < 0;
+
+  return (
+    <main className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-8 p-6">
+      <header className="flex flex-wrap items-center justify-between gap-2">
+        <Link href="/app" className="text-xs text-slate-400 hover:text-slate-200">
+          ← Dashboard
+        </Link>
+        <div className="flex items-center gap-3 text-xs">
+          <span className="text-slate-500">
+            Window:
+            {WINDOWS.map((d) => (
+              <Link
+                key={d}
+                href={`/precision?port=${portId}&days=${d}`}
+                className={`ml-2 rounded px-2 py-0.5 ${
+                  days === d
+                    ? "bg-sky-500/20 text-sky-300"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                {d}d
+              </Link>
+            ))}
+          </span>
+          <span className="[&>button]:!px-3 [&>button]:!py-1">
+            <DemoButton />
+          </span>
+        </div>
+      </header>
+
+      <section className="space-y-4">
+        <h1 className="text-3xl font-bold tracking-tight">
+          ETA accuracy benchmark ·{" "}
+          <span className="text-sky-400">
+            {port?.flag ? `${port.flag} ` : ""}
+            {portLabel}
+          </span>
+        </h1>
+        <p className="max-w-2xl text-base text-slate-300">
+          How Port Flow&apos;s predicted ETA compares to each vessel&apos;s own
+          broadcast ETA at {portLabel}, measured on closed voyages over the last{" "}
+          {days} days. We publish the number — good or bad. Lower error is better.
+        </p>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Stat
+          label="Port Flow predicted ETA (RMSE)"
+          value={fmtH(baselineMeaningful ? ourOnSet : rmse)}
+          tone={beats ? "good" : "warn"}
+          hint={`MAE ${fmtH(data.maeHours)} · ${data.count} voyages`}
+        />
+        <Stat
+          label="Broadcast ETA (RMSE)"
+          value={baselineMeaningful ? fmtH(baseline) : "Building…"}
+          hint={
+            baselineMeaningful
+              ? `crew-declared, ${baselineN} voyages (same set)`
+              : `only ${baselineN} comparable voyages so far (need ${MIN_BASELINE_N})`
+          }
+        />
+        <Stat
+          label={beats ? "Our advantage" : "Gap"}
+          value={delta !== null ? `${Math.abs(delta).toFixed(1)} %` : "—"}
+          tone={delta === null ? "default" : beats ? "good" : "warn"}
+          hint={
+            delta === null
+              ? "benchmark builds as more voyages close"
+              : beats
+                ? "lower error than the broadcast ETA"
+                : "higher error than the broadcast ETA"
+          }
+        />
+      </section>
+
+      {baselineMeaningful ? (
+        <p className="-mt-4 text-xs text-slate-500">
+          Broadcast ETAs more than 7 days from the actual arrival are excluded as
+          AIS sentinel / placeholder values ({excluded} excluded). Both figures
+          are computed on the same remaining voyage set — apples to apples.
+        </p>
+      ) : null}
+
+      <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
+            Closed voyages
+          </h2>
+          <span className="text-xs text-slate-500">
+            error = predicted/broadcast minus actual arrival (hours)
+          </span>
+        </div>
+        {data.voyages.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="text-slate-500">
+                <tr className="text-left">
+                  <th className="py-1 pr-3 font-normal">MMSI</th>
+                  <th className="py-1 pr-3 font-normal">Cargo</th>
+                  <th className="py-1 pr-3 font-normal">Arrival</th>
+                  <th className="py-1 pr-3 text-right font-normal">Our error</th>
+                  <th className="py-1 pr-3 text-right font-normal">Broadcast error</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.voyages.slice(0, 50).map((v) => {
+                  const ourErr = v.predicted_eta
+                    ? (v.predicted_eta - (v.arrived_ts ?? 0)) / 3_600_000
+                    : null;
+                  const broadErr = v.broadcast_eta
+                    ? (v.broadcast_eta - (v.arrived_ts ?? 0)) / 3_600_000
+                    : null;
+                  return (
+                    <tr key={v.voyage_id} className="border-t border-slate-800">
+                      <td className="py-1.5 pr-3 tabular-nums text-slate-300">
+                        {v.mmsi}
+                      </td>
+                      <td className="py-1.5 pr-3 text-slate-300">
+                        {v.cargo_class ?? "—"}
+                      </td>
+                      <td className="py-1.5 pr-3 tabular-nums text-slate-400">
+                        {fmtTs(v.arrived_ts)}
+                      </td>
+                      <td
+                        className={`py-1.5 pr-3 text-right tabular-nums ${errTone(ourErr)}`}
+                      >
+                        {fmtH(ourErr)}
+                      </td>
+                      <td className="py-1.5 pr-3 text-right tabular-nums text-slate-400">
+                        {fmtH(broadErr)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">
+            No closed voyages in this window yet — the benchmark fills as vessels
+            complete their voyages to {portLabel}.
+          </p>
+        )}
+      </section>
+
+      <section className="rounded-lg border border-sky-700/40 bg-gradient-to-br from-sky-500/10 to-slate-900/40 p-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-100">
+              See it on a live desk
+            </h2>
+            <p className="mt-1 max-w-xl text-sm text-slate-300">
+              Predicted ETAs, congestion and sanctions screening across 51 ports —
+              try it in one click, no signup.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/app"
+              className="rounded border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:border-sky-500"
+            >
+              Open dashboard
+            </Link>
+            <Link
+              href="/pricing"
+              className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400"
+            >
+              See pricing →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-300">
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-200">
+          How it&apos;s measured
+        </h2>
+        <ul className="list-disc space-y-1 pl-5 text-slate-400">
+          <li>
+            Predicted ETA: distance-to-berth over speed-made-good, refreshed on
+            every AIS position, with a seasonal correction from rolling medians.
+          </li>
+          <li>
+            Broadcast ETA: the crew-entered ETA in the vessel&apos;s AIS message —
+            the de-facto industry default.
+          </li>
+          <li>
+            Both are compared to the actual arrival timestamp on the same closed
+            voyages. We report RMSE (penalises large misses) and MAE (typical
+            error).
+          </li>
+          <li>
+            Broadcast ETAs more than 7 days off are dropped as AIS sentinel /
+            placeholder values, and our model is scored on that same set — so the
+            comparison is honest, not cherry-picked.
+          </li>
+          <li>
+            Coverage is public AIS only; ports with weak coverage show fewer
+            closed voyages. We&apos;d rather show a small honest sample than a big
+            misleading one.
+          </li>
+        </ul>
+      </section>
+
+      <footer className="border-t border-slate-800 pt-3">
+        <Attributions compact />
+      </footer>
+    </main>
+  );
 }

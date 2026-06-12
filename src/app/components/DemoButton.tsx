@@ -31,7 +31,8 @@ function DemoButtonInner() {
       // and their useEffects re-fetch with the new demo cookie.
       // Otherwise vesselBookmarksEnabled stays false and the bookmark
       // icon never appears, even though the session is active.
-      window.location.href = "/";
+      // Land straight in the dashboard (/app), not the marketing landing.
+      window.location.href = "/app";
     } catch {
       setPending(false);
     }
