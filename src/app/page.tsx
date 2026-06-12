@@ -66,6 +66,9 @@ export default async function Home() {
             <Link href="/guide" className="hidden rounded px-3 py-1.5 text-slate-300 hover:text-white sm:inline">
               Guide
             </Link>
+            <Link href="/news" className="hidden rounded px-3 py-1.5 text-slate-300 hover:text-white sm:inline">
+              News
+            </Link>
             <Link href="/pricing" className="rounded px-3 py-1.5 text-slate-300 hover:text-white">
               Pricing
             </Link>
@@ -235,6 +238,7 @@ export default async function Home() {
           <nav className="flex flex-wrap gap-x-5 gap-y-2">
             <Link href="/app" className="hover:text-slate-200">Dashboard</Link>
             <Link href="/about" className="hover:text-slate-200">About</Link>
+            <Link href="/news" className="hover:text-slate-200">News</Link>
             <Link href="/methodology" className="hover:text-slate-200">Methodology</Link>
             <Link href="/precision" className="hover:text-slate-200">Benchmark</Link>
             <Link href="/guide" className="hover:text-slate-200">Guide</Link>
