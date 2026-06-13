@@ -67,6 +67,8 @@ const CHOKEPOINT_LABELS: Record<string, string> = {
   kerch: "Kerch Strait",
   panama: "Panama Canal",
   sunda: "Sunda Strait",
+  good_hope: "Cape of Good Hope",
+  "good-hope": "Cape of Good Hope",
 };
 
 function labelChokepoint(id: string): string {

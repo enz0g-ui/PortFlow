@@ -1086,6 +1086,12 @@ export default function Dashboard() {
             {t("nav.guide")}
           </Link>
           <Link
+            href="/news"
+            className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-sky-500 hover:text-sky-300"
+          >
+            News
+          </Link>
+          <Link
             href="/sources"
             className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-sky-500 hover:text-sky-300"
           >
