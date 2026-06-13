@@ -1035,10 +1035,12 @@ export default function Dashboard() {
       <DegradationBanner />
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">
-            {t("app.title")}{" "}
-            <span className="text-sky-400">· {t("app.subtitle")}</span>
-          </h1>
+          <Link href="/?home" title="Port Flow — home" className="group inline-block">
+            <h1 className="text-xl font-semibold tracking-tight group-hover:text-sky-300">
+              {t("app.title")}{" "}
+              <span className="text-sky-400">· {t("app.subtitle")}</span>
+            </h1>
+          </Link>
           <p className="text-xs text-slate-400">{t("app.tagline")}</p>
         </div>
         {/* min-height reserves the wrapped nav-row height so the Clerk-gated

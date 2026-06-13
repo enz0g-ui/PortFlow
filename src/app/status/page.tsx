@@ -102,7 +102,7 @@ export default function StatusPage() {
   return (
     <main className="mx-auto flex w-full max-w-[900px] flex-1 flex-col gap-6 p-6">
       <header className="flex items-center justify-between">
-        <Link href="/" className="text-xs text-slate-400 hover:text-slate-200">
+        <Link href="/app" className="text-xs text-slate-400 hover:text-slate-200">
           {tp("status.backLink")}
         </Link>
         <span className="text-xs text-slate-500">

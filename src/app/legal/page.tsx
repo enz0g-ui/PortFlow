@@ -11,7 +11,7 @@ export default function LegalPage() {
     <main className="mx-auto flex w-full max-w-[1000px] flex-1 flex-col gap-6 p-6">
       <header className="flex items-center justify-between">
         <Link
-          href="/"
+          href="/app"
           className="text-xs text-slate-400 hover:text-slate-200"
         >
           {tp("legal.backLink")}

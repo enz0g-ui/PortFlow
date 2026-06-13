@@ -38,7 +38,7 @@ export default async function AccountPage() {
   return (
     <main className="mx-auto flex w-full max-w-[800px] flex-col gap-4 p-6">
       <header className="flex items-center justify-between">
-        <Link href="/" className="text-xs text-slate-400 hover:text-slate-200">
+        <Link href="/app" className="text-xs text-slate-400 hover:text-slate-200">
           ← retour
         </Link>
         <Link

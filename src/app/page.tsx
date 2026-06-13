@@ -41,12 +41,19 @@ const FEATURES = [
   ["Watchlist, alerts & API", "Slack · Telegram · Email · Webhook alerts, plus a JSON API and CSV export."],
 ];
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   // Logged-in users and active demo sessions skip the marketing page and go
-  // straight to the product. The local dev fallback (id "dev", Clerk disabled)
-  // is NOT redirected, so the landing stays viewable in development.
+  // straight to the product — UNLESS they explicitly ask to view the landing
+  // (?home, used by the "Home" link inside the dashboard). The local dev
+  // fallback (id "dev", Clerk disabled) is never redirected.
+  const sp = await searchParams;
+  const wantsHome = sp.home !== undefined;
   const user = await getCurrentUser();
-  if (user && user.id !== "dev") {
+  if (user && user.id !== "dev" && !wantsHome) {
     redirect("/app");
   }
 
