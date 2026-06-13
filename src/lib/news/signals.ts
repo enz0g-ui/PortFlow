@@ -71,7 +71,7 @@ const CHOKEPOINT_LABELS: Record<string, string> = {
   "good-hope": "Cape of Good Hope",
 };
 
-function labelChokepoint(id: string): string {
+export function labelChokepoint(id: string): string {
   // IDs are prefixed "cp_" in the DB (cp_malacca, cp_suez, …).
   const key = id.replace(/^cp_/, "");
   return (

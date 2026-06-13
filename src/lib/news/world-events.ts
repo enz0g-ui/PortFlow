@@ -1,6 +1,8 @@
 import { PORTS } from "../ports";
 import { listPiracyIncidents } from "../piracy-asam";
-import { getNewsSignals } from "./signals";
+import { computeKpiSnapshot } from "../kpi";
+import { listChokepointTransits } from "../chokepoint-detector";
+import { labelChokepoint } from "./signals";
 
 /**
  * World events tied to our coverage — the "news half" of the news engine.
@@ -121,20 +123,54 @@ export async function getWorldEvents(now = Date.now()): Promise<WorldEvent[]> {
   if (cache && now - cache.ts < TTL_MS) return cache.data;
 
   const keywords = placeKeywords();
-  const signals = getNewsSignals(now);
-  const congestionByName = new Map(
-    signals.congestion.map((c) => [c.portName.toLowerCase(), c]),
+
+  // Full chokepoint transit counts (7d), keyed by display label — not just the
+  // top few, so ANY matched chokepoint gets its figure (v1.1).
+  const chokeByLabel = new Map<string, number>();
+  try {
+    const counts = new Map<string, number>();
+    for (const t of listChokepointTransits({ daysBack: 7, limit: 3000 })) {
+      counts.set(t.chokepointId, (counts.get(t.chokepointId) ?? 0) + 1);
+    }
+    for (const [id, n] of counts) {
+      chokeByLabel.set(labelChokepoint(id).toLowerCase(), n);
+    }
+  } catch {
+    /* ignore */
+  }
+
+  // Any matched port gets its live congestion computed on demand (memoised).
+  const portByName = new Map(
+    PORTS.filter((p) => p.name).map((p) => [p.name.toLowerCase(), p]),
   );
-  const chokeByLabel = new Map(
-    signals.chokepoints.map((c) => [c.label.toLowerCase(), c]),
-  );
+  const kpiMemo = new Map<string, string | null>();
+
+  function congestionStr(portId: string, portName: string): string | null {
+    if (kpiMemo.has(portId)) return kpiMemo.get(portId)!;
+    let out: string | null = null;
+    try {
+      const snap = computeKpiSnapshot(portId, now);
+      if (snap.totalVessels >= 5) {
+        const pct = Math.round((snap.anchored / snap.totalVessels) * 100);
+        out = `${portName}: ${snap.anchored} at anchor (${pct}% waiting)`;
+      }
+    } catch {
+      /* ignore */
+    }
+    kpiMemo.set(portId, out);
+    return out;
+  }
 
   function ourDataFor(places: string[]): string | undefined {
     for (const pl of places) {
-      const c = congestionByName.get(pl.toLowerCase());
-      if (c) return `${pl}: ${c.anchored} at anchor (${c.ratioPct}% waiting)`;
-      const k = chokeByLabel.get(pl.toLowerCase());
-      if (k) return `${pl}: ${k.transits7d} transits in 7 days`;
+      const plL = pl.toLowerCase();
+      const port = portByName.get(plL);
+      if (port) {
+        const c = congestionStr(port.id, port.name);
+        if (c) return c;
+      }
+      const n = chokeByLabel.get(plL);
+      if (n && n > 0) return `${pl}: ${n} transits in 7 days`;
     }
     return undefined;
   }
