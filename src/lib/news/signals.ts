@@ -1,6 +1,6 @@
 import { PORTS } from "../ports";
 import { computeKpiSnapshot } from "../kpi";
-import { listChokepointTransits } from "../chokepoint-detector";
+import { getChokepointTransitCounts } from "../chokepoint-detector";
 import { listDarkEvents } from "../dark-events";
 import { listLoiteringEvents } from "../loitering-detector";
 import { getVoyageAccuracy } from "../voyages";
@@ -111,19 +111,19 @@ export function getNewsSignals(now = Date.now()): NewsSignals {
   congestion.sort((a, b) => b.ratioPct - a.ratioPct || b.anchored - a.anchored);
   const topCongestion = congestion.slice(0, 6);
 
-  // --- Chokepoints: transit counts over the last 7 days, by chokepoint ---
-  const chokeCounts = new Map<string, number>();
+  // --- Chokepoints: TRUE transit counts over the last 7 days (SQL COUNT) ---
+  let chokepoints: ChokepointSignal[] = [];
   try {
-    for (const t of listChokepointTransits({ daysBack: 7, limit: 1000 })) {
-      chokeCounts.set(t.chokepointId, (chokeCounts.get(t.chokepointId) ?? 0) + 1);
-    }
+    chokepoints = getChokepointTransitCounts(7)
+      .map((c) => ({
+        id: c.chokepointId,
+        label: labelChokepoint(c.chokepointId),
+        transits7d: c.count,
+      }))
+      .slice(0, 6);
   } catch {
     /* ignore */
   }
-  const chokepoints: ChokepointSignal[] = Array.from(chokeCounts.entries())
-    .map(([id, n]) => ({ id, label: labelChokepoint(id), transits7d: n }))
-    .sort((a, b) => b.transits7d - a.transits7d)
-    .slice(0, 6);
 
   // --- AIS-gap (dark) events + loitering, last 7 days ---
   let darkEvents7d = 0;

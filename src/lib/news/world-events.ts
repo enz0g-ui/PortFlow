@@ -1,7 +1,7 @@
 import { PORTS } from "../ports";
 import { listPiracyIncidents } from "../piracy-asam";
 import { computeKpiSnapshot } from "../kpi";
-import { listChokepointTransits } from "../chokepoint-detector";
+import { getChokepointTransitCounts } from "../chokepoint-detector";
 import { labelChokepoint } from "./signals";
 
 /**
@@ -128,12 +128,8 @@ export async function getWorldEvents(now = Date.now()): Promise<WorldEvent[]> {
   // top few, so ANY matched chokepoint gets its figure (v1.1).
   const chokeByLabel = new Map<string, number>();
   try {
-    const counts = new Map<string, number>();
-    for (const t of listChokepointTransits({ daysBack: 7, limit: 3000 })) {
-      counts.set(t.chokepointId, (counts.get(t.chokepointId) ?? 0) + 1);
-    }
-    for (const [id, n] of counts) {
-      chokeByLabel.set(labelChokepoint(id).toLowerCase(), n);
+    for (const c of getChokepointTransitCounts(7)) {
+      chokeByLabel.set(labelChokepoint(c.chokepointId).toLowerCase(), c.count);
     }
   } catch {
     /* ignore */
@@ -169,8 +165,10 @@ export async function getWorldEvents(now = Date.now()): Promise<WorldEvent[]> {
         const c = congestionStr(port.id, port.name);
         if (c) return c;
       }
+      // Require a meaningful count: a near-zero chokepoint (e.g. Hormuz when
+      // ships go dark and aren't counted as transits) would be misleading.
       const n = chokeByLabel.get(plL);
-      if (n && n > 0) return `${pl}: ${n} transits in 7 days`;
+      if (n && n >= 10) return `${pl}: ${n} transits in 7 days`;
     }
     return undefined;
   }

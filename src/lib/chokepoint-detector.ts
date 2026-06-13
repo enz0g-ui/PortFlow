@@ -372,6 +372,28 @@ export function listChokepointTransits(opts: {
   }));
 }
 
+/**
+ * True transit counts per chokepoint over the window (SQL COUNT, not a capped
+ * row fetch). Use this for headline figures — listChokepointTransits caps rows
+ * and would badly undercount busy straits.
+ */
+export function getChokepointTransitCounts(
+  daysBack = 7,
+): Array<{ chokepointId: string; count: number }> {
+  const days = Math.max(1, Math.min(365, daysBack));
+  const since = Date.now() - days * 86_400_000;
+  const rows = db()
+    .raw.prepare(
+      `SELECT chokepoint_id AS id, COUNT(*) AS n
+       FROM chokepoint_transits
+       WHERE entered_at >= ?
+       GROUP BY chokepoint_id
+       ORDER BY n DESC`,
+    )
+    .all(since) as unknown as Array<{ id: string; n: number }>;
+  return rows.map((r) => ({ chokepointId: r.id, count: r.n }));
+}
+
 let _intervalId: ReturnType<typeof setInterval> | null = null;
 let _lastRunAt = 0;
 
