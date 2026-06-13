@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getNewsSignals } from "@/lib/news/signals";
+import { getWorldEvents } from "@/lib/news/world-events";
 import { CopyButton } from "../../components/CopyButton";
 
 // Internal composing tool — not for indexing. Surfaces the current, real
@@ -13,8 +14,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function SignalsPage() {
+export default async function SignalsPage() {
   const s = getNewsSignals();
+  const events = await getWorldEvents();
   const generated = new Date(s.generatedAt).toLocaleString("en-GB", {
     timeZone: "UTC",
     hour12: false,
@@ -58,6 +60,53 @@ export default function SignalsPage() {
         ) : (
           <p className="text-sm text-slate-500">
             Not enough live data yet to draft a line (feed may be reconnecting).
+          </p>
+        )}
+      </section>
+
+      {/* World events tied to our coverage */}
+      <section className="space-y-3">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-sky-400">
+          World events tied to your coverage
+        </h2>
+        <p className="text-[11px] leading-snug text-slate-500">
+          Named sources — headlines &amp; links only, no reuse. Where a story
+          overlaps a place you track, your live figure is attached: turn it into
+          a factual, sourced post.
+        </p>
+        {events.length > 0 ? (
+          <ul className="divide-y divide-slate-800 rounded-xl border border-slate-800 bg-slate-900/60">
+            {events.map((e, i) => (
+              <li key={i} className="p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wider text-sky-400">
+                      {e.source}
+                      {e.places.length ? ` · ${e.places.join(", ")}` : ""}
+                    </div>
+                    <a
+                      href={e.url}
+                      target="_blank"
+                      rel="noopener"
+                      className="text-sm text-slate-100 hover:text-sky-300"
+                    >
+                      {e.title}
+                    </a>
+                    {e.ourData ? (
+                      <div className="mt-0.5 text-xs text-emerald-300">
+                        Our data — {e.ourData}
+                      </div>
+                    ) : null}
+                  </div>
+                  {e.line ? <CopyButton text={e.line} label="Copy line" /> : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-slate-500">
+            No matching world events right now (feeds may be unreachable, or
+            nothing currently overlaps your tracked places).
           </p>
         )}
       </section>
