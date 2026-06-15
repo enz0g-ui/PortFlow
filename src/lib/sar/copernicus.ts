@@ -93,7 +93,10 @@ export async function fetchSarImage(
             acquisitionMode: "IW",
             resolution: "HIGH",
           },
-          processing: { backCoeff: "GAMMA0_TERRAIN" },
+          // SIGMA0_ELLIPSOID: no terrain correction (water is flat) — GAMMA0_TERRAIN
+          // 400'd ("not supported without orthorectification"). Standard for
+          // over-water vessel detection and cheaper in Processing Units.
+          processing: { backCoeff: "SIGMA0_ELLIPSOID" },
         },
       ],
     },
