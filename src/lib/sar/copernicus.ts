@@ -49,16 +49,18 @@ export interface SarFetchResult {
 const EVALSCRIPT = `//VERSION=3
 function setup() {
   return {
-    input: [{ bands: ["VV"], units: "DECIBEL" }],
+    input: [{ bands: ["VV"], units: "LINEAR_POWER" }],
     output: { bands: 1, sampleType: "UINT8" },
     mosaicking: "ORBIT"
   };
 }
 function evaluatePixel(s) {
-  // gamma0 backscatter in dB. Open water ~ -22 dB, vessels/metal ~ -5..+5 dB.
-  // Map [-25, 0] dB to [0, 255] so ships are bright on dark water (CFAR input).
-  // (S1GRD does not support "DN" units for VV — that 400'd; DECIBEL is correct.)
-  const v = Math.round(((s.VV + 25) / 25) * 255);
+  // VV linear gamma0; convert to dB in-script (S1GRD accepts only DN /
+  // LINEAR_POWER / AMPLITUDE — "DN" and "DECIBEL" both 400'd).
+  // Open water ~ -22 dB, vessels/metal ~ -5..+5 dB. Map [-25,0] dB -> [0,255]
+  // so ships read bright on dark water for the CFAR detector.
+  const db = 10.0 * Math.log(Math.max(s.VV, 1e-4)) / Math.LN10;
+  const v = Math.round(((db + 25.0) / 25.0) * 255.0);
   return [Math.min(255, Math.max(0, v))];
 }`;
 
