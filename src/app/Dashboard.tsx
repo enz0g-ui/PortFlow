@@ -62,6 +62,7 @@ import { DemoButton } from "./components/DemoButton";
 import { Attributions } from "./components/Attributions";
 import { DegradationBanner } from "./components/DegradationBanner";
 import { CARGO_LABELS } from "@/lib/cargo";
+import { getChokepointContext } from "@/lib/chokepoint-context";
 import { useI18n } from "@/lib/i18n/context";
 import type {
   CargoClass,
@@ -801,6 +802,7 @@ export default function Dashboard() {
     ? (port.countryNames[locale] ?? port.country)
     : "";
   const portBlurb = port ? (port.blurbs?.[locale] ?? port.blurb) : "";
+  const chokepointContext = port ? getChokepointContext(port.id) : undefined;
   const nativeName =
     port && port.nativeLocale !== locale
       ? port.names[port.nativeLocale]
@@ -1171,6 +1173,42 @@ export default function Dashboard() {
               /sources
             </Link>{" "}
             {t("aisCoverage.lowOptions.after")}
+          </span>
+        </div>
+      ) : null}
+
+      {chokepointContext ? (
+        <div className="rounded-lg border border-sky-700/50 bg-sky-500/5 px-4 py-3 text-xs">
+          <span className="font-semibold text-sky-300">
+            📊 {t("chokepoint.context")}
+          </span>{" "}
+          <span className="text-slate-100">
+            {[
+              chokepointContext.transitsPerDay,
+              chokepointContext.oilMbd,
+              chokepointContext.shareGlobal,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </span>{" "}
+          <span className="text-slate-500">
+            — {chokepointContext.source}
+            {chokepointContext.sourceUrl ? (
+              <>
+                {" · "}
+                <a
+                  href={chokepointContext.sourceUrl}
+                  target="_blank"
+                  rel="noopener"
+                  className="text-sky-300 underline hover:text-sky-200"
+                >
+                  source
+                </a>
+              </>
+            ) : null}
+          </span>
+          <span className="mt-1 block text-slate-400">
+            {t("chokepoint.contextNote")}
           </span>
         </div>
       ) : null}

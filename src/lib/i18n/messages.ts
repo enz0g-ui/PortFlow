@@ -55,6 +55,9 @@ const fr: Messages = {
   "auth.signIn": "Se connecter",
   "auth.signUp": "Créer un compte",
   "auth.account": "Compte",
+  "chokepoint.context": "Contexte stratégique",
+  "chokepoint.contextNote":
+    "Chiffres structurels de référence (PAS notre comptage live). L'AIS ci-dessous est faible ici : couverture terrestre + navires en black-out.",
   "aisCoverage.lowTitle": "Couverture AIS limitée",
   "aisCoverage.lowBody":
     "l'AIS public est faible ici (réseau communautaire incomplet), et dans un chokepoint sous tension les navires coupent aussi leur transpondeur (black-out). Les compteurs peuvent donc afficher peu ou zéro navire alors qu'il y a du trafic. Ce trou est précisément ce que notre détection de dark events et notre couche radar Sentinel-1 (SAR) sont faites pour révéler — l'AIS seul en est incapable. Pour aller plus loin :",
@@ -299,6 +302,9 @@ const en: Messages = {
   "auth.signIn": "Sign in",
   "auth.signUp": "Sign up",
   "auth.account": "Account",
+  "chokepoint.context": "Strategic context",
+  "chokepoint.contextNote":
+    "Structural reference figures (NOT our live count). Live AIS below is sparse here: terrestrial coverage + vessels running dark.",
   "aisCoverage.lowTitle": "Limited AIS coverage",
   "aisCoverage.lowBody":
     "public AIS is thin here (incomplete community network), and in a contested chokepoint vessels also switch their transponders off (go dark). Counters can therefore read low or zero even when there is traffic. That gap is exactly what our dark-event detection and Sentinel-1 radar (SAR) layer are built to surface — AIS alone can't. To go further:",
