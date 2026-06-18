@@ -703,6 +703,7 @@ export const PORTS: Port[] = [
     flag: "⚓",
     region: "chokepoint",
     strategic: true,
+    aisCoverage: "low",
     nativeLocale: "ar",
     names: {
       ar: "مضيق هرمز",

@@ -57,7 +57,7 @@ const fr: Messages = {
   "auth.account": "Compte",
   "aisCoverage.lowTitle": "Couverture AIS limitée",
   "aisCoverage.lowBody":
-    "ce port se trouve dans une zone faiblement couverte par aisstream.io (réseau communautaire). Les compteurs peuvent afficher peu ou aucun navire malgré l'activité réelle. Pour la visibilité complète :",
+    "l'AIS public est faible ici (réseau communautaire incomplet), et dans un chokepoint sous tension les navires coupent aussi leur transpondeur (black-out). Les compteurs peuvent donc afficher peu ou zéro navire alors qu'il y a du trafic. Ce trou est précisément ce que notre détection de dark events et notre couche radar Sentinel-1 (SAR) sont faites pour révéler — l'AIS seul en est incapable. Pour aller plus loin :",
   "aisCoverage.lowOptions.before":
     "(a) ajouter une clé API Spire ou Orbcomm via",
   "aisCoverage.lowOptions.after":
@@ -301,7 +301,7 @@ const en: Messages = {
   "auth.account": "Account",
   "aisCoverage.lowTitle": "Limited AIS coverage",
   "aisCoverage.lowBody":
-    "this port sits in a region poorly covered by aisstream.io (community-driven). Counters may show few or no vessels despite real activity. For full visibility:",
+    "public AIS is thin here (incomplete community network), and in a contested chokepoint vessels also switch their transponders off (go dark). Counters can therefore read low or zero even when there is traffic. That gap is exactly what our dark-event detection and Sentinel-1 radar (SAR) layer are built to surface — AIS alone can't. To go further:",
   "aisCoverage.lowOptions.before":
     "(a) add a Spire or Orbcomm API key via",
   "aisCoverage.lowOptions.after":
