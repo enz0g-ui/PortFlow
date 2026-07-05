@@ -3,17 +3,19 @@
  * vessels they reference by IMO and MMSI. Refreshed daily.
  *
  * Free + public sources:
- *   - OFAC SDN: https://www.treasury.gov/ofac/downloads/sdn.csv (alt list also)
- *   - UK OFSI: https://ofsistorage.blob.core.windows.net/publishlive/2022format/ConList.json
+ *   - OFAC SDN: sanctionslistservice.ofac.treas.gov (CSV; the old
+ *     treasury.gov URL is a ~13s redirect chain that kept timing out)
+ *   - UK OFSI: ConList.csv (OFSI dropped the JSON format — ConList.json 404s)
  *
  * Note: matching by MMSI is not 100% reliable — sanctions lists historically
  * named vessels (IMO is the canonical id), MMSI is added when known.
  * We expose both lookups.
  */
 
-const OFAC_CSV = "https://www.treasury.gov/ofac/downloads/sdn.csv";
-const UK_OFSI_JSON =
-  "https://ofsistorage.blob.core.windows.net/publishlive/2022format/ConList.json";
+const OFAC_CSV =
+  "https://sanctionslistservice.ofac.treas.gov/api/download/sdn.csv";
+const UK_OFSI_CSV =
+  "https://ofsistorage.blob.core.windows.net/publishlive/2022format/ConList.csv";
 
 interface SanctionEntry {
   source: "ofac" | "ofsi";
@@ -54,8 +56,11 @@ function getCache(): SanctionsCache {
   return g[KEY]!;
 }
 
-const IMO_REGEX = /\bIMO[\s:#-]*(\d{7})\b/i;
-const MMSI_REGEX = /\bMMSI[\s:#-]*(\d{9})\b/i;
+// Tolerant of the varied phrasings across lists: "IMO 9524475",
+// "(IMO number):9524475", "IMO: 9524475" — allow a few non-digit chars
+// between the keyword and the number.
+const IMO_REGEX = /\bIMO[^0-9]{0,16}(\d{7})\b/i;
+const MMSI_REGEX = /\bMMSI[^0-9]{0,16}(\d{9})\b/i;
 
 function parseIdsFromText(text: string): { imo?: number; mmsi?: number } {
   const imoMatch = text.match(IMO_REGEX);
@@ -69,7 +74,7 @@ function parseIdsFromText(text: string): { imo?: number; mmsi?: number } {
 async function fetchOfac(): Promise<SanctionEntry[]> {
   const r = await fetch(OFAC_CSV, {
     cache: "no-store",
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(30_000),
   });
   if (!r.ok) throw new Error(`OFAC HTTP ${r.status}`);
   const text = await r.text();
@@ -134,35 +139,76 @@ function parseCsvLine(line: string): string[] {
   return out;
 }
 
+/**
+ * Whole-text CSV parser: unlike parseCsvLine, records are split on newlines
+ * OUTSIDE quotes — the OFSI CSV embeds newlines inside quoted fields
+ * ("Other Information" wraps), so line-by-line parsing shreds records.
+ */
+function parseCsvRecords(text: string): string[][] {
+  const records: string[][] = [];
+  let row: string[] = [];
+  let cur = "";
+  let q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      if (q && text[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        q = !q;
+      }
+    } else if (c === "," && !q) {
+      row.push(cur);
+      cur = "";
+    } else if ((c === "\n" || c === "\r") && !q) {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(cur);
+      if (row.length > 1 || row[0] !== "") records.push(row);
+      row = [];
+      cur = "";
+    } else {
+      cur += c;
+    }
+  }
+  if (cur !== "" || row.length > 0) {
+    row.push(cur);
+    records.push(row);
+  }
+  return records;
+}
+
+// ConList.csv layout: record 0 is a "Last Updated,<date>" metadata row,
+// record 1 the 36-column header. Columns we use (0-based):
+// 0 = Name 6 · 27 = Other Information (carries "(IMO number):NNNNNNN")
+// · 31 = Regime.
+const OFSI_COL_NAME = 0;
+const OFSI_COL_OTHER_INFO = 27;
+const OFSI_COL_REGIME = 31;
+
 async function fetchOfsi(): Promise<SanctionEntry[]> {
-  const r = await fetch(UK_OFSI_JSON, {
+  const r = await fetch(UK_OFSI_CSV, {
     cache: "no-store",
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(30_000),
   });
   if (!r.ok) throw new Error(`OFSI HTTP ${r.status}`);
-  const json = (await r.json()) as {
-    Designations?: Array<{
-      Name?: { Name6?: string };
-      OtherInformation?: string;
-      RegimeName?: string;
-      Names?: Array<{ Name6?: string }>;
-    }>;
-  };
+  const text = await r.text();
 
   const entries: SanctionEntry[] = [];
-  for (const d of json.Designations ?? []) {
-    const name = d.Name?.Name6 ?? d.Names?.[0]?.Name6 ?? "";
+  for (const cells of parseCsvRecords(text).slice(2)) {
+    if (cells.length < 32) continue;
+    const name = (cells[OFSI_COL_NAME] ?? "").trim();
     if (!name) continue;
-    const blob = `${name} ${d.OtherInformation ?? ""}`;
-    const ids = parseIdsFromText(blob);
+    const other = cells[OFSI_COL_OTHER_INFO] ?? "";
+    const ids = parseIdsFromText(`${name} ${other}`);
     if (!ids.imo && !ids.mmsi) continue;
     entries.push({
       source: "ofsi",
-      list: d.RegimeName ?? "UK",
-      name: name.trim(),
+      list: (cells[OFSI_COL_REGIME] ?? "").trim() || "UK",
+      name,
       imo: ids.imo,
       mmsi: ids.mmsi,
-      reason: (d.OtherInformation ?? "").slice(0, 200),
+      reason: other.slice(0, 200),
     });
   }
   return entries;
@@ -179,17 +225,32 @@ export async function refreshSanctions(force = false): Promise<void> {
 
   inflight = (async () => {
     const errors: string[] = [];
-    const all: SanctionEntry[] = [];
+    let ofacEntries: SanctionEntry[] | null = null;
+    let ofsiEntries: SanctionEntry[] | null = null;
     try {
-      all.push(...(await fetchOfac()));
+      ofacEntries = await fetchOfac();
     } catch (err) {
       errors.push(`ofac: ${(err as Error).message}`);
     }
     try {
-      all.push(...(await fetchOfsi()));
+      ofsiEntries = await fetchOfsi();
     } catch (err) {
       errors.push(`ofsi: ${(err as Error).message}`);
     }
+
+    // Keep-last-good: a source that failed keeps its previous entries — a
+    // stale sanctions list beats an empty one (screening going blank both
+    // looks broken and silently stops flagging). fetchedAt only advances
+    // when at least one source succeeded, so /api/health keeps reporting
+    // the true staleness of what we're serving.
+    if (ofacEntries === null && ofsiEntries === null) {
+      cache.errors = errors;
+      return;
+    }
+    const all = [
+      ...(ofacEntries ?? cache.entries.filter((e) => e.source === "ofac")),
+      ...(ofsiEntries ?? cache.entries.filter((e) => e.source === "ofsi")),
+    ];
     cache.entries = all;
     cache.byImo = new Map();
     cache.byMmsi = new Map();
