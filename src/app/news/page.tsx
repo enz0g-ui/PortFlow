@@ -4,6 +4,7 @@ import { listBriefs } from "@/lib/news/briefs";
 import { getNewsSignals } from "@/lib/news/signals";
 import { getWorldEvents } from "@/lib/news/world-events";
 import { CopyButton } from "../components/CopyButton";
+import { NewsletterForm } from "../components/NewsletterForm";
 
 export const dynamic = "force-dynamic";
 
@@ -255,6 +256,17 @@ export default async function NewsPage() {
         </Link>
         .
       </p>
+
+      <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-5">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-200">
+          Get the briefs by email
+        </h2>
+        <p className="mb-3 mt-1 max-w-xl text-sm text-slate-400">
+          One email a week with every new data brief — congestion anomalies,
+          chokepoint moves, precision updates.
+        </p>
+        <NewsletterForm source="news" />
+      </section>
 
       <footer className="border-t border-slate-800 pt-6 text-xs text-slate-500">
         <nav className="flex flex-wrap gap-x-5 gap-y-2">

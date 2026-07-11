@@ -414,6 +414,26 @@ export function recentClosedVoyages(
   ) as unknown as VoyageRow[];
 }
 
+// Cross-port feed for /receipts: closed voyages whose prediction was logged
+// strictly before arrival. Ad-hoc prepare (not in DbHandle) — public page,
+// not a hot path.
+export function recentClosedVoyagesAllPorts(
+  sinceMs: number,
+  limit = 200,
+): VoyageRow[] {
+  return db()
+    .raw.prepare(
+      `SELECT * FROM voyages
+       WHERE arrived_ts IS NOT NULL
+         AND arrived_ts >= ?
+         AND predicted_eta IS NOT NULL
+         AND predicted_at IS NOT NULL
+         AND predicted_at < arrived_ts
+       ORDER BY arrived_ts DESC LIMIT ?`,
+    )
+    .all(sinceMs, limit) as unknown as VoyageRow[];
+}
+
 export function vesselLifecycle(mmsi: number, sinceMs: number): VoyageRow[] {
   return db()
     .raw.prepare(

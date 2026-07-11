@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { DemoButton } from "./components/DemoButton";
 import { LiveBenchmark } from "./components/LiveBenchmark";
+import { NewsletterForm } from "./components/NewsletterForm";
 
 // Problem-oriented title — captures intent searches ("tanker ETA prediction",
 // "port congestion"), not just the brand name. Layout appends "· Port Flow".
@@ -211,6 +212,24 @@ export default async function Home({
         </div>
       </section>
 
+      {/* Weekly data brief — every visitor should be able to leave a trace */}
+      <section className="border-t border-slate-800">
+        <div className="mx-auto max-w-3xl px-6 py-14">
+          <h2 className="text-xl font-semibold text-slate-100">
+            The weekly data brief
+          </h2>
+          <p className="mb-4 mt-1 text-sm text-slate-400">
+            Congestion anomalies, chokepoint moves, precision updates — one
+            email a week, numbers first. The same briefs published on{" "}
+            <Link href="/news" className="underline hover:text-slate-200">
+              /news
+            </Link>
+            .
+          </p>
+          <NewsletterForm source="landing" />
+        </div>
+      </section>
+
       {/* Final CTA */}
       <section className="border-t border-slate-800 bg-gradient-to-b from-slate-900/40 to-slate-950">
         <div className="mx-auto max-w-3xl px-6 py-20 text-center">
@@ -248,6 +267,9 @@ export default async function Home({
             <Link href="/news" className="hover:text-slate-200">News</Link>
             <Link href="/methodology" className="hover:text-slate-200">Methodology</Link>
             <Link href="/precision" className="hover:text-slate-200">Benchmark</Link>
+            <Link href="/receipts" className="hover:text-slate-200">Receipts</Link>
+            <Link href="/ports" className="hover:text-slate-200">Ports</Link>
+            <Link href="/security" className="hover:text-slate-200">Security</Link>
             <Link href="/guide" className="hover:text-slate-200">Guide</Link>
             <Link href="/sources" className="hover:text-slate-200">Sources</Link>
             <Link href="/pricing" className="hover:text-slate-200">Pricing</Link>
