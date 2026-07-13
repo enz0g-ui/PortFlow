@@ -1884,7 +1884,7 @@ export default function Dashboard() {
             <div className="mt-4 flex gap-2">
               <Link
                 href="/pricing"
-                className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400"
+                className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-[#06121d] hover:bg-sky-400"
               >
                 Voir les tarifs →
               </Link>
@@ -1921,7 +1921,7 @@ export default function Dashboard() {
             <div className="mt-4 flex gap-2">
               <Link
                 href="/pricing"
-                className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400"
+                className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-[#06121d] hover:bg-sky-400"
               >
                 Voir les tarifs →
               </Link>

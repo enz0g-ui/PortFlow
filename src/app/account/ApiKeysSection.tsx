@@ -92,7 +92,7 @@ export function ApiKeysSection() {
         </p>
         <a
           href="/pricing"
-          className="mt-3 inline-block rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-400"
+          className="mt-3 inline-block rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-[#06121d] hover:bg-sky-400"
         >
           Voir les tarifs →
         </a>
@@ -183,7 +183,7 @@ export function ApiKeysSection() {
       {!creating && active.length < data.max ? (
         <button
           onClick={() => setCreating(true)}
-          className="rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-400"
+          className="rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-[#06121d] hover:bg-sky-400"
         >
           + Créer une clé API
         </button>
@@ -201,7 +201,7 @@ export function ApiKeysSection() {
           <button
             type="submit"
             disabled={busy}
-            className="rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-400 disabled:opacity-50"
+            className="rounded bg-sky-500 px-3 py-1.5 text-xs font-medium text-[#06121d] hover:bg-sky-400 disabled:opacity-50"
           >
             {busy ? "…" : "Créer"}
           </button>

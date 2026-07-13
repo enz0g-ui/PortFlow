@@ -1,18 +1,24 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 import { I18nProvider } from "@/lib/i18n/context";
 import { AuthShell } from "./components/AuthShell";
 import { DemoBanner } from "./components/DemoBanner";
 import "./globals.css";
 
-const geistSans = Geist({
+// Design system « la preuve d'abord » (refonte 13/07/2026) : Space Grotesk
+// pour le texte, IBM Plex Mono pour les chiffres et labels techniques. On
+// réutilise les variables historiques --font-geist-* pour que TOUTE l'app
+// (dashboard compris) bascule sans churn de classes.
+const geistSans = Space_Grotesk({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
+const geistMono = IBM_Plex_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 // Search-engine ownership verification. Tokens are env-driven so they can be

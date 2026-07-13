@@ -129,7 +129,7 @@ function DemoForm() {
           <button
             type="submit"
             disabled={submitting || anonPending || !code.trim()}
-            className="rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-[#06121d] hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? "Activating…" : "Start 30-min session"}
           </button>

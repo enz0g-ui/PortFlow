@@ -235,7 +235,7 @@ export default function PricingPage() {
                   href={href}
                   className={`rounded px-3 py-2 text-center text-sm font-medium ${
                     highlight
-                      ? "bg-sky-500 text-white hover:bg-sky-400"
+                      ? "bg-sky-500 text-[#06121d] hover:bg-sky-400"
                       : "border border-slate-700 text-slate-200 hover:border-sky-500"
                   }`}
                 >
@@ -247,7 +247,7 @@ export default function PricingPage() {
                   disabled={pending !== null}
                   className={`rounded px-3 py-2 text-center text-sm font-medium ${
                     highlight
-                      ? "bg-sky-500 text-white hover:bg-sky-400"
+                      ? "bg-sky-500 text-[#06121d] hover:bg-sky-400"
                       : "border border-slate-700 text-slate-200 hover:border-sky-500"
                   } disabled:opacity-50`}
                 >

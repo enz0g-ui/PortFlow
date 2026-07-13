@@ -207,7 +207,7 @@ export default function FleetPage() {
         <p className="text-sm text-slate-400">{tp("fleet.signIn")}</p>
         <Link
           href="/sign-in"
-          className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400"
+          className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-[#06121d] hover:bg-sky-400"
         >
           {t("nav.signIn") || "Sign in"}
         </Link>
@@ -330,7 +330,7 @@ export default function FleetPage() {
           <p className="mt-1 text-sm text-slate-400">{tp("fleet.empty.lead")}</p>
           <Link
             href="/"
-            className="mt-4 inline-block rounded bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400"
+            className="mt-4 inline-block rounded bg-sky-500 px-4 py-2 text-sm font-medium text-[#06121d] hover:bg-sky-400"
           >
             {tp("fleet.empty.cta")} →
           </Link>

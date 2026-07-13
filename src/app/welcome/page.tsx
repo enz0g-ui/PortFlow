@@ -139,7 +139,7 @@ function WelcomeInner() {
           <div className="flex gap-3">
             <button
               onClick={() => setStep(2)}
-              className="rounded bg-sky-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-sky-400"
+              className="rounded bg-sky-500 px-5 py-2.5 text-sm font-medium text-[#06121d] hover:bg-sky-400"
             >
               {tp("welcome.step1.cta")}
             </button>
@@ -245,7 +245,7 @@ function WelcomeInner() {
             <button
               onClick={savePorts}
               disabled={picked.size === 0 || savingPorts}
-              className="rounded bg-sky-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-sky-400 disabled:opacity-50"
+              className="rounded bg-sky-500 px-5 py-2.5 text-sm font-medium text-[#06121d] hover:bg-sky-400 disabled:opacity-50"
             >
               {savingPorts
                 ? "…"
@@ -307,7 +307,7 @@ function WelcomeInner() {
           <div className="flex gap-3">
             <button
               onClick={finish}
-              className="rounded bg-sky-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-sky-400"
+              className="rounded bg-sky-500 px-5 py-2.5 text-sm font-medium text-[#06121d] hover:bg-sky-400"
             >
               {tp("welcome.step3.cta")}
             </button>

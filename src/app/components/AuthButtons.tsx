@@ -24,7 +24,7 @@ export function AuthButtons() {
           </button>
         </SignInButton>
         <SignUpButton mode="redirect">
-          <button className="rounded bg-sky-500 px-2 py-1 text-xs font-medium text-white hover:bg-sky-400">
+          <button className="rounded bg-sky-500 px-2 py-1 text-xs font-medium text-[#06121d] hover:bg-sky-400">
             {t("auth.signUp")}
           </button>
         </SignUpButton>

@@ -52,7 +52,7 @@ export function NewsletterForm({ source = "unknown" }: { source?: string }) {
         <button
           type="submit"
           disabled={status === "loading" || status === "success" || !email}
-          className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400 disabled:opacity-60"
+          className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-[#06121d] hover:bg-sky-400 disabled:opacity-60"
         >
           {status === "loading"
             ? "Sending…"

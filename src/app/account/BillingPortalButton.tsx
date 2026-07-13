@@ -42,7 +42,7 @@ export function BillingPortalButton({ tier }: { tier: string }) {
       <button
         onClick={open}
         disabled={busy}
-        className="rounded bg-sky-500 px-4 py-2 text-xs font-medium text-white hover:bg-sky-400 disabled:opacity-50"
+        className="rounded bg-sky-500 px-4 py-2 text-xs font-medium text-[#06121d] hover:bg-sky-400 disabled:opacity-50"
       >
         {busy ? "…" : "Ouvrir le portail Stripe →"}
       </button>

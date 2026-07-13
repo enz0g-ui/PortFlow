@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { DemoButton } from "./components/DemoButton";
 import { LiveBenchmark } from "./components/LiveBenchmark";
 import { NewsletterForm } from "./components/NewsletterForm";
+import { TickerBar } from "./components/TickerBar";
 
 // Problem-oriented title — captures intent searches ("tanker ETA prediction",
 // "port congestion"), not just the brand name. Layout appends "· Port Flow".
@@ -33,13 +34,13 @@ const PERSONAS = [
   },
 ];
 
-const FEATURES = [
-  ["Predicted ETA + published benchmark", "Our ETA vs the broadcast ETA, with an open RMSE/MAE benchmark — measured, not claimed."],
-  ["51 ports · 12 chokepoints, live", "Real-time AIS coverage across the world's tanker hubs and the straits that matter."],
-  ["Multi-regime sanctions screening", "UKSL, OFAC, UN-SC and EU FSF in one pass, with an audit trail."],
-  ["Chokepoint transit alerts", "Hormuz, Suez, Bosphorus, Malacca — transit counts, dwell time and deviations."],
-  ["Dark-event / AIS-gap detection", "In-house detection of vessels going dark in contested waters — behavioural, not speculative."],
-  ["Watchlist, alerts & API", "Slack · Telegram · Email · Webhook alerts, plus a JSON API and CSV export."],
+const FEATURES: Array<[stat: string, tone: string, title: string, body: string]> = [
+  ["MAE", "text-emerald-300", "Predicted ETA + published benchmark", "Our ETA vs the broadcast ETA, with an open RMSE/MAE benchmark — measured, not claimed."],
+  ["51 · 12", "text-sky-500", "Ports & chokepoints, live", "Real-time AIS coverage across the world's tanker hubs and the straits that matter."],
+  ["×4", "text-sky-500", "Multi-regime sanctions screening", "UKSL, OFAC, UN-SC and EU FSF in one pass, with an audit trail."],
+  ["⌖", "text-amber-300", "Chokepoint transit alerts", "Hormuz, Suez, Bosphorus, Malacca — transit counts, dwell time and deviations."],
+  ["⬤", "text-rose-300", "Dark-event / AIS-gap detection", "In-house detection of vessels going dark in contested waters — behavioural, not speculative."],
+  ["{ }", "text-sky-500", "Watchlist, alerts & API", "Slack · Telegram · Email · Webhook alerts, plus a JSON API and CSV export."],
 ];
 
 export default async function Home({
@@ -63,26 +64,36 @@ export default async function Home({
       {/* Nav */}
       <header className="sticky top-0 z-20 border-b border-slate-800 bg-slate-950/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-6 py-3">
-          <Link href="/" className="text-lg font-semibold tracking-tight">
-            Port Flow
-            <span className="ml-1.5 text-sky-400">·</span>
+          <Link href="/" className="flex items-baseline gap-2.5">
+            <span className="text-[17px] font-bold tracking-[-0.02em] text-slate-100">
+              PORT FLOW
+            </span>
+            <span className="hidden font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-sky-500 sm:inline">
+              tanker intel
+            </span>
           </Link>
           <nav className="flex items-center gap-1 text-sm">
-            <Link href="/methodology" className="hidden rounded px-3 py-1.5 text-slate-300 hover:text-white sm:inline">
+            <Link href="/methodology" className="hidden rounded px-3 py-1.5 text-slate-300 hover:text-white lg:inline">
               Methodology
             </Link>
-            <Link href="/guide" className="hidden rounded px-3 py-1.5 text-slate-300 hover:text-white sm:inline">
-              Guide
+            <Link href="/precision" className="hidden rounded px-3 py-1.5 text-slate-300 hover:text-white sm:inline">
+              Benchmark
+            </Link>
+            <Link href="/ports" className="hidden rounded px-3 py-1.5 text-slate-300 hover:text-white sm:inline">
+              Ports
             </Link>
             <Link href="/news" className="hidden rounded px-3 py-1.5 text-slate-300 hover:text-white sm:inline">
               News
+            </Link>
+            <Link href="/guide" className="hidden rounded px-3 py-1.5 text-slate-300 hover:text-white lg:inline">
+              Guide
             </Link>
             <Link href="/pricing" className="rounded px-3 py-1.5 text-slate-300 hover:text-white">
               Pricing
             </Link>
             <Link
               href="/app"
-              className="rounded border border-slate-700 px-3 py-1.5 text-slate-200 hover:border-sky-500 hover:text-white"
+              className="rounded bg-sky-500 px-4 py-2 text-sm font-semibold text-[#06121d] hover:bg-sky-400"
             >
               Open dashboard
             </Link>
@@ -90,78 +101,85 @@ export default async function Home({
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="mx-auto max-w-5xl px-6 pb-16 pt-20 text-center sm:pt-28">
-        <div className="mb-4 inline-block rounded-full border border-slate-700 px-3 py-1 text-xs uppercase tracking-widest text-sky-400">
-          Tanker intelligence · 51 ports
-        </div>
-        <h1 className="mx-auto max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
-          Crew-declared ETAs are off by hours.
-          <span className="block text-sky-400">Ours aren&apos;t.</span>
-        </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-400">
-          Port Flow turns public AIS into predicted ETAs, live port congestion,
-          sanctions screening and chokepoint alerts — with a{" "}
-          <span className="text-slate-200">published accuracy benchmark</span>,
-          not a marketing claim.
-        </p>
-        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <div className="[&>button]:px-6 [&>button]:py-3 [&>button]:text-base">
-            <DemoButton />
+      {/* Live ticker — real counts, not decoration */}
+      <TickerBar />
+
+      {/* Hero split — pitch + live benchmark card */}
+      <section className="mx-auto grid max-w-6xl items-center gap-12 px-6 pb-16 pt-16 lg:grid-cols-[1fr_420px] sm:pt-20">
+        <div>
+          <div className="mb-5 inline-flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-sky-500">
+            <span className="h-1.5 w-1.5 animate-[pf-pulse_2s_infinite] rounded-full bg-emerald-300" />
+            Real-time AIS · 51 ports · 12 chokepoints
           </div>
-          <Link
-            href="/demurrage-calculator"
-            className="rounded border border-amber-500/60 px-6 py-3 text-base font-medium text-amber-300 hover:border-amber-400 hover:text-amber-200"
-          >
-            Demurrage calculator — free
-          </Link>
-          <Link
-            href="/pricing"
-            className="rounded border border-slate-700 px-6 py-3 text-base font-medium text-slate-200 hover:border-sky-500 hover:text-white"
-          >
-            See pricing
-          </Link>
+          <h1 className="max-w-2xl text-4xl font-semibold leading-[1.08] tracking-[-0.03em] sm:text-[52px]">
+            Crew-declared ETAs drift by{" "}
+            <span className="text-rose-300">hours</span>.
+            <span className="block">
+              Ours are <span className="text-emerald-300">measured</span>.
+            </span>
+          </h1>
+          <p className="mt-5 max-w-lg text-base leading-relaxed text-slate-400">
+            Predicted ETAs, live congestion, sanctions screening and chokepoint
+            alerts — with a{" "}
+            <span className="text-slate-200">published accuracy benchmark</span>
+            , not a marketing claim.
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="[&>button]:!bg-sky-500 [&>button]:!text-[#06121d] [&>button]:px-6 [&>button]:py-3 [&>button]:text-base [&>button]:font-semibold hover:[&>button]:!bg-sky-400">
+              <DemoButton />
+            </div>
+            <Link
+              href="/demurrage-calculator"
+              className="rounded border border-slate-700 px-6 py-3 text-center text-base font-medium text-slate-100 hover:border-sky-500"
+            >
+              Demurrage calculator — free
+            </Link>
+          </div>
+          <p className="mt-4 font-mono text-[11.5px] text-slate-600">
+            open methodology · documented limits · no card for the demo
+          </p>
         </div>
-        <p className="mt-5 text-xs text-slate-500">
-          Open methodology · documented limits · cancel anytime · no card for the demo
-        </p>
+        <LiveBenchmark />
       </section>
 
-      {/* Proof — honest live benchmark */}
-      <LiveBenchmark />
-
-      {/* Personas */}
-      <section className="mx-auto max-w-6xl px-6 py-20">
-        <h2 className="mb-12 text-center text-2xl font-semibold sm:text-3xl">
-          Built for the people who move cargo
-        </h2>
-        <div className="grid gap-6 md:grid-cols-3">
-          {PERSONAS.map((p) => (
+      {/* Audiences */}
+      <section className="border-t border-slate-800">
+        <div className="mx-auto grid max-w-6xl md:grid-cols-3">
+          {PERSONAS.map((p, i) => (
             <div
               key={p.tag}
-              className="flex flex-col rounded-2xl border border-slate-800 bg-slate-900/40 p-7"
+              className={`flex flex-col px-8 py-8 ${i < 2 ? "md:border-r md:border-slate-800" : ""} ${i > 0 ? "border-t border-slate-800 md:border-t-0" : ""}`}
             >
-              <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-sky-400">
+              <div className="mb-2.5 font-mono text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-500">
                 {p.tag}
               </div>
-              <p className="mb-4 text-sm text-slate-400">{p.pain}</p>
-              <p className="mt-auto text-sm font-medium text-slate-100">{p.gain}</p>
+              <p className="mb-2 text-[15px] font-medium text-slate-100">{p.pain}</p>
+              <p className="mt-auto text-[13px] leading-relaxed text-slate-400">{p.gain}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Features */}
-      <section className="border-t border-slate-800 bg-slate-900/30">
-        <div className="mx-auto max-w-6xl px-6 py-20">
-          <h2 className="mb-12 text-center text-2xl font-semibold sm:text-3xl">
-            One screen, the whole tanker picture
+      <section className="border-t border-slate-800">
+        <div className="mx-auto max-w-6xl px-6 py-16">
+          <div className="mb-3 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-sky-500">
+            One screen, the whole tanker view
+          </div>
+          <h2 className="mb-9 text-2xl font-semibold tracking-[-0.02em] sm:text-[32px]">
+            Six building blocks, one public benchmark
           </h2>
-          <div className="grid gap-px overflow-hidden rounded-2xl border border-slate-800 bg-slate-800 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map(([title, body]) => (
-              <div key={title} className="bg-slate-950 p-7">
-                <h3 className="mb-2 text-base font-semibold text-slate-100">{title}</h3>
-                <p className="text-sm text-slate-400">{body}</p>
+          <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map(([stat, tone, title, body]) => (
+              <div
+                key={title}
+                className="rounded-md border border-slate-800 bg-slate-900 px-6 py-5"
+              >
+                <div className={`mb-2.5 font-mono text-[26px] font-semibold ${tone}`}>
+                  {stat}
+                </div>
+                <h3 className="mb-1.5 text-sm font-semibold text-slate-100">{title}</h3>
+                <p className="text-[12.5px] leading-relaxed text-slate-400">{body}</p>
               </div>
             ))}
           </div>
@@ -180,81 +198,95 @@ export default async function Home({
       </section>
 
       {/* Pricing teaser */}
-      <section className="mx-auto max-w-6xl px-6 py-20">
-        <h2 className="mb-3 text-center text-2xl font-semibold sm:text-3xl">
-          Pricing that undercuts the incumbents
-        </h2>
-        <p className="mx-auto mb-10 max-w-2xl text-center text-sm text-slate-400">
-          A full Kpler or Lloyd&apos;s List seat runs into tens of thousands a year.
-          Port Flow starts free, scales with you, and cancels anytime.
-        </p>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            ["Free", "€0", "Read-only across all 51 ports & 12 chokepoints."],
-            ["Starter", "€97/mo", "Watchlist, alerts and a single seat for one desk."],
-            ["Professional", "€149/mo", "Sanctions screening, 60-day history, CSV export, API."],
-            ["Pro+", "€374/mo", "Dark-fleet detection, SAR fusion, priority support."],
-          ].map(([name, price, body]) => (
-            <div
-              key={name}
-              className="flex flex-col rounded-2xl border border-slate-800 bg-slate-900/40 p-6"
+      <section className="border-t border-slate-800 bg-slate-900/40">
+        <div className="mx-auto max-w-6xl px-6 py-16">
+          <h2 className="mb-2 text-2xl font-semibold tracking-[-0.02em] sm:text-[32px]">
+            Pricing that undercuts the incumbents
+          </h2>
+          <p className="mb-8 max-w-2xl text-sm text-slate-400">
+            A full Kpler or Lloyd&apos;s List seat runs into tens of thousands a
+            year. Port Flow starts free, scales with you, and cancels anytime.
+          </p>
+          <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["Free", "€0", "", "Read-only across all 51 ports & 12 chokepoints."],
+              ["Starter", "€97", "/mo", "Watchlist, alerts and a single seat for one desk."],
+              ["Professional", "€149", "/mo", "Sanctions screening, 60-day history, CSV export, API."],
+              ["Pro+", "€374", "/mo", "Dark-fleet detection, SAR fusion, priority support."],
+            ].map(([name, price, suffix, body]) => {
+              const popular = name === "Professional";
+              return (
+                <div
+                  key={name}
+                  className={`relative flex flex-col rounded-md border p-6 ${
+                    popular
+                      ? "border-sky-500 bg-sky-500/5"
+                      : "border-slate-800"
+                  }`}
+                >
+                  {popular ? (
+                    <div className="absolute -top-2.5 left-5 rounded bg-sky-500 px-2 py-0.5 font-mono text-[9.5px] font-semibold tracking-[0.08em] text-[#06121d]">
+                      POPULAR
+                    </div>
+                  ) : null}
+                  <div className={`text-[13px] font-semibold ${popular ? "text-sky-500" : "text-slate-300"}`}>
+                    {name}
+                  </div>
+                  <div className="mt-2 font-mono text-3xl font-semibold text-slate-100">
+                    {price}
+                    {suffix ? (
+                      <span className="text-[13px] text-slate-500">{suffix}</span>
+                    ) : null}
+                  </div>
+                  <p className="mt-3 text-[12.5px] leading-relaxed text-slate-400">{body}</p>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-8">
+            <Link
+              href="/pricing"
+              className="inline-block rounded bg-sky-500 px-6 py-3 text-base font-semibold text-[#06121d] hover:bg-sky-400"
             >
-              <div className="text-sm font-semibold text-slate-100">{name}</div>
-              <div className="mt-1 text-2xl font-bold text-sky-400">{price}</div>
-              <p className="mt-3 text-xs text-slate-400">{body}</p>
-            </div>
-          ))}
-        </div>
-        <div className="mt-10 text-center">
-          <Link
-            href="/pricing"
-            className="inline-block rounded bg-sky-500 px-6 py-3 text-base font-semibold text-slate-950 hover:bg-sky-400"
-          >
-            See full pricing &amp; features →
-          </Link>
-          <p className="mt-3 text-xs text-slate-500">
-            Annual billing shown · monthly available · VAT not applicable (art. 293 B CGI)
-          </p>
-        </div>
-      </section>
-
-      {/* Weekly data brief — every visitor should be able to leave a trace */}
-      <section className="border-t border-slate-800">
-        <div className="mx-auto max-w-3xl px-6 py-14">
-          <h2 className="text-xl font-semibold text-slate-100">
-            The weekly data brief
-          </h2>
-          <p className="mb-4 mt-1 text-sm text-slate-400">
-            Congestion anomalies, chokepoint moves, precision updates — one
-            email a week, numbers first. The same briefs published on{" "}
-            <Link href="/news" className="underline hover:text-slate-200">
-              /news
+              See full pricing &amp; features →
             </Link>
-            .
-          </p>
-          <NewsletterForm source="landing" />
+            <p className="mt-3 font-mono text-[11px] text-slate-600">
+              annual billing shown · monthly available · VAT not applicable (art. 293 B CGI)
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="border-t border-slate-800 bg-gradient-to-b from-slate-900/40 to-slate-950">
-        <div className="mx-auto max-w-3xl px-6 py-20 text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            See it on a live tanker desk in one click
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-slate-400">
-            No signup, no card. A 10-minute Professional-tier session, instantly.
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <div className="[&>button]:px-6 [&>button]:py-3 [&>button]:text-base">
+      {/* Weekly brief + final CTA — split panel */}
+      <section className="border-t border-slate-800">
+        <div className="mx-auto grid max-w-6xl lg:grid-cols-2">
+          <div className="px-6 py-11 lg:border-r lg:border-slate-800 lg:px-10">
+            <h2 className="mb-1.5 text-lg font-semibold text-slate-100">
+              The weekly data brief
+            </h2>
+            <p className="mb-4 max-w-md text-[13px] leading-relaxed text-slate-400">
+              Congestion anomalies, chokepoint moves, precision updates — one
+              email a week, numbers first. The same briefs published on{" "}
+              <Link href="/news" className="underline hover:text-slate-200">
+                /news
+              </Link>
+              .
+            </p>
+            <div className="max-w-md">
+              <NewsletterForm source="landing" />
+            </div>
+          </div>
+          <div className="flex flex-col justify-center border-t border-slate-800 px-6 py-11 lg:border-t-0 lg:px-10">
+            <h2 className="mb-1.5 text-[22px] font-semibold text-slate-100">
+              A live tanker desk, one click away
+            </h2>
+            <p className="mb-5 text-[13px] text-slate-400">
+              No signup, no card. A 10-minute Professional-tier session,
+              instantly.
+            </p>
+            <div className="[&>button]:!bg-sky-500 [&>button]:!text-[#06121d] [&>button]:px-6 [&>button]:py-3 [&>button]:text-base [&>button]:font-semibold hover:[&>button]:!bg-sky-400 self-start">
               <DemoButton />
             </div>
-            <Link
-              href="/app"
-              className="rounded border border-slate-700 px-6 py-3 text-base font-medium text-slate-200 hover:border-sky-500 hover:text-white"
-            >
-              Open the live dashboard
-            </Link>
           </div>
         </div>
       </section>

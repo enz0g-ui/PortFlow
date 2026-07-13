@@ -12,7 +12,7 @@ export default function NotFound() {
       <div className="flex gap-2">
         <Link
           href="/"
-          className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-white hover:bg-sky-400"
+          className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-[#06121d] hover:bg-sky-400"
         >
           Back to dashboard
         </Link>

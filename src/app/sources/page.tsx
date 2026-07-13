@@ -803,7 +803,7 @@ function KeyRowEditor({
       <button
         type="submit"
         disabled={busy || !value.trim()}
-        className="rounded bg-sky-500 px-2 py-1 text-[10px] font-medium text-white hover:bg-sky-400 disabled:opacity-50"
+        className="rounded bg-sky-500 px-2 py-1 text-[10px] font-medium text-[#06121d] hover:bg-sky-400 disabled:opacity-50"
       >
         ✓
       </button>
