@@ -178,6 +178,12 @@ export default async function PortPage({
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <DemoButton />
           <Link
+            href={`/demurrage-calculator?port=${port.id}`}
+            className="rounded border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:border-sky-500"
+          >
+            Demurrage exposure at {port.name} →
+          </Link>
+          <Link
             href="/pricing"
             className="rounded border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:border-sky-500"
           >

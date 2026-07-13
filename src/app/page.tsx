@@ -269,6 +269,7 @@ export default async function Home({
             <Link href="/precision" className="hover:text-slate-200">Benchmark</Link>
             <Link href="/receipts" className="hover:text-slate-200">Receipts</Link>
             <Link href="/ports" className="hover:text-slate-200">Ports</Link>
+            <Link href="/demurrage-calculator" className="hover:text-slate-200">Demurrage calc</Link>
             <Link href="/security" className="hover:text-slate-200">Security</Link>
             <Link href="/guide" className="hover:text-slate-200">Guide</Link>
             <Link href="/sources" className="hover:text-slate-200">Sources</Link>
