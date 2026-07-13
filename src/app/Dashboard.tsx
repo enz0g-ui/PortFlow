@@ -1033,107 +1033,104 @@ export default function Dashboard() {
   const classLabel = (cls: VesselClass) => t(`vesselClass.${cls}`) || cls;
 
   return (
-    <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-4 p-4">
+    <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-3 p-4">
       <DegradationBanner />
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Link href="/?home" title="Port Flow — home" className="group inline-block">
-            <h1 className="text-xl font-semibold tracking-tight group-hover:text-sky-300">
-              {t("app.title")}{" "}
-              <span className="text-sky-400">· {t("app.subtitle")}</span>
-            </h1>
-          </Link>
-          <p className="text-xs text-slate-400">{t("app.tagline")}</p>
-        </div>
-        {/* min-height reserves the wrapped nav-row height so the Clerk-gated
-            auth/demo buttons mounting after hydration don't add a wrap line
-            and shove the dashboard down — this header row was the RUM-flagged
-            CLS culprit (0.5). content-start keeps rows top-aligned within it. */}
-        <div className="flex min-h-[3.5rem] flex-wrap content-start items-center gap-2 text-xs">
-          <PortSelector
-            ports={ports}
-            selectedId={portId}
-            onSelect={trySelectPort}
-            bookmarkedIds={bookmarkedIds}
-            onToggleBookmark={toggleBookmark}
-            bookmarksEnabled={bookmarksEnabled}
-            accessiblePortIds={me?.portsAccessible}
-          />
-          <LanguageSwitcher />
-          <DemoButton />
-          <AuthButtons />
-          <Link
-            href="/account"
-            className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-amber-500 hover:text-amber-300"
-            title="Alerts (live or deferred) — Slack · Telegram · Email · Webhook · Discord — configure in Account"
+      {/* Command bar — mockup « la preuve d'abord » : barre dense, port +
+          badge MAE proéminent, nav condensée. Full-bleed dans le <main> padded
+          via marges négatives, collée en haut. */}
+      <header className="sticky top-0 z-30 -mx-4 -mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-800 bg-slate-900/95 px-4 py-2.5 backdrop-blur">
+        <Link href="/?home" title="Port Flow — home" className="flex items-baseline gap-2">
+          <span className="text-[15px] font-bold tracking-[-0.02em] text-slate-100">
+            PORT FLOW
+          </span>
+          <span className="hidden font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-sky-500 sm:inline">
+            tanker intel
+          </span>
+        </Link>
+
+        <PortSelector
+          ports={ports}
+          selectedId={portId}
+          onSelect={trySelectPort}
+          bookmarkedIds={bookmarkedIds}
+          onToggleBookmark={toggleBookmark}
+          bookmarksEnabled={bookmarksEnabled}
+          accessiblePortIds={me?.portsAccessible}
+        />
+
+        {/* MAE badge — the proof, front and centre */}
+        <Link
+          href={`/precision?port=${portId}`}
+          className="inline-flex items-center gap-2 rounded border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 hover:border-emerald-400/50"
+          title="Live ETA accuracy vs the crew broadcast — see /precision"
+        >
+          <span className="h-1.5 w-1.5 animate-[pf-pulse_2s_infinite] rounded-full bg-emerald-300" />
+          <span className="font-mono text-[11px] font-semibold text-emerald-300">
+            MAE{" "}
+            {accuracyResp?.maeHours != null
+              ? `${accuracyResp.maeHours.toFixed(1)} h`
+              : "…"}
+          </span>
+        </Link>
+
+        <span
+          className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs ${
+            tone === "good"
+              ? "border-emerald-700 text-emerald-300"
+              : tone === "warn"
+                ? "border-amber-700 text-amber-300"
+                : "border-rose-700 text-rose-300"
+          }`}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+          AIS {aisLabel}
+        </span>
+        {byoVessels.length > 0 ? (
+          <span
+            className="inline-flex items-center gap-2 rounded-full border border-indigo-700 px-2.5 py-1 text-xs text-indigo-300"
+            title={`Enrichissement BYO via ${byoSources.join(", ")}`}
           >
-            🔔 Alerts
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            BYO {byoVessels.length}
+          </span>
+        ) : null}
+
+        {/* Right cluster — nav condensée + demo + auth. min-height réserve la
+            hauteur de la rangée Clerk-gated (culprit CLS 0.5 historique). */}
+        <div className="ml-auto flex min-h-[2rem] flex-wrap content-center items-center justify-end gap-1.5 text-xs">
+          <Link href={`/precision?port=${portId}`} className="hidden rounded px-2 py-1 text-slate-300 hover:text-white lg:inline">
+            {t("nav.precision")}
           </Link>
-          <Link
-            href={`/precision?port=${portId}`}
-            className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-sky-500 hover:text-sky-300"
-          >
-            {t("nav.precision")} →
-          </Link>
-          <Link
-            href="/methodology"
-            className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-sky-500 hover:text-sky-300"
-          >
+          <Link href="/methodology" className="hidden rounded px-2 py-1 text-slate-300 hover:text-white lg:inline">
             {t("nav.methodology")}
           </Link>
-          <Link
-            href="/guide"
-            className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-sky-500 hover:text-sky-300"
-          >
+          <Link href="/guide" className="hidden rounded px-2 py-1 text-slate-300 hover:text-white xl:inline">
             {t("nav.guide")}
           </Link>
-          <Link
-            href="/news"
-            className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-sky-500 hover:text-sky-300"
-          >
+          <Link href="/news" className="hidden rounded px-2 py-1 text-slate-300 hover:text-white lg:inline">
             News
           </Link>
-          <Link
-            href="/sources"
-            className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-sky-500 hover:text-sky-300"
-          >
+          <Link href="/sources" className="hidden rounded px-2 py-1 text-slate-300 hover:text-white xl:inline">
             Sources
           </Link>
           {vesselBookmarksEnabled ? (
-            <Link
-              href="/fleet"
-              className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-sky-500 hover:text-sky-300"
-            >
+            <Link href="/fleet" className="rounded px-2 py-1 text-slate-300 hover:text-white">
               ● {t("nav.fleet")}
             </Link>
           ) : null}
-          <Link
-            href="/pricing"
-            className="rounded border border-sky-700 bg-sky-500/10 px-2 py-1 text-sky-300 hover:border-sky-400 hover:text-sky-200"
-          >
+          <Link href="/pricing" className="rounded px-2 py-1 text-slate-300 hover:text-white">
             {t("nav.pricing")}
           </Link>
-          <span
-            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 ${
-              tone === "good"
-                ? "border-emerald-700 text-emerald-400"
-                : tone === "warn"
-                  ? "border-amber-700 text-amber-400"
-                  : "border-rose-700 text-rose-400"
-            }`}
+          <Link
+            href="/account"
+            className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-amber-500 hover:text-amber-300"
+            title="Alerts — Slack · Telegram · Email · Webhook · Discord — configure in Account"
           >
-            <span className="h-2 w-2 rounded-full bg-current" />
-            AIS {aisLabel}
-          </span>
-          {byoVessels.length > 0 ? (
-            <span
-              className="inline-flex items-center gap-2 rounded-full border border-indigo-700 px-3 py-1 text-indigo-300"
-              title={`Enrichissement BYO via ${byoSources.join(", ")}`}
-            >
-              <span className="h-2 w-2 rounded-full bg-current" />
-              BYO {byoVessels.length}
-            </span>
-          ) : null}
+            🔔
+          </Link>
+          <LanguageSwitcher />
+          <DemoButton />
+          <AuthButtons />
         </div>
       </header>
 
@@ -1413,7 +1410,7 @@ export default function Dashboard() {
         <span className="text-slate-500">{t("filter.subclasses")}</span>
       </div>
 
-      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 lg:gap-3">
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
         <KpiCard
           label={t("kpi.totalVessels")}
           value={k?.totalVessels ?? "—"}
@@ -1847,12 +1844,18 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <footer className="space-y-2 border-t border-slate-800 pt-3 text-xs text-slate-500">
-        <div>
-          {t("footer.refresh")} {t("footer.persistence")}{" "}
-          {t("footer.portsCount", { n: ports.length })}
-        </div>
-        <Attributions compact />
+      {/* Status bar — mockup : cadence de rafraîchissement + attributions,
+          dense mono, full-bleed collée en bas du workspace. */}
+      <footer className="-mx-4 -mb-4 mt-1 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-slate-800 bg-slate-900/95 px-4 py-2 font-mono text-[9.5px] text-slate-500">
+        <span className="inline-flex items-center gap-1.5 text-emerald-300">
+          <span className="h-1.5 w-1.5 rounded-full bg-current" /> AIS {aisLabel}
+        </span>
+        <span>{t("footer.refresh")}</span>
+        <span>{t("footer.persistence")}</span>
+        <span>{t("footer.portsCount", { n: ports.length })}</span>
+        <span className="ml-auto">
+          <Attributions compact />
+        </span>
       </footer>
       {selectedMmsi != null ? (
         <VesselDetailPanel

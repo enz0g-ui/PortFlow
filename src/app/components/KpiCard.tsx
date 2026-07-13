@@ -9,11 +9,16 @@ interface Props {
 
 const toneClass: Record<NonNullable<Props["tone"]>, string> = {
   default: "text-slate-100",
-  good: "text-emerald-400",
-  warn: "text-amber-400",
-  bad: "text-rose-400",
+  good: "text-emerald-300",
+  warn: "text-amber-300",
+  bad: "text-rose-300",
 };
 
+/**
+ * KPI strip cell — mockup « la preuve d'abord » : mono label uppercase,
+ * mono number, dense bordered cell. Reads as a connected instrument strip
+ * rather than a floating card.
+ */
 export function KpiCard({
   label,
   value,
@@ -24,7 +29,7 @@ export function KpiCard({
 }: Props) {
   const interactive = typeof onClick === "function";
   const baseCls =
-    "rounded-lg border bg-slate-900/60 px-4 py-3 text-left transition-colors";
+    "rounded-md border bg-slate-900 px-3.5 py-2.5 text-left transition-colors";
   const stateCls = active
     ? "border-sky-500 ring-1 ring-sky-500/40"
     : "border-slate-800";
@@ -33,14 +38,18 @@ export function KpiCard({
 
   const inner = (
     <>
-      <div className="text-xs uppercase tracking-wider text-slate-400">
+      <div
+        className={`font-mono text-[9px] font-medium uppercase tracking-[0.1em] ${
+          tone === "bad" ? "text-rose-300/90" : "text-slate-500"
+        }`}
+      >
         {label}
       </div>
-      <div className={`text-2xl font-semibold tabular-nums ${toneClass[tone]}`}>
+      <div className={`font-mono text-[21px] font-semibold tabular-nums ${toneClass[tone]}`}>
         {value}
       </div>
       {hint ? (
-        <div className="mt-1 text-xs text-slate-500">{hint}</div>
+        <div className="mt-0.5 font-mono text-[10px] text-slate-500">{hint}</div>
       ) : null}
     </>
   );
