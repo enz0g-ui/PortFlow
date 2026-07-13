@@ -110,6 +110,12 @@ export default async function Home({
             <DemoButton />
           </div>
           <Link
+            href="/demurrage-calculator"
+            className="rounded border border-amber-500/60 px-6 py-3 text-base font-medium text-amber-300 hover:border-amber-400 hover:text-amber-200"
+          >
+            Demurrage calculator — free
+          </Link>
+          <Link
             href="/pricing"
             className="rounded border border-slate-700 px-6 py-3 text-base font-medium text-slate-200 hover:border-sky-500 hover:text-white"
           >
