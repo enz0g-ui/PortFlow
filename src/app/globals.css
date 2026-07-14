@@ -144,7 +144,7 @@ body {
 }
 #risk:target,
 #voyages:target {
-  animation: pf-target-glow 2.2s ease-out;
+  animation: pf-target-glow 3.2s ease-out;
   scroll-margin-top: 64px;
 }
 
