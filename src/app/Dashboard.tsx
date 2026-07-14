@@ -53,6 +53,11 @@ const EncountersLoiteringPanel = dynamic(
   { ssr: false, loading: () => <PanelSkeleton /> },
 );
 import { CongestionGauge } from "./components/CongestionGauge";
+import {
+  ContextPanel,
+  MixPanel,
+  WorkspaceRail,
+} from "./components/WorkspacePanels";
 import { WeatherWidget } from "./components/WeatherWidget";
 import { VesselDetailPanel } from "./components/VesselDetailPanel";
 import { PortSelector, type PortInfo } from "./components/PortSelector";
@@ -356,6 +361,9 @@ export default function Dashboard() {
   const [worldView, setWorldView] = useState(false);
   const [worldVessels, setWorldVessels] = useState<Vessel[]>([]);
   const [showFavoritesPanel, setShowFavoritesPanel] = useState(false);
+  // Workspace v2 : la sélection s'affiche dans le panneau contexte accolé à
+  // la carte ; l'overlay VesselDetailPanel ne s'ouvre plus que sur demande.
+  const [detailOpen, setDetailOpen] = useState(false);
   const [byoSources, setByoSources] = useState<string[]>([]);
   const [byoVessels, setByoVessels] = useState<Vessel[]>([]);
 
@@ -1032,19 +1040,70 @@ export default function Dashboard() {
 
   const classLabel = (cls: VesselClass) => t(`vesselClass.${cls}`) || cls;
 
+  // ── Workspace v2 (maquette Claude Design) : données dérivées du panneau
+  // contexte (navire sélectionné + feed risque) et du mix compact. Aucune
+  // nouvelle source — tout vient de l'état live existant.
+  const contextVessel =
+    selectedMmsi != null
+      ? (allVessels.find((v) => v.mmsi === selectedMmsi) ?? null)
+      : null;
+  const contextVoyage =
+    selectedMmsi != null
+      ? (filteredVoyages.find((v) => v.mmsi === selectedMmsi) ?? null)
+      : null;
+  const riskFeedItems = [
+    ...darkEvents.slice(0, 4).map((e) => ({
+      id: `d${e.id}`,
+      name: e.name ?? `MMSI ${e.mmsi}`,
+      meta: `Dark · ${e.cargoClass ?? "—"}${e.startZone ? ` · ${e.startZone}` : ""}`,
+      value: e.durationHours != null ? `${e.durationHours.toFixed(1)} h` : "—",
+      mmsi: e.mmsi,
+    })),
+    ...encounters.slice(0, 2).map((e) => ({
+      id: `e${e.id}`,
+      name: `${e.vesselAName ?? e.mmsiA} × ${e.vesselBName ?? e.mmsiB}`,
+      meta: t("ws.feed.sts"),
+      value: e.durationH != null ? `${e.durationH.toFixed(1)} h` : "—",
+      mmsi: e.mmsiA,
+    })),
+    ...loitering.slice(0, 2).map((e) => ({
+      id: `l${e.id}`,
+      name: e.name ?? `MMSI ${e.mmsi}`,
+      meta: t("ws.feed.loitering"),
+      value: e.durationH != null ? `${e.durationH.toFixed(1)} h` : "—",
+      mmsi: e.mmsi,
+    })),
+  ];
+  const fleetMixData = (
+    ["cargo", "tanker", "passenger", "fishing", "tug", "pilot", "other"] as VesselClass[]
+  )
+    .map((c) => ({ label: classLabel(c), n: k?.byClass?.[c] ?? 0 }))
+    .filter((m) => m.n > 0);
+  const cargoMixData = [...TANKER_CARGO]
+    .map((c) => ({
+      label: CARGO_LABELS[c],
+      n: allVessels.filter((v) => v.cargoClass === c).length,
+    }))
+    .filter((m) => m.n > 0);
+
   return (
-    <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-3 p-4">
+    <main className="mx-auto flex w-full max-w-[1680px] flex-1 flex-col">
       <DegradationBanner />
       {/* Command bar — mockup « la preuve d'abord » : barre dense, port +
           badge MAE proéminent, nav condensée. Full-bleed dans le <main> padded
           via marges négatives, collée en haut. */}
-      <header className="sticky top-0 z-30 -mx-4 -mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-800 bg-slate-900/95 px-4 py-2.5 backdrop-blur">
-        <Link href="/?home" title="Port Flow — home" className="flex items-baseline gap-2">
+      {/* z-[1100] : au-dessus des panes Leaflet (~1000), sinon le dropdown
+          du sélecteur de ports passe SOUS la carte (contexte d'empilement). */}
+      <header className="sticky top-0 z-[1100] flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-800 bg-slate-900/95 px-4 py-2.5 backdrop-blur">
+        {/* « intelligence » en toutes lettres, sur deux lignes — « intel »
+            évoquait la marque Intel (retour user 14/07). */}
+        <Link href="/?home" title="Port Flow — home" className="flex items-center gap-2">
           <span className="text-[15px] font-bold tracking-[-0.02em] text-slate-100">
             PORT FLOW
           </span>
-          <span className="hidden font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-sky-500 sm:inline">
-            tanker intel
+          <span className="hidden flex-col font-mono text-[7.5px] font-medium uppercase leading-[1.35] tracking-[0.14em] text-sky-500 sm:flex">
+            <span>tanker</span>
+            <span>intelligence</span>
           </span>
         </Link>
 
@@ -1058,20 +1117,30 @@ export default function Dashboard() {
           accessiblePortIds={me?.portsAccessible}
         />
 
-        {/* MAE badge — the proof, front and centre */}
-        <Link
-          href={`/precision?port=${portId}`}
-          className="inline-flex items-center gap-2 rounded border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 hover:border-emerald-400/50"
-          title="Live ETA accuracy vs the crew broadcast — see /precision"
-        >
-          <span className="h-1.5 w-1.5 animate-[pf-pulse_2s_infinite] rounded-full bg-emerald-300" />
-          <span className="font-mono text-[11px] font-semibold text-emerald-300">
-            MAE{" "}
-            {accuracyResp?.maeHours != null
-              ? `${accuracyResp.maeHours.toFixed(1)} h`
-              : "…"}
-          </span>
-        </Link>
+        {/* MAE badge — the proof, front and centre. Même règle d'honnêteté
+            que /precision : pas de chiffre sous 20 voyages clos (un port
+            froid afficherait une valeur aberrante). */}
+        {accuracyResp?.maeHours != null &&
+        (accuracyResp.sampleCount ?? 0) >= 20 ? (
+          <Link
+            href={`/precision?port=${portId}`}
+            className="inline-flex items-center gap-2 rounded border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 hover:border-emerald-400/50"
+            title={t("ws.maeBadgeTitle")}
+          >
+            <span className="h-1.5 w-1.5 animate-[pf-pulse_2s_infinite] rounded-full bg-emerald-300" />
+            <span className="font-mono text-[11px] font-semibold text-emerald-300">
+              MAE {accuracyResp.maeHours.toFixed(1)} h
+            </span>
+          </Link>
+        ) : (
+          <Link
+            href={`/precision?port=${portId}`}
+            className="inline-flex items-center gap-2 rounded border border-slate-700 px-2.5 py-1.5 font-mono text-[11px] text-slate-400 hover:border-sky-500"
+            title={t("ws.benchBadgeTitle")}
+          >
+            benchmark →
+          </Link>
+        )}
 
         <span
           className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs ${
@@ -1134,97 +1203,92 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {port ? (
-        <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-4 py-3 text-xs text-slate-400">
-          <span className="text-sm font-semibold text-slate-200">
-            {port.flag} {portName}
-            {nativeName ? (
-              <span className="ml-2 text-xs italic text-slate-400">
-                {nativeName}
-              </span>
-            ) : null}
-            <span className="ml-2 text-xs font-normal text-slate-500">
-              {portCountry}
+      {/* ═══ Workspace « tout sur un écran » (maquette Claude Design v2) :
+          rail | KPI strip → filtres → carte + panneau contexte → voyages +
+          mix. Hauteur viewport sur desktop — la table défile, pas la page.
+          Les panneaux détaillés historiques restent SOUS le workspace. ═══ */}
+      <div id="top" className="flex min-h-0 flex-1 lg:h-[calc(100dvh-3.25rem)]">
+        <WorkspaceRail portId={portId} />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+
+      <section className="grid flex-none grid-cols-2 gap-px border-b border-slate-800 bg-slate-800/40 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8">
+        <KpiCard
+          label={t("kpi.totalVessels")}
+          value={k?.totalVessels ?? "—"}
+          active={stateFilter === null}
+          onClick={() => setStateFilter(null)}
+          hint={stateFilter ? t("filter.clearStateTooltip") : undefined}
+        />
+        <KpiCard
+          label={t("kpi.anchored")}
+          value={k?.anchored ?? "—"}
+          tone={(k?.anchored ?? 0) > 30 ? "warn" : "default"}
+          hint={t("kpi.anchoredHint")}
+          active={stateFilter === "anchored"}
+          onClick={() => toggleState("anchored")}
+        />
+        <KpiCard
+          label={t("kpi.underway")}
+          value={k?.underway ?? "—"}
+          active={stateFilter === "underway"}
+          onClick={() => toggleState("underway")}
+        />
+        <KpiCard
+          label={t("kpi.moored")}
+          value={k?.moored ?? "—"}
+          active={stateFilter === "moored"}
+          onClick={() => toggleState("moored")}
+        />
+        <KpiCard
+          label={t("kpi.inboundHour")}
+          value={k?.inboundLastHour ?? "—"}
+          tone="good"
+        />
+        <KpiCard
+          label={t("kpi.activeVoyages")}
+          value={voyagesResp?.inboundCount ?? voyagesResp?.count ?? "—"}
+          hint={
+            voyagesResp?.waitingCount && voyagesResp.waitingCount > 0
+              ? t("kpi.activeVoyagesInbound")
+              : tankersOnly
+                ? t("kpi.tankersHint")
+                : t("kpi.allHint")
+          }
+        />
+        <KpiCard
+          label={t("kpi.waitingInRoads")}
+          value={voyagesResp?.waitingCount ?? "—"}
+          hint={t("kpi.waitingHint")}
+          tone={
+            voyagesResp?.waitingCount && voyagesResp.waitingCount > 5
+              ? "warn"
+              : "default"
+          }
+        />
+        {/* Promo alertes — la feature la plus différenciante est invisible
+            pour un visiteur pressé : cellule accrocheuse, cloche pulsante,
+            même vocabulaire que la cloche de la command bar. */}
+        <Link
+          href="/account"
+          title={t("kpi.alertPromoHint")}
+          className="rounded-md border border-amber-400/40 bg-amber-400/10 px-3.5 py-2.5 text-left transition-colors hover:border-amber-400 hover:bg-amber-400/15"
+        >
+          <div className="font-mono text-[9px] font-medium uppercase tracking-[0.1em] text-amber-300">
+            {t("kpi.alertPromo")}
+          </div>
+          <div className="flex items-baseline gap-1.5 font-mono text-[21px] font-semibold text-amber-300">
+            <span className="inline-block animate-[pf-pulse_2s_infinite]">🔔</span>
+            <span className="font-sans text-[12px] font-semibold leading-tight">
+              {t("kpi.alertPromoHint").split("—")[0].trim()}
             </span>
-          </span>{" "}
-          <span className="ms-2">— {portBlurb}</span>{" "}
-          <span className="text-slate-500">
-            · {t("port.strengths")}:{" "}
-            {port.cargoStrength.map((c) => CARGO_LABELS[c]).join(", ")}
-          </span>
-        </div>
-      ) : null}
-
-      {port?.aisCoverage === "low" ? (
-        <div className="rounded-lg border border-amber-700/50 bg-amber-500/5 px-4 py-3 text-xs">
-          <span className="font-semibold text-amber-300">
-            🛰️ {t("aisCoverage.lowTitle")}
-          </span>{" "}
-          <span className="text-slate-300">— {t("aisCoverage.lowBody")}</span>{" "}
-          <span className="text-slate-400">
-            {t("aisCoverage.lowOptions.before")}{" "}
-            <Link
-              href="/sources"
-              className="text-amber-300 underline hover:text-amber-200"
-            >
-              /sources
-            </Link>{" "}
-            {t("aisCoverage.lowOptions.after")}
-          </span>
-        </div>
-      ) : null}
-
-      {chokepointContext ? (
-        <div className="rounded-lg border border-sky-700/50 bg-sky-500/5 px-4 py-3 text-xs">
-          <span className="font-semibold text-sky-300">
-            📊 {t("chokepoint.context")}
-          </span>{" "}
-          <span className="text-slate-100">
-            {[
-              chokepointContext.transitsPerDay,
-              chokepointContext.oilMbd,
-              chokepointContext.shareGlobal,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </span>{" "}
-          <span className="text-slate-500">
-            — {chokepointContext.source}
-            {chokepointContext.sourceUrl ? (
-              <>
-                {" · "}
-                <a
-                  href={chokepointContext.sourceUrl}
-                  target="_blank"
-                  rel="noopener"
-                  className="text-sky-300 underline hover:text-sky-200"
-                >
-                  source
-                </a>
-              </>
-            ) : null}
-          </span>
-          <span className="mt-1 block text-slate-400">
-            {t("chokepoint.contextNote")}
-          </span>
-        </div>
-      ) : null}
-
-      <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <CongestionGauge
-            anchored={k?.anchored ?? 0}
-            total={k?.totalVessels ?? 0}
-          />
-          <FlowChart history={histResp?.history ?? []} />
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <WeatherWidget data={weatherResp ?? null} />
-          <AccuracyPanel data={accuracyResp ?? null} />
-        </div>
+          </div>
+          <div className="mt-0.5 font-mono text-[10px] text-amber-300/60">
+            Slack · Telegram · Email →
+          </div>
+        </Link>
       </section>
 
-      <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs">
+      <div className="mx-2 mb-1 mt-2 flex flex-none items-center justify-between rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs">
         <div className="flex items-center gap-2">
           <button
             onClick={() => {
@@ -1410,62 +1474,6 @@ export default function Dashboard() {
         <span className="text-slate-500">{t("filter.subclasses")}</span>
       </div>
 
-      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
-        <KpiCard
-          label={t("kpi.totalVessels")}
-          value={k?.totalVessels ?? "—"}
-          active={stateFilter === null}
-          onClick={() => setStateFilter(null)}
-          hint={stateFilter ? t("filter.clearStateTooltip") : undefined}
-        />
-        <KpiCard
-          label={t("kpi.anchored")}
-          value={k?.anchored ?? "—"}
-          tone={(k?.anchored ?? 0) > 30 ? "warn" : "default"}
-          hint={t("kpi.anchoredHint")}
-          active={stateFilter === "anchored"}
-          onClick={() => toggleState("anchored")}
-        />
-        <KpiCard
-          label={t("kpi.underway")}
-          value={k?.underway ?? "—"}
-          active={stateFilter === "underway"}
-          onClick={() => toggleState("underway")}
-        />
-        <KpiCard
-          label={t("kpi.moored")}
-          value={k?.moored ?? "—"}
-          active={stateFilter === "moored"}
-          onClick={() => toggleState("moored")}
-        />
-        <KpiCard
-          label={t("kpi.inboundHour")}
-          value={k?.inboundLastHour ?? "—"}
-          tone="good"
-        />
-        <KpiCard
-          label={t("kpi.activeVoyages")}
-          value={voyagesResp?.inboundCount ?? voyagesResp?.count ?? "—"}
-          hint={
-            voyagesResp?.waitingCount && voyagesResp.waitingCount > 0
-              ? t("kpi.activeVoyagesInbound")
-              : tankersOnly
-                ? t("kpi.tankersHint")
-                : t("kpi.allHint")
-          }
-        />
-        <KpiCard
-          label={t("kpi.waitingInRoads")}
-          value={voyagesResp?.waitingCount ?? "—"}
-          hint={t("kpi.waitingHint")}
-          tone={
-            voyagesResp?.waitingCount && voyagesResp.waitingCount > 5
-              ? "warn"
-              : "default"
-          }
-        />
-      </section>
-
       {classFilterBreakdown ? (
         <section className="rounded-lg border border-sky-700/50 bg-sky-500/5 p-3">
           <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-xs">
@@ -1602,7 +1610,8 @@ export default function Dashboard() {
         </section>
       ) : null}
 
-      <section className="h-[480px] sm:h-[620px] lg:h-[720px]">
+      <div className="grid min-h-0 flex-1 border-t border-slate-800 lg:grid-cols-[1fr_384px]">
+      <section className="h-[440px] lg:h-full lg:min-h-0">
         {worldView ? (
           <MapView
             vessels={
@@ -1654,7 +1663,26 @@ export default function Dashboard() {
         )}
       </section>
 
-      <section className="min-h-[440px]">
+      <ContextPanel
+        vessel={contextVessel}
+        voyage={contextVoyage}
+        portName={`${port?.flag ?? ""} ${portName}`.trim()}
+        portBlurb={portBlurb}
+        darkCount={darkEvents.length}
+        stsCount={encounters.length}
+        loiterCount={loitering.length}
+        riskItems={riskFeedItems}
+        onSelectMmsi={setSelectedMmsi}
+        onOpenDetail={() => setDetailOpen(true)}
+        onClear={() => setSelectedMmsi(null)}
+      />
+      </div>
+
+      <div
+        id="voyages"
+        className="grid flex-none border-t border-slate-800 lg:h-[300px] lg:grid-cols-[1fr_384px]"
+      >
+      <section className="min-h-[300px] lg:min-h-0 lg:overflow-y-auto">
         {showFavoritesPanel ? (
           <FavoritesPanel
             selectedMmsi={selectedMmsi}
@@ -1680,6 +1708,105 @@ export default function Dashboard() {
         )}
       </section>
 
+      <MixPanel
+        fleet={fleetMixData}
+        cargo={cargoMixData}
+        avgSpeed={k?.avgSpeedChannel ?? null}
+      />
+      </div>
+        </div>
+      </div>
+      {/* ═══ Fin du workspace — panneaux détaillés ci-dessous ═══ */}
+
+      <div className="space-y-3 p-4">
+
+      {port ? (
+        <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-4 py-3 text-xs text-slate-400">
+          <span className="text-sm font-semibold text-slate-200">
+            {port.flag} {portName}
+            {nativeName ? (
+              <span className="ml-2 text-xs italic text-slate-400">
+                {nativeName}
+              </span>
+            ) : null}
+            <span className="ml-2 text-xs font-normal text-slate-500">
+              {portCountry}
+            </span>
+          </span>{" "}
+          <span className="ms-2">— {portBlurb}</span>{" "}
+          <span className="text-slate-500">
+            · {t("port.strengths")}:{" "}
+            {port.cargoStrength.map((c) => CARGO_LABELS[c]).join(", ")}
+          </span>
+        </div>
+      ) : null}
+
+      {port?.aisCoverage === "low" ? (
+        <div className="rounded-lg border border-amber-700/50 bg-amber-500/5 px-4 py-3 text-xs">
+          <span className="font-semibold text-amber-300">
+            🛰️ {t("aisCoverage.lowTitle")}
+          </span>{" "}
+          <span className="text-slate-300">— {t("aisCoverage.lowBody")}</span>{" "}
+          <span className="text-slate-400">
+            {t("aisCoverage.lowOptions.before")}{" "}
+            <Link
+              href="/sources"
+              className="text-amber-300 underline hover:text-amber-200"
+            >
+              /sources
+            </Link>{" "}
+            {t("aisCoverage.lowOptions.after")}
+          </span>
+        </div>
+      ) : null}
+
+      {chokepointContext ? (
+        <div className="rounded-lg border border-sky-700/50 bg-sky-500/5 px-4 py-3 text-xs">
+          <span className="font-semibold text-sky-300">
+            📊 {t("chokepoint.context")}
+          </span>{" "}
+          <span className="text-slate-100">
+            {[
+              chokepointContext.transitsPerDay,
+              chokepointContext.oilMbd,
+              chokepointContext.shareGlobal,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </span>{" "}
+          <span className="text-slate-500">
+            — {chokepointContext.source}
+            {chokepointContext.sourceUrl ? (
+              <>
+                {" · "}
+                <a
+                  href={chokepointContext.sourceUrl}
+                  target="_blank"
+                  rel="noopener"
+                  className="text-sky-300 underline hover:text-sky-200"
+                >
+                  source
+                </a>
+              </>
+            ) : null}
+          </span>
+          <span className="mt-1 block text-slate-400">
+            {t("chokepoint.contextNote")}
+          </span>
+        </div>
+      ) : null}
+
+      {/* Une seule rangée de 4 cartes compactes, alignées sur la hauteur
+          utile du panneau ETA precision (retour user 14/07). */}
+      <section className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <CongestionGauge
+          anchored={k?.anchored ?? 0}
+          total={k?.totalVessels ?? 0}
+        />
+        <FlowChart history={histResp?.history ?? []} />
+        <WeatherWidget data={weatherResp ?? null} />
+        <AccuracyPanel data={accuracyResp ?? null} />
+      </section>
 
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
@@ -1812,7 +1939,7 @@ export default function Dashboard() {
 
       </section>
 
-      <section className="rounded-lg border border-rose-900/40 bg-slate-900/40 p-4">
+      <section id="risk" className="rounded-lg border border-rose-900/40 bg-slate-900/40 p-4">
         <RiskSectionHeader
           anomaliesCount={anomaliesResp?.anomalies?.length ?? 0}
           darkEventsCount={darkEvents.length}
@@ -1844,9 +1971,9 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Status bar — mockup : cadence de rafraîchissement + attributions,
-          dense mono, full-bleed collée en bas du workspace. */}
-      <footer className="-mx-4 -mb-4 mt-1 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-slate-800 bg-slate-900/95 px-4 py-2 font-mono text-[9.5px] text-slate-500">
+      </div>
+      {/* Status bar — cadence de rafraîchissement + attributions. */}
+      <footer className="flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-slate-800 bg-slate-900/95 px-4 py-2 font-mono text-[9.5px] text-slate-500">
         <span className="inline-flex items-center gap-1.5 text-emerald-300">
           <span className="h-1.5 w-1.5 rounded-full bg-current" /> AIS {aisLabel}
         </span>
@@ -1857,12 +1984,12 @@ export default function Dashboard() {
           <Attributions compact />
         </span>
       </footer>
-      {selectedMmsi != null ? (
+      {detailOpen && selectedMmsi != null ? (
         <VesselDetailPanel
           mmsi={selectedMmsi}
           port={portId}
           portLongitude={port?.center?.[1]}
-          onClose={() => setSelectedMmsi(null)}
+          onClose={() => setDetailOpen(false)}
           bookmarked={bookmarkedMmsis.has(selectedMmsi)}
           onToggleBookmark={toggleVesselBookmark}
           bookmarksEnabled={vesselBookmarksEnabled}

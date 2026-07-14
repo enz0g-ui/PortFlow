@@ -137,6 +137,30 @@ function MapLegend({
         {t("map.legend.title")}
       </div>
       <ul className="space-y-0.5">
+        {clickable ? (
+          <li>
+            <button
+              type="button"
+              onClick={() => onSelect!(null)}
+              aria-pressed={selected === null}
+              className={`flex w-full items-center gap-1.5 rounded px-1 -mx-1 py-0.5 text-left transition-colors ${
+                selected === null
+                  ? "bg-slate-800 text-slate-100"
+                  : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+              }`}
+            >
+              <span
+                className="inline-block h-2 w-2 rounded-full"
+                style={{
+                  background:
+                    "conic-gradient(#f87171 0 25%, #34d399 25% 50%, #facc15 50% 75%, #38bdf8 75% 100%)",
+                }}
+                aria-hidden
+              />
+              <span>{t("map.legend.all")}</span>
+            </button>
+          </li>
+        ) : null}
         {entries.map((e) => {
           const isActive = selected === e.cls;
           const isDimmed = selected !== null && !isActive;

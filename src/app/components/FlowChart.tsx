@@ -33,7 +33,7 @@ export function FlowChart({ history }: Props) {
   }));
 
   return (
-    <div className="h-[260px] w-full rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+    <div className="h-[210px] w-full rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <div className="mb-2 text-xs uppercase tracking-wider text-slate-400">
         {t("section.flow")}
       </div>

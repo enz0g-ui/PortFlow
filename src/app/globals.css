@@ -103,6 +103,51 @@ body {
   cursor: pointer !important;
 }
 
+/* Scrollbars thématisées PARTOUT — les ascenseurs natifs clairs juraient
+   avec le workspace sombre (retour user 14/07). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 196, 255, 0.22) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 196, 255, 0.22);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 196, 255, 0.4);
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Halo d'atterrissage : quand un lien du rail cible une ancre (#risk,
+   #voyages), la zone visée s'illumine brièvement pour guider le regard. */
+@keyframes pf-target-glow {
+  0% {
+    box-shadow:
+      0 0 0 3px rgba(79, 195, 247, 0.55),
+      0 0 44px rgba(79, 195, 247, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+#risk:target,
+#voyages:target {
+  animation: pf-target-glow 3.2s ease-out;
+  scroll-margin-top: 64px;
+}
+
 .scroll-thin {
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.25) transparent;

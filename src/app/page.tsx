@@ -64,12 +64,15 @@ export default async function Home({
       {/* Nav */}
       <header className="sticky top-0 z-20 border-b border-slate-800 bg-slate-950/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-6 py-3">
-          <Link href="/" className="flex items-baseline gap-2.5">
+          {/* « intelligence » en toutes lettres, sur deux lignes — « intel »
+              évoquait la marque Intel (retour user 14/07). */}
+          <Link href="/" className="flex items-center gap-2.5">
             <span className="text-[17px] font-bold tracking-[-0.02em] text-slate-100">
               PORT FLOW
             </span>
-            <span className="hidden font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-sky-500 sm:inline">
-              tanker intel
+            <span className="hidden flex-col font-mono text-[8px] font-medium uppercase leading-[1.35] tracking-[0.14em] text-sky-500 sm:flex">
+              <span>tanker</span>
+              <span>intelligence</span>
             </span>
           </Link>
           <nav className="flex items-center gap-1 text-sm">
