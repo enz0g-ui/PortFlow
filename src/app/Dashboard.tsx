@@ -1062,14 +1062,14 @@ export default function Dashboard() {
     ...encounters.slice(0, 2).map((e) => ({
       id: `e${e.id}`,
       name: `${e.vesselAName ?? e.mmsiA} × ${e.vesselBName ?? e.mmsiB}`,
-      meta: "STS encounter",
+      meta: t("ws.feed.sts"),
       value: e.durationH != null ? `${e.durationH.toFixed(1)} h` : "—",
       mmsi: e.mmsiA,
     })),
     ...loitering.slice(0, 2).map((e) => ({
       id: `l${e.id}`,
       name: e.name ?? `MMSI ${e.mmsi}`,
-      meta: "Loitering",
+      meta: t("ws.feed.loitering"),
       value: e.durationH != null ? `${e.durationH.toFixed(1)} h` : "—",
       mmsi: e.mmsi,
     })),
@@ -1095,12 +1095,15 @@ export default function Dashboard() {
       {/* z-[1100] : au-dessus des panes Leaflet (~1000), sinon le dropdown
           du sélecteur de ports passe SOUS la carte (contexte d'empilement). */}
       <header className="sticky top-0 z-[1100] flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-800 bg-slate-900/95 px-4 py-2.5 backdrop-blur">
-        <Link href="/?home" title="Port Flow — home" className="flex items-baseline gap-2">
+        {/* « intelligence » en toutes lettres, sur deux lignes — « intel »
+            évoquait la marque Intel (retour user 14/07). */}
+        <Link href="/?home" title="Port Flow — home" className="flex items-center gap-2">
           <span className="text-[15px] font-bold tracking-[-0.02em] text-slate-100">
             PORT FLOW
           </span>
-          <span className="hidden font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-sky-500 sm:inline">
-            tanker intel
+          <span className="hidden flex-col font-mono text-[7.5px] font-medium uppercase leading-[1.35] tracking-[0.14em] text-sky-500 sm:flex">
+            <span>tanker</span>
+            <span>intelligence</span>
           </span>
         </Link>
 
@@ -1122,7 +1125,7 @@ export default function Dashboard() {
           <Link
             href={`/precision?port=${portId}`}
             className="inline-flex items-center gap-2 rounded border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 hover:border-emerald-400/50"
-            title="Live ETA accuracy vs the crew broadcast — see /precision"
+            title={t("ws.maeBadgeTitle")}
           >
             <span className="h-1.5 w-1.5 animate-[pf-pulse_2s_infinite] rounded-full bg-emerald-300" />
             <span className="font-mono text-[11px] font-semibold text-emerald-300">
@@ -1133,7 +1136,7 @@ export default function Dashboard() {
           <Link
             href={`/precision?port=${portId}`}
             className="inline-flex items-center gap-2 rounded border border-slate-700 px-2.5 py-1.5 font-mono text-[11px] text-slate-400 hover:border-sky-500"
-            title="The benchmark builds as voyages close — see /precision"
+            title={t("ws.benchBadgeTitle")}
           >
             benchmark →
           </Link>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n/context";
 
 /**
  * Workspace « tout sur un écran » (maquette Claude Design v2, 14/07/2026) :
@@ -15,6 +16,7 @@ import Link from "next/link";
 /* ------------------------------------------------------------------ */
 
 export function WorkspaceRail({ portId }: { portId: string }) {
+  const { t } = useI18n();
   const items: Array<{
     icon: string;
     label: string;
@@ -22,11 +24,11 @@ export function WorkspaceRail({ portId }: { portId: string }) {
     href: string;
     active?: boolean;
   }> = [
-    { icon: "◉", label: "LIVE", tip: "Live view", href: "#top", active: true },
-    { icon: "◷", label: "ETA", tip: "ETA accuracy & benchmark", href: `/precision?port=${portId}` },
-    { icon: "⚠", label: "RISK", tip: "Dark fleet · STS · sanctions", href: "#risk" },
-    { icon: "⚓", label: "PORTS", tip: "All tracked ports", href: "/ports" },
-    { icon: "≣", label: "LIST", tip: "Active voyages", href: "#voyages" },
+    { icon: "◉", label: "LIVE", tip: t("ws.rail.live"), href: "#top", active: true },
+    { icon: "◷", label: "ETA", tip: t("ws.rail.eta"), href: `/precision?port=${portId}` },
+    { icon: "⚠", label: "RISK", tip: t("ws.rail.risk"), href: "#risk" },
+    { icon: "⚓", label: "PORTS", tip: t("ws.rail.ports"), href: "/ports" },
+    { icon: "≣", label: "LIST", tip: t("ws.rail.list"), href: "#voyages" },
   ];
   return (
     <div className="hidden w-[52px] flex-none flex-col items-center gap-1 border-r border-slate-800 bg-slate-900/70 py-2.5 lg:flex">
@@ -49,7 +51,7 @@ export function WorkspaceRail({ portId }: { portId: string }) {
       ))}
       <Link
         href="/api-docs"
-        title="API documentation"
+        title={t("ws.rail.api")}
         className="mt-auto flex h-[42px] w-[42px] flex-col items-center justify-center gap-0.5 rounded-md text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"
       >
         <span className="text-[13px] leading-none">⚙</span>
@@ -125,6 +127,7 @@ export function ContextPanel({
   onOpenDetail: () => void;
   onClear: () => void;
 }) {
+  const { t } = useI18n();
   const deltaH =
     voyage?.predictedEta != null && voyage?.broadcastEta != null
       ? (voyage.broadcastEta - voyage.predictedEta) / 3_600_000
@@ -149,10 +152,10 @@ export function ContextPanel({
     <div className="flex min-h-0 flex-col border-t border-slate-800 bg-slate-900/40 lg:border-l lg:border-t-0">
       <div className="flex flex-none items-center gap-2 border-b border-slate-800 px-4 py-2.5">
         <span className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-500">
-          ◈ Selected vessel
+          ◈ {t("ws.selectedVessel")}
         </span>
         <span className="ml-auto font-mono text-[9.5px] text-slate-600">
-          map · table sync
+          {t("ws.sync")}
         </span>
       </div>
 
@@ -172,17 +175,17 @@ export function ContextPanel({
               }`}
             >
               {vessel.sanctioned
-                ? "SANCTIONED"
+                ? t("ws.state.sanctioned")
                 : anomalous
-                  ? "Δ ANOMALOUS"
+                  ? t("ws.state.anomalous")
                   : voyage?.voyageState === "waiting"
-                    ? "WAITING"
-                    : "APPROACHING"}
+                    ? t("ws.state.waiting")
+                    : t("ws.state.approaching")}
             </span>
             <button
               onClick={onClear}
               className="ml-auto flex-none text-slate-600 hover:text-slate-300"
-              aria-label="Clear selection"
+              aria-label={t("ws.clearSelection")}
             >
               ✕
             </button>
@@ -194,8 +197,8 @@ export function ContextPanel({
 
           {progress != null ? (
             <div className="mt-3.5">
-              <div className="mb-1 flex justify-between font-mono text-[9.5px] text-slate-500">
-                <span>APPROACH</span>
+              <div className="mb-1 flex justify-between font-mono text-[9.5px] uppercase text-slate-500">
+                <span>{t("ws.approach")}</span>
                 <span className="text-slate-200">
                   {voyage?.currentDistanceNm?.toFixed(1)} nm
                 </span>
@@ -212,16 +215,16 @@ export function ContextPanel({
           {voyage ? (
             <div className="mt-3.5 grid grid-cols-2 gap-2.5">
               <div className="rounded-md border border-emerald-400/20 bg-emerald-400/5 px-3 py-2.5">
-                <div className="mb-0.5 font-mono text-[8.5px] font-medium tracking-[0.1em] text-emerald-300">
-                  PORT FLOW ETA
+                <div className="mb-0.5 font-mono text-[8.5px] font-medium uppercase tracking-[0.1em] text-emerald-300">
+                  {t("ws.portFlowEta")}
                 </div>
                 <div className="font-mono text-[15px] font-semibold text-emerald-300">
                   {fmtEta(voyage.predictedEta)}
                 </div>
               </div>
               <div className="rounded-md border border-rose-400/15 bg-rose-400/5 px-3 py-2.5">
-                <div className="mb-0.5 font-mono text-[8.5px] font-medium tracking-[0.1em] text-rose-300/80">
-                  BROADCAST ETA
+                <div className="mb-0.5 font-mono text-[8.5px] font-medium uppercase tracking-[0.1em] text-rose-300/80">
+                  {t("ws.broadcastEta")}
                 </div>
                 <div
                   className={`font-mono text-[15px] font-semibold ${
@@ -251,7 +254,7 @@ export function ContextPanel({
               onClick={onOpenDetail}
               className="ml-auto font-sans text-[11px] font-semibold text-sky-400 hover:text-sky-300"
             >
-              Full profile →
+              {t("ws.fullProfile")}
             </button>
           </div>
         </div>
@@ -266,7 +269,7 @@ export function ContextPanel({
             </p>
           ) : null}
           <p className="mt-2 font-mono text-[10px] text-slate-600">
-            click a vessel on the map or in the table
+            {t("ws.clickHint")}
           </p>
         </div>
       )}
@@ -274,7 +277,7 @@ export function ContextPanel({
       {/* risk feed */}
       <div className="flex flex-none items-center gap-1.5 px-4 pb-1.5 pt-2.5">
         <span className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.12em] text-rose-300">
-          ⚠ Risk · 30d
+          ⚠ {t("ws.riskHeader")}
         </span>
         <span className="ml-auto flex gap-1 font-mono text-[9.5px]">
           <span className="rounded border border-rose-400/30 bg-rose-400/10 px-2 py-0.5 font-semibold text-rose-300">
@@ -308,7 +311,7 @@ export function ContextPanel({
             ))
           ) : (
             <div className="px-4 py-4 font-mono text-[10px] text-slate-600">
-              no active detections
+              {t("ws.noDetections")}
             </div>
           )}
         </div>
@@ -317,10 +320,10 @@ export function ContextPanel({
           className="flex flex-none items-center justify-between border-t border-slate-800 px-4 py-2"
         >
           <span className="font-mono text-[10px] text-slate-500">
-            {darkCount + stsCount + loiterCount} events detected
+            {t("ws.eventsDetected", { n: darkCount + stsCount + loiterCount })}
           </span>
           <span className="text-[11px] font-semibold text-sky-400">
-            See all →
+            {t("ws.seeAll")}
           </span>
         </a>
       </div>
@@ -341,12 +344,13 @@ export function MixPanel({
   cargo: Array<{ label: string; n: number }>;
   avgSpeed: number | null;
 }) {
+  const { t } = useI18n();
   const fleetMax = Math.max(1, ...fleet.map((m) => m.n));
   const cargoMax = Math.max(1, ...cargo.map((m) => m.n));
   return (
     <div className="flex min-h-0 flex-col border-t border-slate-800 bg-slate-900/40 lg:border-l lg:border-t-0">
       <div className="flex-none border-b border-slate-800 px-4 py-2.5 font-mono text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-        Fleet mix · cargoes
+        {t("ws.mixTitle")}
       </div>
       <div className="grid flex-none content-start gap-2 px-4 py-3">
         {fleet.map((m) => (
@@ -383,7 +387,7 @@ export function MixPanel({
         ))}
       </div>
       <div className="mt-auto flex-none border-t border-slate-800/60 px-4 py-2 font-mono text-[10px] text-slate-600">
-        {avgSpeed != null ? `Avg channel speed: ${avgSpeed.toFixed(1)} kn` : ""}
+        {avgSpeed != null ? t("ws.avgSpeed", { v: avgSpeed.toFixed(1) }) : ""}
       </div>
     </div>
   );
