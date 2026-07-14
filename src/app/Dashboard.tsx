@@ -1092,7 +1092,9 @@ export default function Dashboard() {
       {/* Command bar — mockup « la preuve d'abord » : barre dense, port +
           badge MAE proéminent, nav condensée. Full-bleed dans le <main> padded
           via marges négatives, collée en haut. */}
-      <header className="sticky top-0 z-30 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-800 bg-slate-900/95 px-4 py-2.5 backdrop-blur">
+      {/* z-[1100] : au-dessus des panes Leaflet (~1000), sinon le dropdown
+          du sélecteur de ports passe SOUS la carte (contexte d'empilement). */}
+      <header className="sticky top-0 z-[1100] flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-800 bg-slate-900/95 px-4 py-2.5 backdrop-blur">
         <Link href="/?home" title="Port Flow — home" className="flex items-baseline gap-2">
           <span className="text-[15px] font-bold tracking-[-0.02em] text-slate-100">
             PORT FLOW
