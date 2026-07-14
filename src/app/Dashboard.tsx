@@ -1112,20 +1112,30 @@ export default function Dashboard() {
           accessiblePortIds={me?.portsAccessible}
         />
 
-        {/* MAE badge — the proof, front and centre */}
-        <Link
-          href={`/precision?port=${portId}`}
-          className="inline-flex items-center gap-2 rounded border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 hover:border-emerald-400/50"
-          title="Live ETA accuracy vs the crew broadcast — see /precision"
-        >
-          <span className="h-1.5 w-1.5 animate-[pf-pulse_2s_infinite] rounded-full bg-emerald-300" />
-          <span className="font-mono text-[11px] font-semibold text-emerald-300">
-            MAE{" "}
-            {accuracyResp?.maeHours != null
-              ? `${accuracyResp.maeHours.toFixed(1)} h`
-              : "…"}
-          </span>
-        </Link>
+        {/* MAE badge — the proof, front and centre. Même règle d'honnêteté
+            que /precision : pas de chiffre sous 20 voyages clos (un port
+            froid afficherait une valeur aberrante). */}
+        {accuracyResp?.maeHours != null &&
+        (accuracyResp.sampleCount ?? 0) >= 20 ? (
+          <Link
+            href={`/precision?port=${portId}`}
+            className="inline-flex items-center gap-2 rounded border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 hover:border-emerald-400/50"
+            title="Live ETA accuracy vs the crew broadcast — see /precision"
+          >
+            <span className="h-1.5 w-1.5 animate-[pf-pulse_2s_infinite] rounded-full bg-emerald-300" />
+            <span className="font-mono text-[11px] font-semibold text-emerald-300">
+              MAE {accuracyResp.maeHours.toFixed(1)} h
+            </span>
+          </Link>
+        ) : (
+          <Link
+            href={`/precision?port=${portId}`}
+            className="inline-flex items-center gap-2 rounded border border-slate-700 px-2.5 py-1.5 font-mono text-[11px] text-slate-400 hover:border-sky-500"
+            title="The benchmark builds as voyages close — see /precision"
+          >
+            benchmark →
+          </Link>
+        )}
 
         <span
           className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs ${
