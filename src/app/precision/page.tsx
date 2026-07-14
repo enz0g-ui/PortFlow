@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Attributions } from "../components/Attributions";
 import { DemoButton } from "../components/DemoButton";
+import { ClosedVoyagesTable } from "./ClosedVoyagesTable";
 import { getVoyageAccuracy } from "@/lib/voyages";
 import { getPort, DEFAULT_PORT_ID } from "@/lib/ports";
 
@@ -25,27 +26,6 @@ export const metadata: Metadata = {
 function fmtH(v: number | null | undefined, digits = 2): string {
   if (v === null || v === undefined) return "—";
   return `${v.toFixed(digits)} h`;
-}
-
-function fmtTs(ts?: number | null): string {
-  if (!ts) return "—";
-  return (
-    new Date(ts).toLocaleString([], {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "UTC",
-    }) + " UTC"
-  );
-}
-
-function errTone(err: number | null | undefined): string {
-  if (err === null || err === undefined) return "text-slate-500";
-  const a = Math.abs(err);
-  if (a < 1) return "text-emerald-300";
-  if (a < 3) return "text-amber-300";
-  return "text-rose-300";
 }
 
 function Stat({
@@ -196,50 +176,20 @@ export default async function PrecisionPage({
           </span>
         </div>
         {data.voyages.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="text-slate-500">
-                <tr className="text-left">
-                  <th className="py-1 pr-3 font-normal">MMSI</th>
-                  <th className="py-1 pr-3 font-normal">Cargo</th>
-                  <th className="py-1 pr-3 font-normal">Arrival</th>
-                  <th className="py-1 pr-3 text-right font-normal">Our error</th>
-                  <th className="py-1 pr-3 text-right font-normal">Broadcast error</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.voyages.slice(0, 50).map((v) => {
-                  const ourErr = v.predicted_eta
-                    ? (v.predicted_eta - (v.arrived_ts ?? 0)) / 3_600_000
-                    : null;
-                  const broadErr = v.broadcast_eta
-                    ? (v.broadcast_eta - (v.arrived_ts ?? 0)) / 3_600_000
-                    : null;
-                  return (
-                    <tr key={v.voyage_id} className="border-t border-slate-800">
-                      <td className="py-1.5 pr-3 tabular-nums text-slate-300">
-                        {v.mmsi}
-                      </td>
-                      <td className="py-1.5 pr-3 text-slate-300">
-                        {v.cargo_class ?? "—"}
-                      </td>
-                      <td className="py-1.5 pr-3 tabular-nums text-slate-400">
-                        {fmtTs(v.arrived_ts)}
-                      </td>
-                      <td
-                        className={`py-1.5 pr-3 text-right tabular-nums ${errTone(ourErr)}`}
-                      >
-                        {fmtH(ourErr)}
-                      </td>
-                      <td className="py-1.5 pr-3 text-right tabular-nums text-slate-400">
-                        {fmtH(broadErr)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <ClosedVoyagesTable
+            rows={data.voyages.slice(0, 50).map((v) => ({
+              voyageId: v.voyage_id,
+              mmsi: v.mmsi,
+              cargo: v.cargo_class ?? null,
+              arrivedTs: v.arrived_ts ?? null,
+              ourErr: v.predicted_eta
+                ? (v.predicted_eta - (v.arrived_ts ?? 0)) / 3_600_000
+                : null,
+              broadErr: v.broadcast_eta
+                ? (v.broadcast_eta - (v.arrived_ts ?? 0)) / 3_600_000
+                : null,
+            }))}
+          />
         ) : (
           <p className="text-sm text-slate-500">
             No closed voyages in this window yet — the benchmark fills as vessels
