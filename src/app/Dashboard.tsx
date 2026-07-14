@@ -1206,7 +1206,7 @@ export default function Dashboard() {
         <WorkspaceRail portId={portId} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
 
-      <section className="grid flex-none grid-cols-2 gap-px border-b border-slate-800 bg-slate-800/40 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
+      <section className="grid flex-none grid-cols-2 gap-px border-b border-slate-800 bg-slate-800/40 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8">
         <KpiCard
           label={t("kpi.totalVessels")}
           value={k?.totalVessels ?? "—"}
@@ -1260,6 +1260,27 @@ export default function Dashboard() {
               : "default"
           }
         />
+        {/* Promo alertes — la feature la plus différenciante est invisible
+            pour un visiteur pressé : cellule accrocheuse, cloche pulsante,
+            même vocabulaire que la cloche de la command bar. */}
+        <Link
+          href="/account"
+          title={t("kpi.alertPromoHint")}
+          className="rounded-md border border-amber-400/40 bg-amber-400/10 px-3.5 py-2.5 text-left transition-colors hover:border-amber-400 hover:bg-amber-400/15"
+        >
+          <div className="font-mono text-[9px] font-medium uppercase tracking-[0.1em] text-amber-300">
+            {t("kpi.alertPromo")}
+          </div>
+          <div className="flex items-baseline gap-1.5 font-mono text-[21px] font-semibold text-amber-300">
+            <span className="inline-block animate-[pf-pulse_2s_infinite]">🔔</span>
+            <span className="font-sans text-[12px] font-semibold leading-tight">
+              {t("kpi.alertPromoHint").split("—")[0].trim()}
+            </span>
+          </div>
+          <div className="mt-0.5 font-mono text-[10px] text-amber-300/60">
+            Slack · Telegram · Email →
+          </div>
+        </Link>
       </section>
 
       <div className="mx-2 mb-1 mt-2 flex flex-none items-center justify-between rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs">
@@ -1770,18 +1791,16 @@ export default function Dashboard() {
         </div>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <CongestionGauge
-            anchored={k?.anchored ?? 0}
-            total={k?.totalVessels ?? 0}
-          />
-          <FlowChart history={histResp?.history ?? []} />
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <WeatherWidget data={weatherResp ?? null} />
-          <AccuracyPanel data={accuracyResp ?? null} />
-        </div>
+      {/* Une seule rangée de 4 cartes compactes, alignées sur la hauteur
+          utile du panneau ETA precision (retour user 14/07). */}
+      <section className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <CongestionGauge
+          anchored={k?.anchored ?? 0}
+          total={k?.totalVessels ?? 0}
+        />
+        <FlowChart history={histResp?.history ?? []} />
+        <WeatherWidget data={weatherResp ?? null} />
+        <AccuracyPanel data={accuracyResp ?? null} />
       </section>
 
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
