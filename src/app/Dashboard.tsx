@@ -359,6 +359,37 @@ export default function Dashboard() {
     new Map(),
   );
   const [worldView, setWorldView] = useState(false);
+  // Mobile: the map is collapsed by default (numbers are the soul of the page
+  // on a phone; Leaflet + CARTO tiles are heavy). Desktop always mounts it.
+  // Mount-gated (not CSS-hidden) so a closed map downloads zero tiles.
+  const [mapOpen, setMapOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem("portflow:mapShown") === "1") {
+        setMapOpen(true);
+      }
+    } catch {
+      /* ignore */
+    }
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const apply = () => setIsDesktop(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  const toggleMap = () => {
+    setMapOpen((cur) => {
+      const next = !cur;
+      try {
+        window.localStorage.setItem("portflow:mapShown", next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+  const showMap = isDesktop || mapOpen;
   const [worldVessels, setWorldVessels] = useState<Vessel[]>([]);
   const [showFavoritesPanel, setShowFavoritesPanel] = useState(false);
   // Workspace v2 : la sélection s'affiche dans le panneau contexte accolé à
@@ -1305,47 +1336,53 @@ export default function Dashboard() {
         </Link>
       </section>
 
-      <div className="mx-2 mb-1 mt-2 flex flex-none items-center justify-between rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              setTankersOnly(false);
-              setFleetOnly(false);
-            }}
-            className={`rounded px-3 py-1 ${
-              !tankersOnly && !fleetOnly
-                ? "bg-sky-500/15 text-sky-300"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            {t("filter.all")} ({allVessels.length})
-          </button>
-          <button
-            onClick={() => {
-              setTankersOnly(true);
-              setFleetOnly(false);
-            }}
-            className={`rounded px-3 py-1 ${
-              tankersOnly && !fleetOnly
-                ? "bg-sky-500/15 text-sky-300"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            {t("filter.tankers")} ({tankerCount})
-          </button>
-          {/* Mobile-only MAE badge — the header keeps it on sm+; down here it
-              sits in the spare room next to the All/Tankers filters. */}
-          {accuracyResp?.maeHours != null &&
-          (accuracyResp.sampleCount ?? 0) >= 20 ? (
-            <Link
-              href={`/precision?port=${portId}`}
-              className="inline-flex items-center gap-1.5 rounded border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 font-mono text-[11px] font-semibold text-emerald-300 sm:hidden"
-              title={t("ws.maeBadgeTitle")}
+      <div className="mx-2 mb-1 mt-2 flex flex-none flex-wrap items-center justify-between gap-y-2 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          {/* Mobile: three equal boxes (All · Tankers · MAE) on one row, the
+              search on its own full-width row below. Desktop: inline pills. */}
+          <div className="grid w-full grid-cols-3 gap-1.5 sm:flex sm:w-auto sm:items-center sm:gap-2">
+            <button
+              onClick={() => {
+                setTankersOnly(false);
+                setFleetOnly(false);
+              }}
+              className={`flex items-center justify-center whitespace-nowrap rounded border px-2 py-1.5 sm:border-0 sm:px-3 sm:py-1 ${
+                !tankersOnly && !fleetOnly
+                  ? "border-sky-700/60 bg-sky-500/15 text-sky-300"
+                  : "border-slate-800 text-slate-400 hover:text-slate-200"
+              }`}
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-              MAE {accuracyResp.maeHours.toFixed(1)} h
-            </Link>
-          ) : null}
+              {t("filter.all")} ({allVessels.length})
+            </button>
+            <button
+              onClick={() => {
+                setTankersOnly(true);
+                setFleetOnly(false);
+              }}
+              className={`flex items-center justify-center whitespace-nowrap rounded border px-2 py-1.5 sm:border-0 sm:px-3 sm:py-1 ${
+                tankersOnly && !fleetOnly
+                  ? "border-sky-700/60 bg-sky-500/15 text-sky-300"
+                  : "border-slate-800 text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              {t("filter.tankers")} ({tankerCount})
+            </button>
+            {/* Mobile-only MAE box — distinct emerald style; the header keeps
+                the badge on sm+. */}
+            {accuracyResp?.maeHours != null &&
+            (accuracyResp.sampleCount ?? 0) >= 20 ? (
+              <Link
+                href={`/precision?port=${portId}`}
+                className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded border border-emerald-400/30 bg-emerald-400/10 px-2 py-1.5 font-mono text-[11px] font-semibold text-emerald-300 sm:hidden"
+                title={t("ws.maeBadgeTitle")}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                MAE {accuracyResp.maeHours.toFixed(1)} h
+              </Link>
+            ) : (
+              <span className="sm:hidden" />
+            )}
+          </div>
           {vesselBookmarksEnabled ? (
             <button
               onClick={onFleetChipClick}
@@ -1396,7 +1433,7 @@ export default function Dashboard() {
               {t("filter.fleetMultiPortsHint", { n: fleetPortMap.size })}
             </span>
           ) : null}
-          <div className="relative ml-auto flex items-center">
+          <div className="relative flex w-full items-center sm:ml-auto sm:w-auto">
             <svg
               className="pointer-events-none absolute left-2 h-3.5 w-3.5 text-slate-500"
               viewBox="0 0 16 16"
@@ -1414,7 +1451,7 @@ export default function Dashboard() {
               onFocus={() => setSearchOpen(true)}
               onBlur={() => window.setTimeout(() => setSearchOpen(false), 150)}
               placeholder={t("filter.searchPlaceholder", { n: 51 })}
-              className="w-64 rounded border border-slate-700 bg-slate-950 pl-7 pr-7 py-1 text-xs text-slate-100 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none"
+              className="w-full rounded border border-slate-700 bg-slate-950 py-1.5 pl-7 pr-7 text-xs text-slate-100 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none sm:w-64 sm:py-1"
             />
             {searchQuery ? (
               <button
@@ -1501,7 +1538,9 @@ export default function Dashboard() {
             </button>
           ) : null}
         </div>
-        <span className="text-slate-500">{t("filter.subclasses")}</span>
+        <span className="hidden text-slate-500 sm:inline">
+          {t("filter.subclasses")}
+        </span>
       </div>
 
       {classFilterBreakdown ? (
@@ -1641,7 +1680,20 @@ export default function Dashboard() {
       ) : null}
 
       <div className="grid min-h-0 flex-1 border-t border-slate-800 lg:grid-cols-[1fr_384px]">
-      <section className="h-[440px] lg:h-full lg:min-h-0">
+      <section className="lg:h-full lg:min-h-0">
+        {/* Mobile: the map is on-demand (numbers first on a phone). The
+            toggle is invisible on lg+ where the map always mounts. */}
+        <button
+          onClick={toggleMap}
+          className="mx-2 my-1.5 flex w-[calc(100%-16px)] items-center justify-center gap-2 rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs text-slate-300 hover:border-sky-500 lg:hidden"
+        >
+          🗺️ {mapOpen ? t("map.hide") : t("map.show")}
+          <span className="text-[9px] text-slate-500">
+            {mapOpen ? "▲" : "▼"}
+          </span>
+        </button>
+        {showMap ? (
+        <div className="h-[440px] lg:h-full">
         {worldView ? (
           <MapView
             vessels={
@@ -1691,6 +1743,8 @@ export default function Dashboard() {
         ) : (
           <div className="flex h-full w-full items-center justify-center rounded-lg border border-slate-800 bg-slate-900/40 text-sm text-slate-500" />
         )}
+        </div>
+        ) : null}
       </section>
 
       <ContextPanel

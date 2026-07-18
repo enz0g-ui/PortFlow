@@ -55,6 +55,8 @@ const fr: Messages = {
   "auth.signIn": "Se connecter",
   "auth.signUp": "Créer un compte",
   "auth.account": "Compte",
+  "map.show": "Afficher la carte",
+  "map.hide": "Masquer la carte",
   "chokepoint.context": "Contexte stratégique",
   "chokepoint.contextNote":
     "Chiffres structurels de référence (PAS notre comptage live). L'AIS ci-dessous est faible ici : couverture terrestre + navires en black-out.",
@@ -337,6 +339,8 @@ const en: Messages = {
   "auth.signIn": "Sign in",
   "auth.signUp": "Sign up",
   "auth.account": "Account",
+  "map.show": "Show map",
+  "map.hide": "Hide map",
   "chokepoint.context": "Strategic context",
   "chokepoint.contextNote":
     "Structural reference figures (NOT our live count). Live AIS below is sparse here: terrestrial coverage + vessels running dark.",
