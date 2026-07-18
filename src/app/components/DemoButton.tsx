@@ -5,7 +5,7 @@ import { Show } from "@clerk/nextjs";
 
 const clerkEnabled = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-function DemoButtonInner() {
+function DemoButtonInner({ compact = false }: { compact?: boolean }) {
   const [pending, setPending] = useState(false);
 
   const onClick = async () => {
@@ -46,7 +46,7 @@ function DemoButtonInner() {
       title="10-minute preview, no signup required (one per network per 24 h)"
       className="rounded border border-emerald-700/60 bg-emerald-950/40 px-2 py-1 text-xs font-medium text-emerald-200 hover:border-emerald-500 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
     >
-      {pending ? "Starting…" : "Try demo (10 min)"}
+      {pending ? "Starting…" : compact ? "Demo" : "Try demo (10 min)"}
     </button>
   );
 }
@@ -57,11 +57,11 @@ function DemoButtonInner() {
  * with a redundant "try demo" affordance. If Clerk isn't enabled (local
  * dev), the button is always shown.
  */
-export function DemoButton() {
-  if (!clerkEnabled) return <DemoButtonInner />;
+export function DemoButton({ compact = false }: { compact?: boolean }) {
+  if (!clerkEnabled) return <DemoButtonInner compact={compact} />;
   return (
     <Show when="signed-out">
-      <DemoButtonInner />
+      <DemoButtonInner compact={compact} />
     </Show>
   );
 }

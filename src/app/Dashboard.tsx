@@ -1097,7 +1097,7 @@ export default function Dashboard() {
       <header className="sticky top-0 z-[1100] flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-800 bg-slate-900/95 px-4 py-2.5 backdrop-blur">
         {/* « intelligence » en toutes lettres, sur deux lignes — « intel »
             évoquait la marque Intel (retour user 14/07). */}
-        <Link href="/?home" title="Port Flow — home" className="flex items-center gap-2">
+        <Link href="/?home" title="Port Flow — home" className="order-1 flex items-center gap-2">
           <span className="text-[15px] font-bold tracking-[-0.02em] text-slate-100">
             PORT FLOW
           </span>
@@ -1107,15 +1107,19 @@ export default function Dashboard() {
           </span>
         </Link>
 
-        <PortSelector
-          ports={ports}
-          selectedId={portId}
-          onSelect={trySelectPort}
-          bookmarkedIds={bookmarkedIds}
-          onToggleBookmark={toggleBookmark}
-          bookmarksEnabled={bookmarksEnabled}
-          accessiblePortIds={me?.portsAccessible}
-        />
+        {/* Mobile: full-width row under the compact cluster; desktop: inline
+            right after the lockup (order-2). */}
+        <div className="order-4 w-full sm:order-2 sm:w-auto">
+          <PortSelector
+            ports={ports}
+            selectedId={portId}
+            onSelect={trySelectPort}
+            bookmarkedIds={bookmarkedIds}
+            onToggleBookmark={toggleBookmark}
+            bookmarksEnabled={bookmarksEnabled}
+            accessiblePortIds={me?.portsAccessible}
+          />
+        </div>
 
         {/* MAE badge — the proof, front and centre. Même règle d'honnêteté
             que /precision : pas de chiffre sous 20 voyages clos (un port
@@ -1124,7 +1128,7 @@ export default function Dashboard() {
         (accuracyResp.sampleCount ?? 0) >= 20 ? (
           <Link
             href={`/precision?port=${portId}`}
-            className="inline-flex items-center gap-2 rounded border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 hover:border-emerald-400/50"
+            className="hidden items-center gap-2 rounded border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1.5 hover:border-emerald-400/50 sm:order-3 sm:inline-flex"
             title={t("ws.maeBadgeTitle")}
           >
             <span className="h-1.5 w-1.5 animate-[pf-pulse_2s_infinite] rounded-full bg-emerald-300" />
@@ -1135,38 +1139,17 @@ export default function Dashboard() {
         ) : (
           <Link
             href={`/precision?port=${portId}`}
-            className="inline-flex items-center gap-2 rounded border border-slate-700 px-2.5 py-1.5 font-mono text-[11px] text-slate-400 hover:border-sky-500"
+            className="hidden items-center gap-2 rounded border border-slate-700 px-2.5 py-1.5 font-mono text-[11px] text-slate-400 hover:border-sky-500 sm:order-3 sm:inline-flex"
             title={t("ws.benchBadgeTitle")}
           >
             benchmark →
           </Link>
         )}
 
-        <span
-          className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs ${
-            tone === "good"
-              ? "border-emerald-700 text-emerald-300"
-              : tone === "warn"
-                ? "border-amber-700 text-amber-300"
-                : "border-rose-700 text-rose-300"
-          }`}
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-current" />
-          AIS {aisLabel}
-        </span>
-        {byoVessels.length > 0 ? (
-          <span
-            className="inline-flex items-center gap-2 rounded-full border border-indigo-700 px-2.5 py-1 text-xs text-indigo-300"
-            title={`Enrichissement BYO via ${byoSources.join(", ")}`}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-current" />
-            BYO {byoVessels.length}
-          </span>
-        ) : null}
-
-        {/* Right cluster — nav condensée + demo + auth. min-height réserve la
-            hauteur de la rangée Clerk-gated (culprit CLS 0.5 historique). */}
-        <div className="ml-auto flex min-h-[2rem] flex-wrap content-center items-center justify-end gap-1.5 text-xs">
+        {/* Compact cluster — nav condensée + demo + AIS. Mobile: full-width,
+            packs into ~2 lines between the top row and the port selector;
+            desktop: pushed right (order-6). */}
+        <div className="order-3 flex w-full flex-wrap content-center items-center gap-1.5 text-xs sm:order-6 sm:ml-auto sm:w-auto sm:min-h-[2rem] sm:justify-end">
           <Link href={`/precision?port=${portId}`} className="hidden rounded px-2 py-1 text-slate-300 hover:text-white lg:inline">
             {t("nav.precision")}
           </Link>
@@ -1205,7 +1188,34 @@ export default function Dashboard() {
             📱
           </Link>
           <LanguageSwitcher />
-          <DemoButton />
+          <DemoButton compact />
+          <span
+            className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs ${
+              tone === "good"
+                ? "border-emerald-700 text-emerald-300"
+                : tone === "warn"
+                  ? "border-amber-700 text-amber-300"
+                  : "border-rose-700 text-rose-300"
+            }`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            AIS {aisLabel}
+          </span>
+          {byoVessels.length > 0 ? (
+            <span
+              className="inline-flex items-center gap-2 rounded-full border border-indigo-700 px-2.5 py-1 text-xs text-indigo-300"
+              title={`Enrichissement BYO via ${byoSources.join(", ")}`}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              BYO {byoVessels.length}
+            </span>
+          ) : null}
+        </div>
+
+        {/* Auth — mobile: top row, right of the lockup (order-2); desktop:
+            far right after the cluster. min-height reserves the Clerk-gated
+            mount (historic CLS culprit). */}
+        <div className="order-2 ml-auto flex min-h-[2rem] items-center gap-1.5 text-xs sm:order-7 sm:ml-0">
           <AuthButtons />
         </div>
       </header>
@@ -1323,6 +1333,19 @@ export default function Dashboard() {
           >
             {t("filter.tankers")} ({tankerCount})
           </button>
+          {/* Mobile-only MAE badge — the header keeps it on sm+; down here it
+              sits in the spare room next to the All/Tankers filters. */}
+          {accuracyResp?.maeHours != null &&
+          (accuracyResp.sampleCount ?? 0) >= 20 ? (
+            <Link
+              href={`/precision?port=${portId}`}
+              className="inline-flex items-center gap-1.5 rounded border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 font-mono text-[11px] font-semibold text-emerald-300 sm:hidden"
+              title={t("ws.maeBadgeTitle")}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+              MAE {accuracyResp.maeHours.toFixed(1)} h
+            </Link>
+          ) : null}
           {vesselBookmarksEnabled ? (
             <button
               onClick={onFleetChipClick}
