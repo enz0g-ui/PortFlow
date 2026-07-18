@@ -1197,6 +1197,13 @@ export default function Dashboard() {
           >
             🔔
           </Link>
+          <Link
+            href="/m"
+            className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-sky-500 hover:text-sky-300"
+            title="Phone-first glance view — watchlist ETAs + alerts"
+          >
+            📱
+          </Link>
           <LanguageSwitcher />
           <DemoButton />
           <AuthButtons />
