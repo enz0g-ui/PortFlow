@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "dev.octopodus.portflow",
+        "sha256_cert_fingerprints": ["87:7E:A9:5C:89:12:BE:9D:AD:E2:21:8E:CD:3B:79:26:FE:73:56:0A:C0:A4:CD:0E:BF:4E:65:4E:4B:7E:87:C7"]
+      }
+    }]
