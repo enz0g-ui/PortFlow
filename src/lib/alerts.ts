@@ -7,7 +7,8 @@ export type AlertKind =
   | "discord"
   | "telegram"
   | "email"
-  | "webhook";
+  | "webhook"
+  | "push";
 export type AlertEvent =
   | "vessel.arrived"
   | "vessel.departed"
@@ -250,6 +251,23 @@ async function deliver(alert: UserAlert, payload: VesselEventPayload) {
         `UPDATE user_alerts SET last_fired_at = ?, last_status = ? WHERE id = ?`,
       )
       .run(Date.now(), status, alert.id);
+    return;
+  }
+
+  if (alert.kind === "push") {
+    // Web Push to every device the user subscribed on /m. Status: number of
+    // devices reached (0 = none left), -3 = VAPID not configured.
+    const { deliverPushToUser } = await import("./push");
+    const delivered = await deliverPushToUser(alert.user_id, {
+      title: "Port Flow",
+      body: formatHumanLine(alert.event as AlertEvent, payload),
+      url: "/m",
+    });
+    db()
+      .raw.prepare(
+        `UPDATE user_alerts SET last_fired_at = ?, last_status = ? WHERE id = ?`,
+      )
+      .run(Date.now(), delivered >= 1 ? 200 : delivered, alert.id);
     return;
   }
 

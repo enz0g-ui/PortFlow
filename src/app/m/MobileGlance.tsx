@@ -67,6 +67,15 @@ const SEEN_KEY = "portflow:mobile:alertsSeenTs";
 const THEME_KEY = "portflow:mobile:theme";
 const POLL_MS = 60_000;
 
+function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
+  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+  const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = window.atob(b64);
+  const out = new Uint8Array(new ArrayBuffer(raw.length));
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+
 function fmtCountdown(etaMs: number, now: number): string {
   const d = etaMs - now;
   if (d <= 0) return "due";
@@ -202,7 +211,71 @@ export function MobileGlance() {
   const [seenTs, setSeenTs] = useState<number>(0);
   const [now, setNow] = useState(() => Date.now());
   const [mode, setMode] = useState<"dark" | "light">("dark");
+  // Push channel state: "na" = unsupported/not applicable (demo, denied,
+  // server unconfigured), "available" = can offer, "busy" = subscribing,
+  // "on" = this device is subscribed.
+  const [push, setPush] = useState<"na" | "available" | "busy" | "on">("na");
   const t = THEMES[mode];
+
+  // Register the service worker early (needed for push + PWA install).
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }, []);
+
+  // Evaluate push availability once we know who the user is (not for demo
+  // sessions — their identity is throwaway).
+  useEffect(() => {
+    if (!data || data.isDemo || unauth) return;
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    if (typeof Notification === "undefined") return;
+    if (Notification.permission === "denied") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const vapid = await fetch("/api/push/vapid");
+        if (!vapid.ok) return; // server not configured
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (!cancelled) setPush(sub ? "on" : "available");
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [data, unauth]);
+
+  const enablePush = async () => {
+    setPush("busy");
+    try {
+      const vapid = await fetch("/api/push/vapid");
+      if (!vapid.ok) throw new Error("unconfigured");
+      const { publicKey } = (await vapid.json()) as { publicKey: string };
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") {
+        setPush("na");
+        return;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      const sub =
+        (await reg.pushManager.getSubscription()) ??
+        (await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey),
+        }));
+      const r = await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ subscription: sub.toJSON() }),
+      });
+      setPush(r.ok ? "on" : "available");
+    } catch {
+      setPush("available");
+    }
+  };
 
   useEffect(() => {
     try {
@@ -469,6 +542,31 @@ export function MobileGlance() {
                   and they show up here, sorted by ETA.
                 </span>
               </div>
+            ) : null}
+
+            {push === "available" || push === "busy" ? (
+              <button
+                onClick={enablePush}
+                disabled={push === "busy"}
+                className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left ${t.card} disabled:opacity-60`}
+              >
+                <span className="text-lg">🔔</span>
+                <span className="min-w-0 flex-1">
+                  <span className={`block text-[13px] font-semibold ${t.title}`}>
+                    {push === "busy"
+                      ? "Enabling…"
+                      : "Get alerts on your lock screen"}
+                  </span>
+                  <span className={`block text-[11px] ${t.muted}`}>
+                    Vessel arrivals &amp; departures, pushed to this device.
+                  </span>
+                </span>
+                <span
+                  className={`flex-none rounded px-2.5 py-1 text-[11px] font-bold ${mode === "dark" ? "bg-sky-500 text-slate-950" : "bg-sky-600 text-white"}`}
+                >
+                  Enable
+                </span>
+              </button>
             ) : null}
 
             {(data?.ports ?? []).length > 0 ? (

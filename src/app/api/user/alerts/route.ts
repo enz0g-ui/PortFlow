@@ -20,6 +20,7 @@ const VALID_KINDS = new Set<AlertKind>([
   "telegram",
   "email",
   "webhook",
+  "push",
 ]);
 const VALID_EVENTS = new Set<AlertEvent>([
   "vessel.arrived",
@@ -44,6 +45,9 @@ function isEmail(value: string): boolean {
 
 function validateTarget(kind: AlertKind, target: string): boolean {
   if (kind === "email") return isEmail(target);
+  // Push has no per-alert target — devices are resolved from the user's
+  // push_subscriptions rows at delivery time.
+  if (kind === "push") return true;
   return isHttpsUrl(target);
 }
 
