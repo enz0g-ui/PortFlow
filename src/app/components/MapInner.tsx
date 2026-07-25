@@ -333,15 +333,13 @@ export default memo(function MapInner({
       map.addSource("trails", { type: "geojson", data: emptyFC() });
       map.addSource("seltrack", { type: "geojson", data: emptyFC() });
       map.addSource("sar", { type: "geojson", data: emptyFC() });
+      // Pas de clustering : le worker de clustering (supercluster) ne produit
+      // aucune tuile en maplibre 4.7.1 avec notre config, d'où des navires
+      // invisibles. Sans cluster, les 943 points se rendent en dots lumineux
+      // individuels — c'est aussi le rendu « command deck » recherché.
       map.addSource("vessels", {
         type: "geojson",
         data: buildVesselsFC(d.vessels, d.highlightedMmsis),
-        cluster: true,
-        clusterRadius: 42,
-        clusterMaxZoom: 8,
-        clusterProperties: {
-          sanctioned: ["max", ["get", "sanctioned"]],
-        },
       });
 
       // zones de port
@@ -425,7 +423,7 @@ export default memo(function MapInner({
         id: "vessel-sanctioned",
         type: "circle",
         source: "vessels",
-        filter: ["all", ["!", ["has", "point_count"]], ["==", ["get", "sanctioned"], 1]],
+        filter: ["==", ["get", "sanctioned"], 1],
         paint: {
           "circle-radius": 10,
           "circle-color": "rgba(0,0,0,0)",
@@ -440,7 +438,6 @@ export default memo(function MapInner({
         id: "vessel-glow",
         type: "circle",
         source: "vessels",
-        filter: ["!", ["has", "point_count"]],
         paint: {
           "circle-radius": ["*", ["get", "rad"], 2.4],
           "circle-color": CLASS_COLOR_EXPR,
@@ -453,7 +450,6 @@ export default memo(function MapInner({
         id: "vessel-core",
         type: "circle",
         source: "vessels",
-        filter: ["!", ["has", "point_count"]],
         paint: {
           "circle-radius": ["get", "rad"],
           "circle-color": CLASS_COLOR_EXPR,
@@ -475,33 +471,6 @@ export default memo(function MapInner({
           "circle-stroke-color": "#38bdf8",
           "circle-stroke-width": 2.5,
         },
-      });
-
-      // clusters
-      map.addLayer({
-        id: "clusters",
-        type: "circle",
-        source: "vessels",
-        filter: ["has", "point_count"],
-        paint: {
-          "circle-color": ["case", [">", ["get", "sanctioned"], 0], "#7f1d1d", "#0c4a6e"],
-          "circle-stroke-color": ["case", [">", ["get", "sanctioned"], 0], "#fb7185", "#38bdf8"],
-          "circle-stroke-width": 2,
-          "circle-opacity": 0.8,
-          "circle-radius": ["min", 20, ["+", 6, ["*", 2, ["sqrt", ["get", "point_count"]]]]],
-        },
-      });
-      map.addLayer({
-        id: "cluster-count",
-        type: "symbol",
-        source: "vessels",
-        filter: ["has", "point_count"],
-        layout: {
-          "text-field": ["get", "point_count_abbreviated"],
-          "text-font": ["Open Sans Bold", "Noto Sans Bold"],
-          "text-size": 11,
-        },
-        paint: { "text-color": "#f8fafc" },
       });
 
       // SAR
@@ -573,19 +542,6 @@ export default memo(function MapInner({
         const f = e.features?.[0];
         if (f && onSelectRef.current) onSelectRef.current(Number(f.properties!.mmsi));
       });
-      // clic cluster → zoom
-      map.on("click", "clusters", (e) => {
-        const f = map.queryRenderedFeatures(e.point, { layers: ["clusters"] })[0];
-        if (!f) return;
-        const src = map.getSource("vessels") as GeoJSONSource;
-        const cid = f.properties!.cluster_id;
-        src.getClusterExpansionZoom(cid).then((z) => {
-          const [lon, lat] = (f.geometry as GeoJSON.Point).coordinates;
-          map.easeTo({ center: [lon, lat], zoom: z, pitch: PITCH, bearing: BEARING });
-        });
-      });
-      map.on("mouseenter", "clusters", () => (map.getCanvas().style.cursor = "pointer"));
-      map.on("mouseleave", "clusters", () => (map.getCanvas().style.cursor = ""));
      } catch (err) {
       console.error("[pf-map] init error:", err);
      }
