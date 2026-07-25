@@ -301,6 +301,8 @@ export default memo(function MapInner({
       attributionControl: { compact: true },
     });
     mapRef.current = map;
+    (window as unknown as { __m?: MLMap }).__m = map;
+    map.on("error", (e) => console.error("[pf-map] maplibre error:", e.error?.message || e));
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-left");
 
     // Fiabilise le dimensionnement : si le conteneur reçoit sa hauteur après
