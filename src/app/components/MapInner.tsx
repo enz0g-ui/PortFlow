@@ -281,6 +281,13 @@ export default memo(function MapInner({
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
 
+  // Refs vers les données dynamiques : `setup()` (défini dans l'effet d'init,
+  // closure figée au mount) doit lire les valeurs COURANTES au moment où il
+  // s'exécute — sinon, si l'API répond avant que le style soit chargé, setup
+  // installe une source vide et la mise à jour intermédiaire est perdue.
+  const dataRef = useRef({ vessels, highlightedMmsis, zones, selectedMmsi, trails, selectedTrack, sarDetections });
+  dataRef.current = { vessels, highlightedMmsis, zones, selectedMmsi, trails, selectedTrack, sarDetections };
+
   const classByMmsi = useMemo(() => {
     const m = new Map<number, VesselClass>();
     for (const v of vessels) m.set(v.mmsi, v.vesselClass);
@@ -315,8 +322,10 @@ export default memo(function MapInner({
     const setup = () => {
       if (readyRef.current || !mapRef.current) return;
      try {
-      // sources
-      map.addSource("zones", { type: "geojson", data: buildZonesFC(zones) });
+      // sources — on lit les valeurs COURANTES via dataRef (pas la closure
+      // du mount) pour ne pas installer une source vide si l'API a déjà répondu.
+      const d = dataRef.current;
+      map.addSource("zones", { type: "geojson", data: buildZonesFC(d.zones) });
       map.addSource("warzones", { type: "geojson", data: emptyFC() });
       map.addSource("chokepoints", { type: "geojson", data: emptyFC() });
       map.addSource("trails", { type: "geojson", data: emptyFC() });
@@ -324,7 +333,7 @@ export default memo(function MapInner({
       map.addSource("sar", { type: "geojson", data: emptyFC() });
       map.addSource("vessels", {
         type: "geojson",
-        data: buildVesselsFC(vessels, highlightedMmsis),
+        data: buildVesselsFC(d.vessels, d.highlightedMmsis),
         cluster: true,
         clusterRadius: 42,
         clusterMaxZoom: 8,
@@ -457,7 +466,7 @@ export default memo(function MapInner({
         id: "vessel-selected",
         type: "circle",
         source: "vessels",
-        filter: ["==", ["get", "mmsi"], selectedMmsi ?? -1],
+        filter: ["==", ["get", "mmsi"], d.selectedMmsi ?? -1],
         paint: {
           "circle-radius": 9,
           "circle-color": "rgba(56,189,248,0.25)",
@@ -507,6 +516,14 @@ export default memo(function MapInner({
       });
 
       readyRef.current = true;
+
+      // hydrate les sources qui démarrent vides mais dont les données peuvent
+      // déjà être arrivées avant que le style soit prêt (mêmes valeurs courantes).
+      (map.getSource("trails") as GeoJSONSource | undefined)?.setData(
+        buildTrailsFC(d.trails, classByMmsi, d.selectedMmsi, d.highlightedMmsis),
+      );
+      (map.getSource("seltrack") as GeoJSONSource | undefined)?.setData(buildLineFC(d.selectedTrack));
+      (map.getSource("sar") as GeoJSONSource | undefined)?.setData(buildSarFC(d.sarDetections));
 
       // premier cadrage sur le port
       map.fitBounds(
