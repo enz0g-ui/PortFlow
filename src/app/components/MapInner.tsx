@@ -301,8 +301,6 @@ export default memo(function MapInner({
       attributionControl: { compact: true },
     });
     mapRef.current = map;
-    (window as unknown as { __m?: MLMap }).__m = map;
-    map.on("error", (e) => console.error("[pf-map] maplibre error:", e.error?.message || e));
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-left");
 
     // Fiabilise le dimensionnement : si le conteneur reçoit sa hauteur après
@@ -310,9 +308,13 @@ export default memo(function MapInner({
     const sizeRO = new ResizeObserver(() => map.resize());
     sizeRO.observe(containerRef.current);
 
-    map.on("load", () => {
+    // Installe sources + couches + interactions. Idempotent (garde readyRef) :
+    // on l'appelle depuis `load` ET immédiatement si le style est déjà prêt,
+    // pour ne pas dépendre d'un unique événement dont le timing varie beaucoup
+    // sur une box lente (tuiles raster distantes qui retardent `isStyleLoaded`).
+    const setup = () => {
+      if (readyRef.current || !mapRef.current) return;
      try {
-      (window as unknown as { __m?: MLMap }).__m = map;
       // sources
       map.addSource("zones", { type: "geojson", data: buildZonesFC(zones) });
       map.addSource("warzones", { type: "geojson", data: emptyFC() });
@@ -568,7 +570,13 @@ export default memo(function MapInner({
      } catch (err) {
       console.error("[pf-map] init error:", err);
      }
-    });
+    };
+
+    map.on("load", setup);
+    // Filet de sécurité si `load` a déjà eu lieu (ou tarde) mais que le style
+    // est exploitable : `setup` est idempotent, un double appel est sans effet.
+    if (map.isStyleLoaded()) setup();
+    else map.once("idle", setup);
 
     return () => {
       sizeRO.disconnect();
