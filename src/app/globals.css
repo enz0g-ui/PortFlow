@@ -323,7 +323,7 @@ svg text[font-weight="600"] {
 /* Carte : cadre lumineux + vignette interne pour la profondeur. */
 .leaflet-container {
   box-shadow:
-    inset 0 0 90px rgba(3, 8, 18, 0.85),
+    inset 0 0 46px rgba(3, 8, 18, 0.5),
     0 0 0 1px rgba(103, 155, 233, 0.22),
     0 0 34px rgba(56, 130, 246, 0.14);
 }
