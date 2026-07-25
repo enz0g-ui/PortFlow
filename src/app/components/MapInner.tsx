@@ -591,11 +591,20 @@ export default memo(function MapInner({
      }
     };
 
-    map.on("load", setup);
-    // Filet de sécurité si `load` a déjà eu lieu (ou tarde) mais que le style
-    // est exploitable : `setup` est idempotent, un double appel est sans effet.
-    if (map.isStyleLoaded()) setup();
-    else map.once("idle", setup);
+    // On déclenche setup dès que le SPEC de style est parsé (couche `bg`
+    // présente), PAS sur `load`/`idle`/`isStyleLoaded` qui attendent tous le
+    // chargement des tuiles raster distantes : quand CARTO est lent ou limité
+    // en débit, ces événements ne se déclenchent jamais et les couches
+    // vectorielles (navires, zones) ne seraient jamais ajoutées. Les cercles
+    // se dessinent sans dépendre du fond raster. `setup` est idempotent.
+    const trySetup = () => {
+      if (readyRef.current || !mapRef.current) return;
+      if (!map.getLayer("bg")) return; // spec pas encore parsé
+      setup();
+    };
+    map.on("styledata", trySetup);
+    map.on("load", trySetup);
+    trySetup();
 
     return () => {
       sizeRO.disconnect();
@@ -664,7 +673,7 @@ export default memo(function MapInner({
         .catch(() => {});
     };
     if (readyRef.current) load();
-    else map.once("idle", load);
+    else map.on("styledata", load); // `load` garde `done`+readyRef : sûr en multi-appel
   }, []);
 
   // recentrage sur changement de port / bouton recentrer
