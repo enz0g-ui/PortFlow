@@ -458,3 +458,63 @@ path.leaflet-interactive {
     radial-gradient(72% 56% at 30% 16%, rgba(130, 190, 255, 0.13), transparent 55%),
     radial-gradient(150% 130% at 50% 42%, transparent 44%, rgba(3, 7, 14, 0.44) 76%, rgba(2, 5, 11, 0.74) 100%);
 }
+
+/* ============================================================
+   Carte MapLibre GL (migration Leaflet → MapLibre, 25/07/2026).
+   Le vieux bloc « .leaflet-* » ci-dessus ne s'applique plus à la
+   carte du dashboard (conservé pour d'éventuels autres usages).
+   Ici : voiles atmosphériques au-dessus du canvas WebGL + popup.
+   ============================================================ */
+.pf-map .maplibregl-canvas {
+  outline: none;
+}
+/* Aurore + grille tactique, en fondu additif. */
+.pf-map-aurora {
+  mix-blend-mode: screen;
+  background-image:
+    radial-gradient(120% 70% at 50% -8%, rgba(56, 130, 246, 0.16), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(96, 150, 230, 0.045) 0 1px, transparent 1px 46px),
+    repeating-linear-gradient(90deg, rgba(96, 150, 230, 0.045) 0 1px, transparent 1px 46px);
+}
+/* Relief « surface courbe » + vignette des bords (dôme). */
+.pf-map-dome {
+  background:
+    radial-gradient(72% 54% at 30% 12%, rgba(130, 190, 255, 0.12), transparent 55%),
+    radial-gradient(150% 130% at 50% 40%, transparent 46%, rgba(3, 7, 14, 0.4) 78%, rgba(2, 5, 11, 0.7) 100%);
+}
+/* Cadre lumineux + halo bleu autour de la carte. */
+.pf-map {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(110, 165, 245, 0.4),
+    0 0 40px rgba(56, 130, 246, 0.22);
+}
+/* Contrôles MapLibre → thème sombre. */
+.pf-map .maplibregl-ctrl-group {
+  background: rgba(13, 21, 36, 0.85) !important;
+  border: 1px solid rgba(103, 155, 233, 0.3) !important;
+  backdrop-filter: blur(6px);
+}
+.pf-map .maplibregl-ctrl-group button {
+  filter: invert(1) hue-rotate(180deg) brightness(1.1);
+}
+.pf-map .maplibregl-ctrl-attrib {
+  background: rgba(13, 21, 36, 0.7) !important;
+  color: #94a3b8 !important;
+}
+.pf-map .maplibregl-ctrl-attrib a {
+  color: #38bdf8 !important;
+}
+/* Popup navire. */
+.pf-popup .maplibregl-popup-content {
+  background: rgba(12, 20, 34, 0.92) !important;
+  border: 1px solid rgba(79, 195, 247, 0.4);
+  border-radius: 8px;
+  box-shadow: 0 0 18px rgba(56, 130, 246, 0.3);
+  padding: 8px 10px;
+}
+.pf-popup .maplibregl-popup-tip {
+  border-top-color: rgba(12, 20, 34, 0.92) !important;
+  border-bottom-color: rgba(12, 20, 34, 0.92) !important;
+}

@@ -1,18 +1,31 @@
 "use client";
 
-import { memo, useEffect, useMemo, useState } from "react";
-import {
-  CircleMarker,
-  MapContainer,
-  Polygon,
-  Polyline,
-  Rectangle,
-  TileLayer,
-  Tooltip,
-  useMap,
-  useMapEvents,
-} from "react-leaflet";
+/**
+ * Carte du dashboard — MapLibre GL (migration Leaflet → MapLibre, 25/07/2026).
+ *
+ * Pourquoi MapLibre : Laurent veut un vrai plan 3D incliné (« pitch ») comme
+ * les cockpits de contrôle. Leaflet ne sait pas incliner sans casser le clic ;
+ * MapLibre a une caméra 3D native où le hit-test reste juste. Bonus : le rendu
+ * est data-driven (sources GeoJSON + couches), donc les lueurs des navires
+ * sont natives (`circle-blur`) au lieu du hack de double-marqueur Leaflet, et
+ * le clustering est géré par le moteur.
+ *
+ * L'interface `Props` est identique à l'ancienne implémentation Leaflet — ce
+ * fichier reste un drop-in pour MapView/Dashboard. Fonctions portées :
+ * fond CARTO assombri, atmosphère (ciel + voiles), zones de port, zones de
+ * guerre + chokepoints (zoom-aware), trails, trace sélectionnée, navires
+ * (lueur + cœur + sélection + surbrillance filtre), halo sanctionnés, SAR,
+ * clusters, recentrage sur port / navire / cible forcée — le tout en gardant
+ * l'inclinaison 3D.
+ */
+
+import { memo, useEffect, useMemo, useRef } from "react";
+import * as maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import type { Vessel, VesselClass, Zone } from "@/lib/types";
+
+type MLMap = maplibregl.Map;
+type GeoJSONSource = maplibregl.GeoJSONSource;
 
 const CLASS_COLOR: Record<VesselClass, string> = {
   cargo: "#34d399",
@@ -42,8 +55,8 @@ export interface SarDetection {
 
 interface Props {
   vessels: Vessel[];
-  center: [number, number];
-  bbox: [number, number, number, number];
+  center: [number, number]; // [lat, lon] (ordre Leaflet, conservé)
+  bbox: [number, number, number, number]; // [minLat, minLon, maxLat, maxLon]
   zones: Zone[];
   portKey: string;
   expanded?: boolean;
@@ -53,601 +66,199 @@ interface Props {
   highlightedMmsis?: Set<number>;
   sarDetections?: SarDetection[];
   resetTick?: number;
-  /**
-   * Recent position trails for visible vessels, keyed by MMSI (string).
-   * Each entry is an array of [lat, lon, ts] in chronological order.
-   * Refreshed every ~60 s by the dashboard. Hidden at low zoom levels.
-   */
   trails?: Record<string, Array<[number, number, number]>>;
-  /**
-   * Forced pan target — increments panTick triggers a flyTo on the
-   * supplied lat/lon regardless of the auto-pan policy. Used by the
-   * favorites list to recenter on a vessel that's hard to find on a
-   * crowded world map.
-   */
   panTo?: { lat: number; lon: number; tick: number };
 }
 
-// Below this zoom, trails are visual mush (segments collapse to dots) — skip
-// rendering entirely. Port-level zoom is ~10-11; world-level is ~2-4.
-const MIN_TRAIL_ZOOM = 8;
-// Above this zoom (street-level on Leaflet), trails draw straight chords
-// between consecutive AIS positions and visibly cut through buildings,
-// canals, and quays. We don't have hydrography snapping (would require
-// OpenSeaMap waterway data + on-the-fly routing — ~100ms/trace, too
-// expensive client-side). Mirroring VesselFinder's behaviour: hide the
-// trail layer once the map is zoomed in enough that the individual
-// position dots are clearly visible on their own.
+/* Inclinaison 3D « command deck ». */
+const PITCH = 50;
+const BEARING = -18;
 const MAX_TRAIL_ZOOM = 13;
-// Above this zoom, war-risk zones are too coarse to be visually useful (the
-// polygon bounding box is dozens of km, fills the whole port view). Show
-// them only in regional / world view where they convey context.
-const MAX_WARZONE_ZOOM = 7;
+const MIN_TRAIL_ZOOM = 8;
+const MAX_CONTEXT_ZOOM = 7; // zones de guerre + chokepoints : vue régionale
 
-// Cluster vessels into grid buckets when the rendered count would exceed
-// CLUSTER_THRESHOLD. Below it, render every vessel individually for the
-// best signal-to-noise. The selected vessel always escapes clustering.
-const CLUSTER_THRESHOLD = 50;
+type FC = GeoJSON.FeatureCollection;
+const emptyFC = (): FC => ({ type: "FeatureCollection", features: [] });
 
-interface WarZoneFeature {
-  type: "Feature";
-  properties: {
-    id: string;
-    name: string;
-    color: string;
-    since?: string;
-    trigger?: string;
+/* Expression MapLibre : couleur par classe de navire. */
+const CLASS_COLOR_EXPR: maplibregl.ExpressionSpecification = [
+  "match",
+  ["get", "cls"],
+  "cargo",
+  CLASS_COLOR.cargo,
+  "tanker",
+  CLASS_COLOR.tanker,
+  "passenger",
+  CLASS_COLOR.passenger,
+  "fishing",
+  CLASS_COLOR.fishing,
+  "tug",
+  CLASS_COLOR.tug,
+  "pilot",
+  CLASS_COLOR.pilot,
+  CLASS_COLOR.other,
+];
+
+/* ---------- construction des sources GeoJSON ---------- */
+
+function buildVesselsFC(vessels: Vessel[], highlighted?: Set<number>): FC {
+  const hasHighlight = highlighted !== undefined && highlighted.size > 0;
+  return {
+    type: "FeatureCollection",
+    features: vessels.map((v) => {
+      const focused = !hasHighlight || highlighted!.has(v.mmsi);
+      return {
+        type: "Feature",
+        id: v.mmsi,
+        geometry: { type: "Point", coordinates: [v.longitude, v.latitude] },
+        properties: {
+          mmsi: v.mmsi,
+          cls: v.vesselClass,
+          st: v.state,
+          sanctioned: v.sanctioned ? 1 : 0,
+          op: focused ? (v.state === "underway" ? 0.95 : 0.6) : 0.16,
+          rad: v.state === "underway" ? 4.2 : 3.2,
+          name: v.name ?? `MMSI ${v.mmsi}`,
+          callsign: v.callsign ?? "",
+          sog: v.sog,
+          cog: Math.round(v.cog),
+          detail: `${v.cargoClass ?? v.vesselClass} · ${v.state}`,
+          destination: v.destination ?? "",
+          zone: v.zone ?? "",
+        },
+      };
+    }),
   };
-  geometry: { type: "Polygon"; coordinates: Array<Array<[number, number]>> };
-}
-interface WarZonesGeoJSON {
-  type: "FeatureCollection";
-  features: WarZoneFeature[];
 }
 
-const MAX_CHOKEPOINT_ZOOM = 7;
-interface ChokepointFeature {
-  type: "Feature";
-  properties: {
-    id: string;
-    name: string;
-    color?: string;
-    narrative?: string;
-  };
-  geometry: { type: "Polygon"; coordinates: Array<Array<[number, number]>> };
-}
-interface ChokepointsGeoJSON {
-  type: "FeatureCollection";
-  features: ChokepointFeature[];
-}
-
-function FlyTo({
-  bbox,
-  portKey,
-  resetTick,
-}: {
-  bbox: [number, number, number, number];
-  portKey: string;
-  resetTick?: number;
-}) {
-  const map = useMap();
-  // Only fly to bounds when the port actually changes (portKey) or the user
-  // clicks "Recentrer" (resetTick). The `bbox` array reference can churn on
-  // every parent re-render (e.g. /api/ports re-poll), but its value is stable
-  // for a given portKey — depending on it would dezoom the user every 30s,
-  // which is the opposite of what every maritime tracker (MarineTraffic,
-  // VesselFinder, Spire) does. eslint-disable to acknowledge the closure
-  // reads bbox at call time.
-  useEffect(() => {
-    map.flyToBounds(
-      [
-        [bbox[0], bbox[1]],
-        [bbox[2], bbox[3]],
-      ],
-      { duration: 0.6, padding: [20, 20] },
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, portKey, resetTick]);
-  return null;
-}
-
-function PanToSelected({
-  vessel,
-}: {
-  vessel: Vessel | undefined;
-}) {
-  const map = useMap();
-  // Only fly to a vessel when the *selection* changes (mmsi), not on every
-  // position update. Center on the vessel, but don't force a city-level zoom
-  // — keep whatever zoom the user is at unless they're absurdly far out
-  // (then ease to a moderate regional zoom).
-  useEffect(() => {
-    if (!vessel) return;
-    const currentZoom = map.getZoom();
-    const targetZoom = currentZoom < 6 ? 6 : currentZoom;
-    map.flyTo([vessel.latitude, vessel.longitude], targetZoom, {
-      duration: 0.5,
+function buildTrailsFC(
+  trails: Record<string, Array<[number, number, number]>> | undefined,
+  classByMmsi: Map<number, VesselClass>,
+  selectedMmsi: number | null | undefined,
+  highlighted?: Set<number>,
+): FC {
+  if (!trails) return emptyFC();
+  const hasHighlight = highlighted !== undefined && highlighted.size > 0;
+  const features: GeoJSON.Feature[] = [];
+  for (const [mmsiStr, pts] of Object.entries(trails)) {
+    if (pts.length < 2) continue;
+    const mmsi = Number(mmsiStr);
+    if (mmsi === selectedMmsi) continue;
+    const cls = classByMmsi.get(mmsi) ?? "other";
+    const match = !hasHighlight || highlighted!.has(mmsi);
+    features.push({
+      type: "Feature",
+      geometry: {
+        type: "LineString",
+        coordinates: pts.map(([lat, lon]) => [lon, lat]),
+      },
+      properties: { color: CLASS_COLOR[cls], op: match ? 0.35 : 0.08 },
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, vessel?.mmsi]);
-  return null;
+  }
+  return { type: "FeatureCollection", features };
 }
 
-function ForcePanTo({
-  target,
-}: {
-  target?: { lat: number; lon: number; tick: number };
-}) {
-  const map = useMap();
-  useEffect(() => {
-    if (!target) return;
-    const z = Math.max(map.getZoom(), 9);
-    map.flyTo([target.lat, target.lon], z, { duration: 0.7 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, target?.tick]);
-  return null;
+function buildZonesFC(zones: Zone[]): FC {
+  return {
+    type: "FeatureCollection",
+    features: zones.map((z) => ({
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [z.bbox[1], z.bbox[0]],
+            [z.bbox[3], z.bbox[0]],
+            [z.bbox[3], z.bbox[2]],
+            [z.bbox[1], z.bbox[2]],
+            [z.bbox[1], z.bbox[0]],
+          ],
+        ],
+      },
+      properties: { color: ZONE_COLOR[z.kind], name: z.name },
+    })),
+  };
 }
 
-/**
- * Renders fading position trails behind each vessel, in the style of
- * VesselFinder / Spire. Memoized so it doesn't re-create polylines on every
- * 5 s vessel-position poll — only when the trails dataset itself changes
- * (~60 s) or zoom crosses the visibility threshold.
- *
- * Implementation notes:
- * - `<MapContainer preferCanvas>` is set in the parent, so each Polyline
- *   here renders to a single shared canvas (cheap for ~700 lines).
- * - Color matches the vessel class (looked up from the live vessels array).
- * - Selected vessel's trail is suppressed here — it's drawn separately,
- *   brighter, by the parent component's `selectedTrack` polyline.
- * - We listen to `zoomend` to hide trails below MIN_TRAIL_ZOOM, where
- *   they'd just look like noise on top of the markers.
- */
-const TrailsLayer = memo(function TrailsLayer({
-  trails,
-  vesselClassByMmsi,
-  selectedMmsi,
-  highlightedMmsis,
-  visible,
-}: {
-  trails: Record<string, Array<[number, number, number]>>;
-  vesselClassByMmsi: Map<number, VesselClass>;
-  selectedMmsi: number | null | undefined;
-  highlightedMmsis?: Set<number>;
-  visible: boolean;
-}) {
-  if (!visible) return null;
-  const hasHighlight = highlightedMmsis && highlightedMmsis.size > 0;
-  return (
-    <>
-      {Object.entries(trails).map(([mmsiStr, points]) => {
-        if (points.length < 2) return null;
-        const mmsi = Number(mmsiStr);
-        if (mmsi === selectedMmsi) return null; // brighter trail drawn separately
-        const cls = vesselClassByMmsi.get(mmsi) ?? "other";
-        const color = CLASS_COLOR[cls];
-        // When a state filter / search is active, dim trails of vessels that
-        // don't match — keeps the eye on the relevant subset without hiding
-        // context entirely.
-        const isMatch = !hasHighlight || highlightedMmsis!.has(mmsi);
-        const opacity = isMatch ? 0.35 : 0.08;
-        const positions = points.map(
-          ([lat, lon]) => [lat, lon] as [number, number],
-        );
-        return (
-          <Polyline
-            key={`trail-${mmsi}`}
-            positions={positions}
-            pathOptions={{
-              color,
-              weight: 1.5,
-              opacity,
-              interactive: false,
-            }}
-          />
-        );
-      })}
-    </>
-  );
-});
-
-/**
- * Tracks the map's current zoom level via leaflet events. Cheap re-render
- * trigger for components that need to react to zoom changes (e.g. show or
- * hide trails below a threshold).
- */
-function useMapZoom(initial = 11): number {
-  const [zoom, setZoom] = useState(initial);
-  useMapEvents({
-    zoomend: (e) => setZoom(e.target.getZoom()),
-  });
-  return zoom;
+function buildSarFC(sar: SarDetection[] | undefined): FC {
+  if (!sar) return emptyFC();
+  return {
+    type: "FeatureCollection",
+    features: sar.map((d) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [d.lon, d.lat] },
+      properties: {
+        label: `SAR · ${d.lat.toFixed(3)}, ${d.lon.toFixed(3)}`,
+      },
+    })),
+  };
 }
 
-function TrailsForCurrentZoom(props: {
-  trails?: Record<string, Array<[number, number, number]>>;
-  vessels: Vessel[];
-  selectedMmsi: number | null | undefined;
-  highlightedMmsis?: Set<number>;
-}) {
-  const zoom = useMapZoom(11);
-  const visible = zoom >= MIN_TRAIL_ZOOM && zoom <= MAX_TRAIL_ZOOM;
-  const vesselClassByMmsi = useMemo(() => {
-    const m = new Map<number, VesselClass>();
-    for (const v of props.vessels) m.set(v.mmsi, v.vesselClass);
-    return m;
-  }, [props.vessels]);
-  if (!props.trails) return null;
-  return (
-    <TrailsLayer
-      trails={props.trails}
-      vesselClassByMmsi={vesselClassByMmsi}
-      selectedMmsi={props.selectedMmsi}
-      highlightedMmsis={props.highlightedMmsis}
-      visible={visible}
-    />
-  );
+function buildLineFC(track: Array<[number, number]> | undefined): FC {
+  if (!track || track.length < 2) return emptyFC();
+  return {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        geometry: {
+          type: "LineString",
+          coordinates: track.map(([lat, lon]) => [lon, lat]),
+        },
+        properties: {},
+      },
+    ],
+  };
 }
 
-/**
- * War-risk zones overlay — fetches the curated JWC-derived polygons once
- * and renders them as low-opacity red polygons when the user is zoomed out
- * enough for them to be visually meaningful.
- *
- * Hidden at zoom > MAX_WARZONE_ZOOM because at port-level zoom the polygons
- * cover the entire visible map and just clutter the view. Useful in world
- * view and Med/Black Sea regional views.
- */
-const WarZonesLayer = memo(function WarZonesLayer() {
-  const [zones, setZones] = useState<WarZoneFeature[] | null>(null);
-  const zoom = useMapZoom(11);
-  const visible = zoom <= MAX_WARZONE_ZOOM;
-  useEffect(() => {
-    if (zones || !visible) return;
-    fetch("/api/war-risk-zones")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: WarZonesGeoJSON | null) => {
-        if (j?.features) setZones(j.features);
-      })
-      .catch(() => {});
-  }, [zones, visible]);
-  if (!visible || !zones) return null;
-  return (
-    <>
-      {zones.map((f) => {
-        // Convert GeoJSON [lon,lat] → Leaflet [lat,lon] for Polygon positions.
-        const positions: Array<[number, number]> = f.geometry.coordinates[0].map(
-          ([lon, lat]) => [lat, lon],
-        );
-        return (
-          <Polygon
-            key={`warzone-${f.properties.id}`}
-            positions={positions}
-            pathOptions={{
-              color: f.properties.color || "#dc2626",
-              weight: 1,
-              fillOpacity: 0.12,
-              opacity: 0.6,
-              dashArray: "4 4",
-              interactive: true,
-            }}
-          >
-            <Tooltip direction="center" permanent={false}>
-              <div className="text-xs">
-                <div className="font-semibold text-rose-300">
-                  ⚠ {f.properties.name}
-                </div>
-                {f.properties.trigger ? (
-                  <div className="text-[10px] text-slate-400">
-                    {f.properties.trigger}
-                  </div>
-                ) : null}
-                {f.properties.since ? (
-                  <div className="text-[10px] text-slate-500">
-                    listed since {f.properties.since}
-                  </div>
-                ) : null}
-                <div className="mt-1 text-[10px] italic text-slate-500">
-                  Indicative — JWC JWLA-033 (3 Mar 2026)
-                </div>
-              </div>
-            </Tooltip>
-          </Polygon>
-        );
-      })}
-    </>
-  );
-});
+/* ---------- style de base (fond CARTO assombri + ciel) ---------- */
 
-/**
- * Maritime chokepoint overlay (Suez, Hormuz, Bab el-Mandeb, Malacca,
- * Bosphorus, Gibraltar, Skagerrak, Dover, Panama, Cape of Good Hope,
- * Magellan, Singapore Strait). Same zoom-aware visibility as JWC war
- * zones — these are wide bbox rectangles, useful at world / regional
- * view, clutter at port level.
- */
-const ChokepointsLayer = memo(function ChokepointsLayer() {
-  const [zones, setZones] = useState<ChokepointFeature[] | null>(null);
-  const zoom = useMapZoom(11);
-  const visible = zoom <= MAX_CHOKEPOINT_ZOOM;
-  useEffect(() => {
-    if (zones || !visible) return;
-    fetch("/api/chokepoints")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: ChokepointsGeoJSON | null) => {
-        if (j?.features) setZones(j.features);
-      })
-      .catch(() => {});
-  }, [zones, visible]);
-  if (!visible || !zones) return null;
-  return (
-    <>
-      {zones.map((f) => {
-        const positions: Array<[number, number]> = f.geometry.coordinates[0].map(
-          ([lon, lat]) => [lat, lon],
-        );
-        return (
-          <Polygon
-            key={`chokepoint-${f.properties.id}`}
-            positions={positions}
-            pathOptions={{
-              color: f.properties.color || "#fbbf24",
-              weight: 1,
-              fillOpacity: 0.06,
-              opacity: 0.5,
-              dashArray: "2 6",
-              interactive: true,
-            }}
-          >
-            <Tooltip direction="center" permanent={false}>
-              <div className="text-xs">
-                <div className="font-semibold text-amber-300">
-                  ⚓ {f.properties.name}
-                </div>
-                {f.properties.narrative ? (
-                  <div className="text-[10px] text-slate-400">
-                    {f.properties.narrative}
-                  </div>
-                ) : null}
-                <div className="mt-1 text-[10px] italic text-slate-500">
-                  Maritime chokepoint
-                </div>
-              </div>
-            </Tooltip>
-          </Polygon>
-        );
-      })}
-    </>
-  );
-});
-
-interface VesselsLayerProps {
-  vessels: Vessel[];
-  selectedMmsi?: number | null;
-  highlightedMmsis?: Set<number>;
-  onSelect?: (mmsi: number) => void;
+function baseStyle(): maplibregl.StyleSpecification {
+  return {
+    version: 8,
+    glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
+    sources: {
+      carto: {
+        type: "raster",
+        tiles: [
+          "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
+          "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
+          "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
+          "https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
+        ],
+        tileSize: 256,
+        attribution:
+          '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
+      },
+    },
+    layers: [
+      { id: "bg", type: "background", paint: { "background-color": "#060c17" } },
+      {
+        id: "carto",
+        type: "raster",
+        source: "carto",
+        paint: {
+          "raster-brightness-min": 0,
+          "raster-brightness-max": 0.66,
+          "raster-saturation": -0.08,
+          "raster-contrast": 0.06,
+        },
+      },
+    ],
+    sky: {
+      "sky-color": "#0a1830",
+      "sky-horizon-blend": 0.6,
+      "horizon-color": "#0f2748",
+      "horizon-fog-blend": 0.7,
+      "fog-color": "#070d18",
+      "fog-ground-blend": 0.5,
+    },
+  };
 }
 
-/**
- * Renders vessels — either individually (count ≤ CLUSTER_THRESHOLD) or
- * grouped into grid-based cluster bubbles to keep the world view legible.
- * Selected vessel is always rendered individually on top.
- */
-function VesselsLayer({
-  vessels,
-  selectedMmsi,
-  highlightedMmsis,
-  onSelect,
-}: VesselsLayerProps) {
-  const zoom = useMapZoom(11);
+/* ---------- composant ---------- */
 
-  // Grid size in degrees — coarser at lower zoom, finer at port-level zoom.
-  // 2^zoom doubles tiles per zoom level → invert to get screen-equivalent
-  // degree step. Tuned to ~30px buckets at common zooms.
-  const gridDeg = Math.max(0.05, 50 / Math.pow(2, zoom));
-
-  const { clusters, soloVessels } = useMemo(() => {
-    if (vessels.length <= CLUSTER_THRESHOLD || zoom >= 9) {
-      // Port-level or low count → no clustering noise.
-      return { clusters: [] as Cluster[], soloVessels: vessels };
-    }
-    const buckets = new Map<string, Vessel[]>();
-    for (const v of vessels) {
-      // Selected vessel always renders solo.
-      if (v.mmsi === selectedMmsi) continue;
-      const lat = Math.floor(v.latitude / gridDeg) * gridDeg;
-      const lon = Math.floor(v.longitude / gridDeg) * gridDeg;
-      const key = `${lat.toFixed(3)}_${lon.toFixed(3)}`;
-      let arr = buckets.get(key);
-      if (!arr) {
-        arr = [];
-        buckets.set(key, arr);
-      }
-      arr.push(v);
-    }
-    const clusters: Cluster[] = [];
-    const solo: Vessel[] = [];
-    for (const arr of buckets.values()) {
-      if (arr.length === 1) {
-        solo.push(arr[0]);
-      } else {
-        let sumLat = 0;
-        let sumLon = 0;
-        let hasSanctioned = false;
-        for (const v of arr) {
-          sumLat += v.latitude;
-          sumLon += v.longitude;
-          if (v.sanctioned) hasSanctioned = true;
-        }
-        clusters.push({
-          lat: sumLat / arr.length,
-          lon: sumLon / arr.length,
-          count: arr.length,
-          hasSanctioned,
-        });
-      }
-    }
-    const sel = vessels.find((v) => v.mmsi === selectedMmsi);
-    if (sel) solo.push(sel);
-    return { clusters, soloVessels: solo };
-  }, [vessels, zoom, gridDeg, selectedMmsi]);
-
-  return (
-    <>
-      {clusters.map((c, i) => (
-        <CircleMarker
-          key={`cluster-${i}-${c.lat.toFixed(2)}-${c.lon.toFixed(2)}`}
-          center={[c.lat, c.lon]}
-          radius={Math.min(20, 6 + Math.sqrt(c.count) * 2)}
-          pathOptions={{
-            color: c.hasSanctioned ? "#fb7185" : "#38bdf8",
-            fillColor: c.hasSanctioned ? "#7f1d1d" : "#0c4a6e",
-            fillOpacity: 0.75,
-            weight: 2,
-          }}
-        >
-          <Tooltip
-            opacity={1}
-            permanent
-            direction="center"
-            className="cluster-count-tip"
-          >
-            <span>{c.count}</span>
-          </Tooltip>
-        </CircleMarker>
-      ))}
-      {soloVessels.map((v) => (
-        <VesselMarker
-          key={v.mmsi}
-          vessel={v}
-          isSelected={v.mmsi === selectedMmsi}
-          highlightedMmsis={highlightedMmsis}
-          onSelect={onSelect}
-        />
-      ))}
-    </>
-  );
-}
-
-interface Cluster {
-  lat: number;
-  lon: number;
-  count: number;
-  hasSanctioned: boolean;
-}
-
-function VesselMarker({
-  vessel: v,
-  isSelected,
-  highlightedMmsis,
-  onSelect,
-}: {
-  vessel: Vessel;
-  isSelected: boolean;
-  highlightedMmsis?: Set<number>;
-  onSelect?: (mmsi: number) => void;
-}) {
-  const hasHighlight =
-    highlightedMmsis !== undefined && highlightedMmsis.size > 0;
-  const isHighlighted = highlightedMmsis?.has(v.mmsi) ?? false;
-  const baseColor = CLASS_COLOR[v.vesselClass];
-  const isFocused = isSelected || !hasHighlight || isHighlighted;
-  const coreRadius = isSelected
-    ? 8
-    : isFocused
-      ? v.state === "underway"
-        ? 4
-        : 3
-      : 2;
-  return (
-    <>
-      {/* Halo « command deck » : anneau translucide derrière le point pour
-          l'effet lumineux façon globe (la carte est en preferCanvas, donc les
-          filtres CSS ne l'atteignent pas — on peint le halo en canvas). */}
-      {isFocused ? (
-        <CircleMarker
-          center={[v.latitude, v.longitude]}
-          radius={coreRadius + (isSelected ? 7 : 3.5)}
-          interactive={false}
-          pathOptions={{
-            stroke: false,
-            fillColor: isSelected ? "#38bdf8" : baseColor,
-            fillOpacity: isSelected ? 0.22 : 0.16,
-          }}
-        />
-      ) : null}
-    <CircleMarker
-      center={[v.latitude, v.longitude]}
-      radius={coreRadius}
-      pathOptions={{
-        color: isSelected ? "#38bdf8" : baseColor,
-        fillColor: baseColor,
-        fillOpacity: isSelected
-          ? 1
-          : isFocused
-            ? v.state === "underway"
-              ? 0.85
-              : 0.5
-            : 0.15,
-        opacity: isSelected ? 1 : isFocused ? 0.9 : 0.25,
-        weight: isSelected ? 3 : 1,
-      }}
-      eventHandlers={
-        onSelect ? { click: () => onSelect(v.mmsi) } : undefined
-      }
-    >
-      <Tooltip opacity={0.9}>
-        <div className="text-xs leading-snug">
-          <div className="font-semibold">
-            {v.sanctioned ? (
-              <span className="mr-1 rounded bg-rose-500/20 px-1 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-300">
-                🚫 Sanctioned
-              </span>
-            ) : null}
-            {v.name ?? `MMSI ${v.mmsi}`}
-          </div>
-          <div className="text-[10px] text-slate-400">
-            MMSI {v.mmsi}
-            {v.callsign ? ` · ${v.callsign}` : ""}
-          </div>
-          <div className="mt-1">
-            {v.cargoClass ?? v.vesselClass} · {v.state}
-          </div>
-          <div>
-            {v.sog.toFixed(1)} kn · cap {Math.round(v.cog)}°
-          </div>
-          {v.lengthM || v.draught ? (
-            <div className="text-[10px] text-slate-400">
-              {v.lengthM ? `L ${Math.round(v.lengthM)} m` : ""}
-              {v.lengthM && v.draught ? " · " : ""}
-              {v.draught ? `tirant d'eau ${v.draught.toFixed(1)} m` : ""}
-            </div>
-          ) : null}
-          {v.destination ? <div>→ {v.destination}</div> : null}
-          {v.zone ? <div className="text-slate-400">zone : {v.zone}</div> : null}
-          {v.lastUpdate ? (
-            <div className="text-[10px] text-slate-500">
-              màj{" "}
-              {Math.max(0, Math.round((Date.now() - v.lastUpdate) / 1000))}s
-            </div>
-          ) : null}
-        </div>
-      </Tooltip>
-    </CircleMarker>
-    </>
-  );
-}
-
-function ResizeOnExpand({ expanded }: { expanded?: boolean }) {
-  const map = useMap();
-  useEffect(() => {
-    const id = window.setTimeout(() => map.invalidateSize(), 250);
-    return () => window.clearTimeout(id);
-  }, [map, expanded]);
-  return null;
-}
-
-export default function MapInner({
+export default memo(function MapInner({
   vessels,
   center,
   bbox,
@@ -663,122 +274,420 @@ export default function MapInner({
   trails,
   panTo,
 }: Props) {
-  const selected = vessels.find((v) => v.mmsi === selectedMmsi);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<MLMap | null>(null);
+  const readyRef = useRef(false);
+  const popupRef = useRef<maplibregl.Popup | null>(null);
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
+
+  const classByMmsi = useMemo(() => {
+    const m = new Map<number, VesselClass>();
+    for (const v of vessels) m.set(v.mmsi, v.vesselClass);
+    return m;
+  }, [vessels]);
+
+  /* -- init une seule fois -- */
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: baseStyle(),
+      center: [center[1], center[0]],
+      zoom: 10.5,
+      pitch: PITCH,
+      bearing: BEARING,
+      maxPitch: 68,
+      attributionControl: { compact: true },
+    });
+    mapRef.current = map;
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-left");
+
+    map.on("load", () => {
+      // sources
+      map.addSource("zones", { type: "geojson", data: buildZonesFC(zones) });
+      map.addSource("warzones", { type: "geojson", data: emptyFC() });
+      map.addSource("chokepoints", { type: "geojson", data: emptyFC() });
+      map.addSource("trails", { type: "geojson", data: emptyFC() });
+      map.addSource("seltrack", { type: "geojson", data: emptyFC() });
+      map.addSource("sar", { type: "geojson", data: emptyFC() });
+      map.addSource("vessels", {
+        type: "geojson",
+        data: buildVesselsFC(vessels, highlightedMmsis),
+        cluster: true,
+        clusterRadius: 42,
+        clusterMaxZoom: 8,
+        clusterProperties: {
+          sanctioned: ["max", ["get", "sanctioned"]],
+        },
+      });
+
+      // zones de port
+      map.addLayer({
+        id: "zones-fill",
+        type: "fill",
+        source: "zones",
+        paint: { "fill-color": ["get", "color"], "fill-opacity": 0.06 },
+      });
+      map.addLayer({
+        id: "zones-line",
+        type: "line",
+        source: "zones",
+        paint: {
+          "line-color": ["get", "color"],
+          "line-opacity": 0.55,
+          "line-width": 1,
+          "line-dasharray": [3, 3],
+        },
+      });
+
+      // zones de guerre + chokepoints (visibles seulement en vue régionale)
+      map.addLayer({
+        id: "warzones-fill",
+        type: "fill",
+        source: "warzones",
+        maxzoom: MAX_CONTEXT_ZOOM + 0.5,
+        paint: { "fill-color": ["get", "color"], "fill-opacity": 0.12 },
+      });
+      map.addLayer({
+        id: "warzones-line",
+        type: "line",
+        source: "warzones",
+        maxzoom: MAX_CONTEXT_ZOOM + 0.5,
+        paint: {
+          "line-color": ["get", "color"],
+          "line-opacity": 0.6,
+          "line-width": 1,
+          "line-dasharray": [4, 4],
+        },
+      });
+      map.addLayer({
+        id: "chokepoints-line",
+        type: "line",
+        source: "chokepoints",
+        maxzoom: MAX_CONTEXT_ZOOM + 0.5,
+        paint: {
+          "line-color": ["get", "color"],
+          "line-opacity": 0.5,
+          "line-width": 1,
+          "line-dasharray": [2, 6],
+        },
+      });
+
+      // trails (vue port ↔ régionale)
+      map.addLayer({
+        id: "trails",
+        type: "line",
+        source: "trails",
+        minzoom: MIN_TRAIL_ZOOM,
+        maxzoom: MAX_TRAIL_ZOOM + 0.5,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ["get", "color"],
+          "line-opacity": ["get", "op"],
+          "line-width": 1.4,
+        },
+      });
+
+      // trace du navire sélectionné
+      map.addLayer({
+        id: "seltrack",
+        type: "line",
+        source: "seltrack",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": "#38bdf8", "line-opacity": 0.95, "line-width": 2.4 },
+      });
+
+      // halo sanctionnés (anneau rouge)
+      map.addLayer({
+        id: "vessel-sanctioned",
+        type: "circle",
+        source: "vessels",
+        filter: ["all", ["!", ["has", "point_count"]], ["==", ["get", "sanctioned"], 1]],
+        paint: {
+          "circle-radius": 10,
+          "circle-color": "rgba(0,0,0,0)",
+          "circle-stroke-color": "#dc2626",
+          "circle-stroke-width": 1.6,
+          "circle-stroke-opacity": 0.8,
+        },
+      });
+
+      // navires : lueur (halo natif via blur)
+      map.addLayer({
+        id: "vessel-glow",
+        type: "circle",
+        source: "vessels",
+        filter: ["!", ["has", "point_count"]],
+        paint: {
+          "circle-radius": ["*", ["get", "rad"], 2.4],
+          "circle-color": CLASS_COLOR_EXPR,
+          "circle-blur": 1,
+          "circle-opacity": ["*", ["get", "op"], 0.5],
+        },
+      });
+      // navires : cœur
+      map.addLayer({
+        id: "vessel-core",
+        type: "circle",
+        source: "vessels",
+        filter: ["!", ["has", "point_count"]],
+        paint: {
+          "circle-radius": ["get", "rad"],
+          "circle-color": CLASS_COLOR_EXPR,
+          "circle-opacity": ["get", "op"],
+          "circle-stroke-color": "#eaf7ff",
+          "circle-stroke-width": 0.6,
+          "circle-stroke-opacity": ["*", ["get", "op"], 0.7],
+        },
+      });
+      // navire sélectionné (surbrillance)
+      map.addLayer({
+        id: "vessel-selected",
+        type: "circle",
+        source: "vessels",
+        filter: ["==", ["get", "mmsi"], selectedMmsi ?? -1],
+        paint: {
+          "circle-radius": 9,
+          "circle-color": "rgba(56,189,248,0.25)",
+          "circle-stroke-color": "#38bdf8",
+          "circle-stroke-width": 2.5,
+        },
+      });
+
+      // clusters
+      map.addLayer({
+        id: "clusters",
+        type: "circle",
+        source: "vessels",
+        filter: ["has", "point_count"],
+        paint: {
+          "circle-color": ["case", [">", ["get", "sanctioned"], 0], "#7f1d1d", "#0c4a6e"],
+          "circle-stroke-color": ["case", [">", ["get", "sanctioned"], 0], "#fb7185", "#38bdf8"],
+          "circle-stroke-width": 2,
+          "circle-opacity": 0.8,
+          "circle-radius": ["min", 20, ["+", 6, ["*", 2, ["sqrt", ["get", "point_count"]]]]],
+        },
+      });
+      map.addLayer({
+        id: "cluster-count",
+        type: "symbol",
+        source: "vessels",
+        filter: ["has", "point_count"],
+        layout: {
+          "text-field": ["get", "point_count_abbreviated"],
+          "text-font": ["Open Sans Bold", "Noto Sans Bold"],
+          "text-size": 11,
+        },
+        paint: { "text-color": "#f8fafc" },
+      });
+
+      // SAR
+      map.addLayer({
+        id: "sar",
+        type: "circle",
+        source: "sar",
+        paint: {
+          "circle-radius": 5,
+          "circle-color": "rgba(251,191,36,0.4)",
+          "circle-stroke-color": "#f59e0b",
+          "circle-stroke-width": 1.4,
+        },
+      });
+
+      readyRef.current = true;
+
+      // premier cadrage sur le port
+      map.fitBounds(
+        [
+          [bbox[1], bbox[0]],
+          [bbox[3], bbox[2]],
+        ],
+        { padding: 60, pitch: PITCH, bearing: BEARING, duration: 0 },
+      );
+
+      // interactions navires
+      const showPopup = (e: maplibregl.MapLayerMouseEvent) => {
+        const f = e.features?.[0];
+        if (!f) return;
+        map.getCanvas().style.cursor = "pointer";
+        const p = f.properties as Record<string, string | number>;
+        const html = `<div style="font:12px/1.35 ui-sans-serif;color:#e2eefb">
+          <div style="font-weight:600">${p.sanctioned ? "🚫 " : ""}${p.name}</div>
+          <div style="font-size:10px;color:#94a3b8">MMSI ${p.mmsi}${p.callsign ? " · " + p.callsign : ""}</div>
+          <div style="margin-top:2px">${p.detail}</div>
+          <div>${Number(p.sog).toFixed(1)} kn · cap ${p.cog}°</div>
+          ${p.destination ? `<div>→ ${p.destination}</div>` : ""}
+          ${p.zone ? `<div style="color:#94a3b8">zone : ${p.zone}</div>` : ""}
+        </div>`;
+        popupRef.current?.remove();
+        popupRef.current = new maplibregl.Popup({
+          closeButton: false,
+          closeOnClick: false,
+          offset: 10,
+          className: "pf-popup",
+        })
+          .setLngLat(e.lngLat)
+          .setHTML(html)
+          .addTo(map);
+      };
+      const hidePopup = () => {
+        map.getCanvas().style.cursor = "";
+        popupRef.current?.remove();
+        popupRef.current = null;
+      };
+      map.on("mouseenter", "vessel-core", showPopup);
+      map.on("mousemove", "vessel-core", showPopup);
+      map.on("mouseleave", "vessel-core", hidePopup);
+      map.on("click", "vessel-core", (e) => {
+        const f = e.features?.[0];
+        if (f && onSelectRef.current) onSelectRef.current(Number(f.properties!.mmsi));
+      });
+      // clic cluster → zoom
+      map.on("click", "clusters", (e) => {
+        const f = map.queryRenderedFeatures(e.point, { layers: ["clusters"] })[0];
+        if (!f) return;
+        const src = map.getSource("vessels") as GeoJSONSource;
+        const cid = f.properties!.cluster_id;
+        src.getClusterExpansionZoom(cid).then((z) => {
+          const [lon, lat] = (f.geometry as GeoJSON.Point).coordinates;
+          map.easeTo({ center: [lon, lat], zoom: z, pitch: PITCH, bearing: BEARING });
+        });
+      });
+      map.on("mouseenter", "clusters", () => (map.getCanvas().style.cursor = "pointer"));
+      map.on("mouseleave", "clusters", () => (map.getCanvas().style.cursor = ""));
+    });
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      readyRef.current = false;
+    };
+    // init unique — les mises à jour passent par les effets ci-dessous
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* -- mises à jour data-driven -- */
+  const setData = (id: string, data: FC) => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    const src = map.getSource(id) as GeoJSONSource | undefined;
+    src?.setData(data);
+  };
+
+  useEffect(() => {
+    setData("vessels", buildVesselsFC(vessels, highlightedMmsis));
+  }, [vessels, highlightedMmsis]);
+
+  useEffect(() => {
+    setData(
+      "trails",
+      buildTrailsFC(trails, classByMmsi, selectedMmsi, highlightedMmsis),
+    );
+  }, [trails, classByMmsi, selectedMmsi, highlightedMmsis]);
+
+  useEffect(() => {
+    setData("seltrack", buildLineFC(selectedTrack));
+  }, [selectedTrack]);
+
+  useEffect(() => {
+    setData("zones", buildZonesFC(zones));
+  }, [zones]);
+
+  useEffect(() => {
+    setData("sar", buildSarFC(sarDetections));
+  }, [sarDetections]);
+
+  // surbrillance sélection
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    if (map.getLayer("vessel-selected"))
+      map.setFilter("vessel-selected", ["==", ["get", "mmsi"], selectedMmsi ?? -1]);
+  }, [selectedMmsi]);
+
+  // zones de guerre + chokepoints : fetch paresseux
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    let done = false;
+    const load = () => {
+      if (done || !readyRef.current) return;
+      done = true;
+      fetch("/api/war-risk-zones")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => j?.features && setData("warzones", j))
+        .catch(() => {});
+      fetch("/api/chokepoints")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => j?.features && setData("chokepoints", j))
+        .catch(() => {});
+    };
+    if (readyRef.current) load();
+    else map.once("idle", load);
+  }, []);
+
+  // recentrage sur changement de port / bouton recentrer
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    map.fitBounds(
+      [
+        [bbox[1], bbox[0]],
+        [bbox[3], bbox[2]],
+      ],
+      { padding: 60, pitch: PITCH, bearing: BEARING, duration: 700 },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [portKey, resetTick]);
+
+  // recentrage sur navire sélectionné (garde le pitch)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current || selectedMmsi == null || portKey === "__world__") return;
+    const v = vessels.find((x) => x.mmsi === selectedMmsi);
+    if (!v) return;
+    const z = Math.max(map.getZoom(), 8);
+    map.easeTo({
+      center: [v.longitude, v.latitude],
+      zoom: z,
+      pitch: PITCH,
+      bearing: BEARING,
+      duration: 500,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMmsi]);
+
+  // cible forcée (favoris)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current || !panTo) return;
+    map.easeTo({
+      center: [panTo.lon, panTo.lat],
+      zoom: Math.max(map.getZoom(), 9),
+      pitch: PITCH,
+      bearing: BEARING,
+      duration: 700,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panTo?.tick]);
+
+  // resize quand la carte est agrandie
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const id = window.setTimeout(() => map.resize(), 260);
+    return () => window.clearTimeout(id);
+  }, [expanded]);
 
   return (
-    <MapContainer
-      center={center}
-      zoom={11}
-      style={{ height: "100%", width: "100%" }}
-      preferCanvas={true}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; OSM'
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-      />
-      <FlyTo bbox={bbox} portKey={portKey} resetTick={resetTick} />
-      <ResizeOnExpand expanded={expanded} />
-      <WarZonesLayer />
-      <ChokepointsLayer />
-      {/* Polygon import is now used; if dead-code linter complains, this
-          comment proves intentional retention. */}
-      {portKey !== "__world__" ? (
-        <PanToSelected vessel={selected} />
-      ) : null}
-      <ForcePanTo target={panTo} />
-      {zones.map((z) => (
-        <Rectangle
-          key={`${portKey}-${z.id}`}
-          bounds={[
-            [z.bbox[0], z.bbox[1]],
-            [z.bbox[2], z.bbox[3]],
-          ]}
-          pathOptions={{
-            color: ZONE_COLOR[z.kind],
-            weight: 1,
-            fillOpacity: 0.05,
-            dashArray: "4 4",
-          }}
-        >
-          <Tooltip direction="center" opacity={0.8} permanent={false}>
-            {z.name}
-          </Tooltip>
-        </Rectangle>
-      ))}
-      <TrailsForCurrentZoom
-        trails={trails}
-        vessels={vessels}
-        selectedMmsi={selectedMmsi}
-        highlightedMmsis={highlightedMmsis}
-      />
-      {selectedTrack && selectedTrack.length > 1 ? (
-        <Polyline
-          positions={selectedTrack}
-          pathOptions={{ color: "#38bdf8", weight: 2, opacity: 0.9 }}
-        />
-      ) : null}
-      {sarDetections?.map((d) => (
-        <CircleMarker
-          key={`sar-${d.id}`}
-          center={[d.lat, d.lon]}
-          radius={5}
-          pathOptions={{
-            color: "#f59e0b",
-            fillColor: "#fbbf24",
-            fillOpacity: 0.4,
-            weight: 1.5,
-            dashArray: "2 2",
-          }}
-          interactive={true}
-        >
-          <Tooltip>
-            <div className="text-xs">
-              <div className="font-semibold text-amber-600">SAR detection</div>
-              <div>
-                {d.lat.toFixed(4)}, {d.lon.toFixed(4)}
-              </div>
-              <div className="text-[10px] text-slate-500">
-                {new Date(d.ts).toLocaleString([], {
-                  day: "2-digit",
-                  month: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  timeZone: "UTC",
-                })}{" "}
-                UTC
-                {d.sizePx ? ` · ${d.sizePx} px` : ""}
-              </div>
-            </div>
-          </Tooltip>
-        </CircleMarker>
-      ))}
-      {/* Sanctioned-vessel outer halo — red dashed ring drawn behind the
-          regular marker so it always shows up regardless of filter state.
-          Only renders for vessels where the API enrichment set sanctioned=true
-          (UK / OFAC / UN / EU sanctions match on IMO or MMSI). */}
-      {vessels
-        .filter((v) => v.sanctioned)
-        .map((v) => (
-          <CircleMarker
-            key={`sanc-halo-${v.mmsi}`}
-            center={[v.latitude, v.longitude]}
-            radius={11}
-            pathOptions={{
-              color: "#dc2626",
-              weight: 2,
-              fill: false,
-              opacity: 0.9,
-              dashArray: "3 3",
-            }}
-            interactive={false}
-          />
-        ))}
-      <VesselsLayer
-        vessels={vessels}
-        selectedMmsi={selectedMmsi}
-        highlightedMmsis={highlightedMmsis}
-        onSelect={onSelect}
-      />
-    </MapContainer>
+    <div className="pf-map relative h-full w-full">
+      {/* div dédiée à MapLibre (il y appende son canvas WebGL) */}
+      <div ref={containerRef} className="absolute inset-0" />
+      {/* voiles atmosphériques au-dessus du canvas (aurore + grille + dôme),
+          pointer-events none pour ne pas gêner l'interaction. */}
+      <div className="pf-map-aurora pointer-events-none absolute inset-0 z-[5]" />
+      <div className="pf-map-dome pointer-events-none absolute inset-0 z-[6]" />
+    </div>
   );
-}
+});
