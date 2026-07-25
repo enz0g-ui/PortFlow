@@ -552,18 +552,33 @@ function VesselMarker({
   const isHighlighted = highlightedMmsis?.has(v.mmsi) ?? false;
   const baseColor = CLASS_COLOR[v.vesselClass];
   const isFocused = isSelected || !hasHighlight || isHighlighted;
+  const coreRadius = isSelected
+    ? 8
+    : isFocused
+      ? v.state === "underway"
+        ? 4
+        : 3
+      : 2;
   return (
+    <>
+      {/* Halo « command deck » : anneau translucide derrière le point pour
+          l'effet lumineux façon globe (la carte est en preferCanvas, donc les
+          filtres CSS ne l'atteignent pas — on peint le halo en canvas). */}
+      {isFocused ? (
+        <CircleMarker
+          center={[v.latitude, v.longitude]}
+          radius={coreRadius + (isSelected ? 7 : 3.5)}
+          interactive={false}
+          pathOptions={{
+            stroke: false,
+            fillColor: isSelected ? "#38bdf8" : baseColor,
+            fillOpacity: isSelected ? 0.22 : 0.16,
+          }}
+        />
+      ) : null}
     <CircleMarker
       center={[v.latitude, v.longitude]}
-      radius={
-        isSelected
-          ? 8
-          : isFocused
-            ? v.state === "underway"
-              ? 4
-              : 3
-            : 2
-      }
+      radius={coreRadius}
       pathOptions={{
         color: isSelected ? "#38bdf8" : baseColor,
         fillColor: baseColor,
@@ -619,6 +634,7 @@ function VesselMarker({
         </div>
       </Tooltip>
     </CircleMarker>
+    </>
   );
 }
 

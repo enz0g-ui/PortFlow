@@ -413,3 +413,43 @@ path.leaflet-interactive {
 .uppercase[class*="tracking-"] {
   color: #9fc2e8;
 }
+
+/* ============================================================
+   Carte dashboard « command deck » (25/07/2026, retour Laurent :
+   même esthétique que le globe /overview). La carte est en
+   preferCanvas → les filtres CSS n'atteignent pas les navires ;
+   on agit donc par couches de pane Leaflet + halos peints en
+   canvas côté React (VesselMarker). Ici :
+   1) on assombrit UNIQUEMENT les tuiles (tilePane) pour l'ambiance
+      « écran de contrôle » sans ternir les navires ;
+   2) on glisse une aurore + une grille tactique ENTRE les tuiles
+      (z 200) et le canvas des navires (overlayPane z 400) via
+      ::before à z 250, en fondu additif (screen) pour ne rien
+      assombrir au-dessus.
+   ============================================================ */
+.leaflet-tile-pane {
+  filter: brightness(0.62) contrast(1.06) saturate(0.92);
+}
+.leaflet-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 250;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background-image:
+    radial-gradient(120% 80% at 50% -10%, rgba(56, 130, 246, 0.16), transparent 60%),
+    radial-gradient(90% 70% at 50% 120%, rgba(30, 58, 138, 0.14), transparent 62%),
+    repeating-linear-gradient(0deg, rgba(96, 150, 230, 0.05) 0 1px, transparent 1px 46px),
+    repeating-linear-gradient(90deg, rgba(96, 150, 230, 0.05) 0 1px, transparent 1px 46px);
+}
+/* Vignette sombre des bords, au-dessus des navires mais sous les contrôles,
+   pour river le regard au centre (n'assombrit que légèrement, en multiply). */
+.leaflet-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 660;
+  pointer-events: none;
+  background: radial-gradient(130% 100% at 50% 45%, transparent 58%, rgba(4, 8, 16, 0.5) 100%);
+}

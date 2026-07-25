@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { DemoButton } from "./components/DemoButton";
 import { LiveBenchmark } from "./components/LiveBenchmark";
+import { GlobeBackdrop } from "./components/GlobeBackdrop";
 import { NewsletterForm } from "./components/NewsletterForm";
 import { TickerBar } from "./components/TickerBar";
 
@@ -107,8 +108,15 @@ export default async function Home({
       {/* Live ticker — real counts, not decoration */}
       <TickerBar />
 
-      {/* Hero split — pitch + live benchmark card */}
-      <section className="mx-auto grid max-w-6xl items-center gap-12 px-6 pb-16 pt-16 lg:grid-cols-[1fr_420px] sm:pt-20">
+      {/* Hero split — pitch + live benchmark card, sur fond globe atténué */}
+      <div className="relative overflow-hidden">
+        {/* Globe décoratif : positionné à droite, atténué, non interactif.
+            Deux voiles en dégradé le font disparaître côté texte (lisibilité)
+            et sous le hero suivant. */}
+        <GlobeBackdrop className="absolute inset-0 z-0 opacity-[0.6]" />
+        <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-r from-slate-950 via-slate-950/70 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-32 bg-gradient-to-t from-slate-950 to-transparent" />
+        <section className="relative z-[1] mx-auto grid max-w-6xl items-center gap-12 px-6 pb-16 pt-16 lg:grid-cols-[1fr_420px] sm:pt-20">
         <div>
           <div className="mb-5 inline-flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-sky-500">
             <span className="h-1.5 w-1.5 animate-[pf-pulse_2s_infinite] rounded-full bg-emerald-300" />
@@ -143,7 +151,8 @@ export default async function Home({
           </p>
         </div>
         <LiveBenchmark />
-      </section>
+        </section>
+      </div>
 
       {/* Audiences */}
       <section className="border-t border-slate-800">
