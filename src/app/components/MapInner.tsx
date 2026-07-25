@@ -309,6 +309,8 @@ export default memo(function MapInner({
     sizeRO.observe(containerRef.current);
 
     map.on("load", () => {
+     try {
+      (window as unknown as { __m?: MLMap }).__m = map;
       // sources
       map.addSource("zones", { type: "geojson", data: buildZonesFC(zones) });
       map.addSource("warzones", { type: "geojson", data: emptyFC() });
@@ -561,6 +563,9 @@ export default memo(function MapInner({
       });
       map.on("mouseenter", "clusters", () => (map.getCanvas().style.cursor = "pointer"));
       map.on("mouseleave", "clusters", () => (map.getCanvas().style.cursor = ""));
+     } catch (err) {
+      console.error("[pf-map] init error:", err);
+     }
     });
 
     return () => {
