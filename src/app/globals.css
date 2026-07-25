@@ -56,6 +56,14 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  /* « Command deck » : profondeur type salle de contrôle — aurore froide
+     en haut, vignette sombre en bas. fixed => aucun coût au scroll. */
+  background-image:
+    radial-gradient(1100px 520px at 50% -120px, rgba(56, 130, 246, 0.16), transparent 70%),
+    radial-gradient(700px 420px at 85% 8%, rgba(79, 195, 247, 0.07), transparent 70%),
+    radial-gradient(900px 600px at 8% 100%, rgba(30, 58, 138, 0.12), transparent 72%),
+    linear-gradient(#070b12, #05080e);
+  background-attachment: fixed;
   font-family:
     var(--font-geist-sans),
     ui-sans-serif,
@@ -242,4 +250,110 @@ body {
 }
 .leaflet-control-attribution a {
   color: #38bdf8 !important;
+}
+
+/* ============================================================
+   Command deck (25/07/2026) — couche « wow » du dashboard.
+   Principe identique à la refonte du 13/07 : on surclasse les
+   utilitaires Tailwind déjà présents partout (panneaux
+   border-slate-800 + bg-slate-900/xx) au lieu de toucher aux
+   ~100 occurrences dans les composants. Effets voulus :
+   verre dépoli, bordures lumineuses, lueurs sur les valeurs
+   et les jauges. Sobre sur le coût GPU : blur modéré, pas de
+   filtre sur les ~1000 marqueurs de la carte.
+   ============================================================ */
+
+/* Panneaux translucides → verre dépoli avec liseré lumineux en haut. */
+.bg-slate-900\/60,
+.bg-slate-900\/40 {
+  background:
+    linear-gradient(165deg, rgba(20, 32, 54, 0.72), rgba(9, 14, 26, 0.58)) !important;
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  box-shadow:
+    inset 0 1px 0 rgba(148, 196, 255, 0.09),
+    0 10px 34px rgba(2, 6, 16, 0.45);
+}
+
+/* Cellules instrument (KPI strip, boutons pleins) : dégradé net, sans blur
+   (elles sont nombreuses et parfois superposées au verre). */
+.bg-slate-900 {
+  background-image: linear-gradient(170deg, #131f33, #0b1322) !important;
+  box-shadow: inset 0 1px 0 rgba(148, 196, 255, 0.07);
+}
+
+/* Bordures des panneaux : bleu lumineux discret. */
+.border-slate-800 {
+  border-color: rgba(103, 155, 233, 0.2) !important;
+}
+
+/* Valeurs chiffrées (KPI, tableaux) : halo instrument. */
+.font-mono.tabular-nums,
+.font-mono .tabular-nums {
+  text-shadow: 0 0 16px rgba(79, 195, 247, 0.28);
+}
+
+/* Sémantique : les états colorés irradient légèrement. */
+.text-emerald-300,
+.text-emerald-400 {
+  text-shadow: 0 0 14px rgba(127, 224, 168, 0.45);
+}
+.text-amber-300,
+.text-amber-400 {
+  text-shadow: 0 0 14px rgba(255, 178, 107, 0.4);
+}
+.text-rose-300,
+.text-rose-400 {
+  text-shadow: 0 0 14px rgba(255, 138, 138, 0.45);
+}
+.text-sky-300,
+.text-sky-400 {
+  text-shadow: 0 0 14px rgba(79, 195, 247, 0.4);
+}
+
+/* Jauges SVG (congestion, précision) : l'arc actif rayonne. Les arcs de
+   fond sont stroke #1e293b → exclus. */
+svg path[stroke-linecap="round"]:not([stroke="#1e293b"]) {
+  filter: drop-shadow(0 0 7px rgba(148, 210, 255, 0.55));
+}
+svg text[font-weight="600"] {
+  filter: drop-shadow(0 0 9px rgba(148, 210, 255, 0.4));
+}
+
+/* Carte : cadre lumineux + vignette interne pour la profondeur. */
+.leaflet-container {
+  box-shadow:
+    inset 0 0 90px rgba(3, 8, 18, 0.85),
+    0 0 0 1px rgba(103, 155, 233, 0.22),
+    0 0 34px rgba(56, 130, 246, 0.14);
+}
+
+/* Pastille « live » : pulsation en anneau (au lieu du simple clignotement). */
+@keyframes pf-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(127, 224, 168, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(127, 224, 168, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(127, 224, 168, 0);
+  }
+}
+.animate-\[pf-pulse_2s_ease-in-out_infinite\] {
+  animation: pf-ring 2s ease-out infinite, pf-pulse 2s ease-in-out infinite;
+  border-radius: 9999px;
+}
+
+/* Les panneaux prennent vie au survol : liseré cyan + lueur, sans lift
+   (pas de layout shift). */
+.rounded-lg.border.border-slate-800 {
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.rounded-lg.border.border-slate-800:hover {
+  border-color: rgba(79, 195, 247, 0.38) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(148, 196, 255, 0.12),
+    0 10px 34px rgba(2, 6, 16, 0.45),
+    0 0 26px rgba(56, 130, 246, 0.16);
 }
