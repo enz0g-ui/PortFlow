@@ -74,6 +74,12 @@ interface Props {
    pas d'un pitch caméra. Nord en haut. */
 const PITCH = 0;
 const BEARING = 0;
+
+/* Vue d'accueil : globe dézoomé où la courbure de la sphère est visible,
+   centré sur l'Europe. L'utilisateur zoome ensuite sur le port (bouton
+   « Recentrer », clic sur un port, ou molette). */
+const INTRO_CENTER: [number, number] = [8, 34];
+const INTRO_ZOOM = 2.6;
 const MAX_TRAIL_ZOOM = 13;
 const MIN_TRAIL_ZOOM = 8;
 const MAX_CONTEXT_ZOOM = 7; // zones de guerre + chokepoints : vue régionale
@@ -267,7 +273,8 @@ function baseStyle(): maplibregl.StyleSpecification {
 
 export default memo(function MapInner({
   vessels,
-  center,
+  // `center` (prop) n'est plus lu : la vue d'accueil est fixée par INTRO_*,
+  // et les recentrages passent par bbox / vessel / panTo. Conservé dans Props.
   bbox,
   zones,
   portKey,
@@ -307,8 +314,8 @@ export default memo(function MapInner({
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: baseStyle(),
-      center: [center[1], center[0]],
-      zoom: 10.5,
+      center: INTRO_CENTER, // vue d'accueil globe (dézoomée) — cf. INTRO_ZOOM
+      zoom: INTRO_ZOOM,
       pitch: PITCH,
       bearing: BEARING,
       maxPitch: 68,
@@ -501,14 +508,10 @@ export default memo(function MapInner({
       (map.getSource("seltrack") as GeoJSONSource | undefined)?.setData(buildLineFC(d.selectedTrack));
       (map.getSource("sar") as GeoJSONSource | undefined)?.setData(buildSarFC(d.sarDetections));
 
-      // premier cadrage sur le port
-      map.fitBounds(
-        [
-          [bbox[1], bbox[0]],
-          [bbox[3], bbox[2]],
-        ],
-        { padding: 60, pitch: PITCH, bearing: BEARING, duration: 0 },
-      );
+      // Pas de cadrage-port au chargement : on reste sur la vue d'accueil
+      // globe (INTRO_ZOOM). L'utilisateur zoome via « Recentrer », un clic
+      // sur un port, ou la molette. Le fitBounds vit dans l'effet [portKey,
+      // resetTick] déclenché par ces actions.
 
       // interactions navires
       const showPopup = (e: maplibregl.MapLayerMouseEvent) => {
