@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { IsoOverview } from "./IsoOverview";
+import { GlobeOverview } from "./GlobeOverview";
 
 export const metadata: Metadata = {
-  title: "Live overview — isometric map",
+  title: "Vue mondiale — maillage AIS temps réel",
   description:
-    "Real-time isometric overview of European tanker traffic: live AIS vessel counts across the North Atlantic and Mediterranean hubs tracked by Port Flow.",
+    "Globe interactif du trafic tanker mondial : comptages AIS en direct sur 51 terminaux, grandes routes maritimes et voyages en approche, suivis par Port Flow.",
 };
 
 export default function OverviewPage() {
-  return <IsoOverview />;
+  return <GlobeOverview />;
 }
