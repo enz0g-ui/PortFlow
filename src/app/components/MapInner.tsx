@@ -70,9 +70,10 @@ interface Props {
   panTo?: { lat: number; lon: number; tick: number };
 }
 
-/* Inclinaison 3D « command deck ». */
-const PITCH = 50;
-const BEARING = -18;
+/* Vue axée (non inclinée) : la profondeur vient de la projection globe,
+   pas d'un pitch caméra. Nord en haut. */
+const PITCH = 0;
+const BEARING = 0;
 const MAX_TRAIL_ZOOM = 13;
 const MIN_TRAIL_ZOOM = 8;
 const MAX_CONTEXT_ZOOM = 7; // zones de guerre + chokepoints : vue régionale
@@ -245,6 +246,11 @@ function baseStyle(): maplibregl.StyleSpecification {
         },
       },
     ],
+    // Projection globe (MapLibre v5) : la carte devient une vraie sphère
+    // courbée vue de face. À fort zoom (niveau port) elle redevient plane
+    // automatiquement pour garder la lisibilité des navires ; la courbure
+    // n'apparaît qu'en vue régionale / monde.
+    projection: { type: "globe" },
     sky: {
       "sky-color": "#0a1830",
       "sky-horizon-blend": 0.6,
@@ -252,6 +258,7 @@ function baseStyle(): maplibregl.StyleSpecification {
       "horizon-fog-blend": 0.7,
       "fog-color": "#070d18",
       "fog-ground-blend": 0.5,
+      "atmosphere-blend": ["interpolate", ["linear"], ["zoom"], 0, 1, 4, 0.7, 7, 0],
     },
   };
 }
