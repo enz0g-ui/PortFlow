@@ -59,10 +59,12 @@ body {
   /* « Command deck » : profondeur type salle de contrôle — aurore froide
      en haut, vignette sombre en bas. fixed => aucun coût au scroll. */
   background-image:
-    radial-gradient(1100px 520px at 50% -120px, rgba(56, 130, 246, 0.16), transparent 70%),
-    radial-gradient(700px 420px at 85% 8%, rgba(79, 195, 247, 0.07), transparent 70%),
-    radial-gradient(900px 600px at 8% 100%, rgba(30, 58, 138, 0.12), transparent 72%),
-    linear-gradient(#070b12, #05080e);
+    radial-gradient(1200px 560px at 50% -140px, rgba(59, 130, 246, 0.32), transparent 70%),
+    radial-gradient(760px 460px at 88% 4%, rgba(79, 195, 247, 0.14), transparent 70%),
+    radial-gradient(1000px 640px at 6% 104%, rgba(37, 78, 178, 0.22), transparent 72%),
+    repeating-linear-gradient(0deg, rgba(96, 150, 230, 0.045) 0 1px, transparent 1px 44px),
+    repeating-linear-gradient(90deg, rgba(96, 150, 230, 0.045) 0 1px, transparent 1px 44px),
+    linear-gradient(#070c14, #04070d);
   background-attachment: fixed;
   font-family:
     var(--font-geist-sans),
@@ -267,12 +269,12 @@ body {
 .bg-slate-900\/60,
 .bg-slate-900\/40 {
   background:
-    linear-gradient(165deg, rgba(20, 32, 54, 0.72), rgba(9, 14, 26, 0.58)) !important;
-  backdrop-filter: blur(9px);
-  -webkit-backdrop-filter: blur(9px);
+    linear-gradient(165deg, rgba(28, 45, 76, 0.66), rgba(8, 13, 25, 0.55)) !important;
+  backdrop-filter: blur(10px) saturate(1.25);
+  -webkit-backdrop-filter: blur(10px) saturate(1.25);
   box-shadow:
-    inset 0 1px 0 rgba(148, 196, 255, 0.09),
-    0 10px 34px rgba(2, 6, 16, 0.45);
+    inset 0 1px 0 rgba(148, 196, 255, 0.16),
+    0 14px 40px rgba(2, 6, 16, 0.55);
 }
 
 /* Cellules instrument (KPI strip, boutons pleins) : dégradé net, sans blur
@@ -284,48 +286,48 @@ body {
 
 /* Bordures des panneaux : bleu lumineux discret. */
 .border-slate-800 {
-  border-color: rgba(103, 155, 233, 0.2) !important;
+  border-color: rgba(110, 165, 245, 0.32) !important;
 }
 
 /* Valeurs chiffrées (KPI, tableaux) : halo instrument. */
 .font-mono.tabular-nums,
 .font-mono .tabular-nums {
-  text-shadow: 0 0 16px rgba(79, 195, 247, 0.28);
+  text-shadow: 0 0 10px rgba(79, 195, 247, 0.55), 0 0 26px rgba(79, 195, 247, 0.3);
 }
 
 /* Sémantique : les états colorés irradient légèrement. */
 .text-emerald-300,
 .text-emerald-400 {
-  text-shadow: 0 0 14px rgba(127, 224, 168, 0.45);
+  text-shadow: 0 0 9px rgba(127, 224, 168, 0.8), 0 0 24px rgba(127, 224, 168, 0.4);
 }
 .text-amber-300,
 .text-amber-400 {
-  text-shadow: 0 0 14px rgba(255, 178, 107, 0.4);
+  text-shadow: 0 0 9px rgba(255, 178, 107, 0.75), 0 0 24px rgba(255, 178, 107, 0.38);
 }
 .text-rose-300,
 .text-rose-400 {
-  text-shadow: 0 0 14px rgba(255, 138, 138, 0.45);
+  text-shadow: 0 0 9px rgba(255, 138, 138, 0.8), 0 0 24px rgba(255, 138, 138, 0.4);
 }
 .text-sky-300,
 .text-sky-400 {
-  text-shadow: 0 0 14px rgba(79, 195, 247, 0.4);
+  text-shadow: 0 0 9px rgba(79, 195, 247, 0.75), 0 0 24px rgba(79, 195, 247, 0.38);
 }
 
 /* Jauges SVG (congestion, précision) : l'arc actif rayonne. Les arcs de
    fond sont stroke #1e293b → exclus. */
 svg path[stroke-linecap="round"]:not([stroke="#1e293b"]) {
-  filter: drop-shadow(0 0 7px rgba(148, 210, 255, 0.55));
+  filter: drop-shadow(0 0 6px rgba(148, 210, 255, 0.9)) drop-shadow(0 0 16px rgba(79, 195, 247, 0.45));
 }
 svg text[font-weight="600"] {
-  filter: drop-shadow(0 0 9px rgba(148, 210, 255, 0.4));
+  filter: drop-shadow(0 0 10px rgba(148, 210, 255, 0.7));
 }
 
 /* Carte : cadre lumineux + vignette interne pour la profondeur. */
 .leaflet-container {
   box-shadow:
     inset 0 0 46px rgba(3, 8, 18, 0.5),
-    0 0 0 1px rgba(103, 155, 233, 0.22),
-    0 0 34px rgba(56, 130, 246, 0.14);
+    0 0 0 1px rgba(110, 165, 245, 0.4),
+    0 0 44px rgba(56, 130, 246, 0.3);
 }
 
 /* Pastille « live » : pulsation en anneau (au lieu du simple clignotement). */
@@ -356,4 +358,58 @@ svg text[font-weight="600"] {
     inset 0 1px 0 rgba(148, 196, 255, 0.12),
     0 10px 34px rgba(2, 6, 16, 0.45),
     0 0 26px rgba(56, 130, 246, 0.16);
+}
+
+/* --- V2 (retour Laurent : « je ne vois pas de différence ») ------------
+   Signature HUD : coins lumineux sur chaque panneau, halo des marqueurs
+   carte, KPI en cyan éclatant. --------------------------------------- */
+
+/* Coins « viseur » cyan sur les panneaux — la signature command center. */
+.rounded-lg.border.border-slate-800 {
+  position: relative;
+}
+.rounded-lg.border.border-slate-800::before,
+.rounded-lg.border.border-slate-800::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  opacity: 0.85;
+}
+.rounded-lg.border.border-slate-800::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid rgba(79, 195, 247, 0.75);
+  border-left: 2px solid rgba(79, 195, 247, 0.75);
+  border-top-left-radius: 8px;
+  filter: drop-shadow(0 0 6px rgba(79, 195, 247, 0.6));
+}
+.rounded-lg.border.border-slate-800::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid rgba(79, 195, 247, 0.45);
+  border-right: 2px solid rgba(79, 195, 247, 0.45);
+  border-bottom-right-radius: 8px;
+}
+
+/* Marqueurs navires : halo lumineux. Testé staging : OK jusqu'à ~500
+   marqueurs ; si ça rame sur les gros ports on repassera par un canvas. */
+path.leaflet-interactive {
+  filter: drop-shadow(0 0 4px rgba(126, 200, 255, 0.85));
+}
+
+/* KPI strip : les chiffres passent en cyan lumineux (sauf tons sémantiques). */
+.text-slate-100.font-mono.tabular-nums,
+.font-mono.tabular-nums.text-slate-100 {
+  color: #aee6ff;
+  text-shadow:
+    0 0 12px rgba(79, 195, 247, 0.85),
+    0 0 34px rgba(79, 195, 247, 0.4);
+}
+
+/* Libellés de section (uppercase) : teinte acier bleuté + espacement. */
+.uppercase.tracking-wider,
+.uppercase[class*="tracking-"] {
+  color: #9fc2e8;
 }
