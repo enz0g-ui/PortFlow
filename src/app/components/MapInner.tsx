@@ -303,6 +303,11 @@ export default memo(function MapInner({
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-left");
 
+    // Fiabilise le dimensionnement : si le conteneur reçoit sa hauteur après
+    // l'init (hydratation, agrandissement), on redimensionne la carte.
+    const sizeRO = new ResizeObserver(() => map.resize());
+    sizeRO.observe(containerRef.current);
+
     map.on("load", () => {
       // sources
       map.addSource("zones", { type: "geojson", data: buildZonesFC(zones) });
@@ -559,6 +564,7 @@ export default memo(function MapInner({
     });
 
     return () => {
+      sizeRO.disconnect();
       map.remove();
       mapRef.current = null;
       readyRef.current = false;
@@ -682,8 +688,10 @@ export default memo(function MapInner({
 
   return (
     <div className="pf-map relative h-full w-full">
-      {/* div dédiée à MapLibre (il y appende son canvas WebGL) */}
-      <div ref={containerRef} className="absolute inset-0" />
+      {/* div dédiée à MapLibre (il y appende son canvas WebGL). Hauteur
+          explicite : la classe .maplibregl-map force position:relative et
+          écraserait un `absolute inset-0` (→ hauteur 0). */}
+      <div ref={containerRef} className="h-full w-full" />
       {/* voiles atmosphériques au-dessus du canvas (aurore + grille + dôme),
           pointer-events none pour ne pas gêner l'interaction. */}
       <div className="pf-map-aurora pointer-events-none absolute inset-0 z-[5]" />
