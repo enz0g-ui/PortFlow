@@ -1118,7 +1118,7 @@ export default function Dashboard() {
     .filter((m) => m.n > 0);
 
   return (
-    <main className="mx-auto flex w-full max-w-[1680px] flex-1 flex-col">
+    <main className="pf-deck mx-auto flex w-full max-w-[1680px] flex-1 flex-col">
       <DegradationBanner />
       {/* Command bar — mockup « la preuve d'abord » : barre dense, port +
           badge MAE proéminent, nav condensée. Full-bleed dans le <main> padded
@@ -1259,7 +1259,7 @@ export default function Dashboard() {
         <WorkspaceRail portId={portId} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
 
-      <section className="grid flex-none grid-cols-2 gap-px border-b border-slate-800 bg-slate-800/40 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8">
+      <section className="grid flex-none grid-cols-2 gap-[11px] px-5 pt-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-[repeat(7,minmax(0,1fr))_minmax(230px,290px)]">
         <KpiCard
           label={t("kpi.totalVessels")}
           value={k?.totalVessels ?? "—"}
@@ -1316,22 +1316,18 @@ export default function Dashboard() {
         {/* Promo alertes — la feature la plus différenciante est invisible
             pour un visiteur pressé : cellule accrocheuse, cloche pulsante,
             même vocabulaire que la cloche de la command bar. */}
-        <Link
-          href="/account"
-          title={t("kpi.alertPromoHint")}
-          className="rounded-md border border-amber-400/40 bg-amber-400/10 px-3.5 py-2.5 text-left transition-colors hover:border-amber-400 hover:bg-amber-400/15"
-        >
-          <div className="font-mono text-[9px] font-medium uppercase tracking-[0.1em] text-amber-300">
+        <Link href="/account" title={t("kpi.alertPromoHint")} className="pf-kpi-alert">
+          <div className="pf-kpi-alert__title">
+            <span className="pf-kpi-alert__dot animate-[pf-live-dot_2s_ease-in-out_infinite]" />
             {t("kpi.alertPromo")}
           </div>
-          <div className="flex items-baseline gap-1.5 font-mono text-[21px] font-semibold text-amber-300">
-            <span className="inline-block animate-[pf-pulse_2s_infinite]">🔔</span>
-            <span className="font-sans text-[12px] font-semibold leading-tight">
-              {t("kpi.alertPromoHint").split("—")[0].trim()}
-            </span>
+          <div className="pf-kpi-alert__text">
+            {t("kpi.alertPromoHint").split("—")[0].trim()}
           </div>
-          <div className="mt-0.5 font-mono text-[10px] text-amber-300/60">
-            Slack · Telegram · Email →
+          <div className="pf-kpi-alert__chips">
+            <span className="pf-kpi-alert__chip">SLACK</span>
+            <span className="pf-kpi-alert__chip">TELEGRAM</span>
+            <span className="pf-kpi-alert__chip">EMAIL</span>
           </div>
         </Link>
       </section>

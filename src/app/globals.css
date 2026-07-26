@@ -76,6 +76,209 @@ body {
     sans-serif;
 }
 
+/* ============================================================================
+   COMMAND DECK — handoff « Modernisation dashboard Portflow » (26/07/2026)
+   Tokens exacts du handoff, SCOPÉS au dashboard via `.pf-deck` (posé sur le
+   <main> du Dashboard). Deux effets :
+   1. remap de --font-geist-sans → IBM Plex Sans : tous les `font-sans` du
+      dashboard basculent, la landing garde Space Grotesk (hors scope).
+   2. jeu de tokens --pf-* (couleurs, fills, ombres) que le markup command-deck
+      référence pour un rendu au pixel, sans dépendre des utilitaires Tailwind
+      remappés (qui portent l'auto-glow du bloc override plus bas).
+   La signature « 3D » du design = le liseré rasant `inset 0 1px 0
+   rgba(180,215,255,.10)` présent dans chaque ombre --pf-sh-*.
+   ============================================================================ */
+.pf-deck {
+  --font-geist-sans: var(--font-plex-sans);
+
+  /* Fonds */
+  --pf-bg: #050910;
+  --pf-bg-globe: #060c16;
+  --pf-panel: linear-gradient(165deg, rgba(26, 41, 66, 0.86), rgba(10, 17, 29, 0.92));
+  --pf-panel-strong: linear-gradient(165deg, rgba(26, 41, 66, 0.9), rgba(10, 17, 29, 0.92));
+  --pf-glass: rgba(8, 14, 24, 0.66);
+  --pf-inset: rgba(9, 15, 26, 0.5);
+
+  /* Texte (du plus clair au plus effacé) */
+  --pf-t1: #eaf3ff; /* titres / valeurs */
+  --pf-t2: #dbe6f5; /* texte courant */
+  --pf-t3: #c3d5ec; /* boutons carte */
+  --pf-t4: #a9bfd8; /* libellés de graphes */
+  --pf-t5: #8ba1bf; /* secondaire */
+  --pf-t6: #7089a8; /* titres de section */
+  --pf-t7: #5f7592; /* tertiaire */
+  --pf-t8: #4d6480; /* mentions */
+
+  /* Accents */
+  --pf-cyan: #6cc4f7;
+  --pf-cyan-bright: #a8dcff;
+  --pf-green: #3fd39a;
+  --pf-green-bright: #7ae5bb;
+  --pf-amber: #f2a23c;
+  --pf-amber-bright: #f6b95e;
+  --pf-red: #ef6a75;
+  --pf-red-bright: #f2949c;
+  --pf-violet: #9a86f7;
+  --pf-yellow: #f2d34c;
+
+  /* Bordures (par élévation) */
+  --pf-bd-1: rgba(126, 166, 222, 0.08);
+  --pf-bd-2: rgba(126, 166, 222, 0.12);
+  --pf-bd-3: rgba(126, 166, 222, 0.13);
+  --pf-bd-4: rgba(126, 166, 222, 0.16);
+  --pf-bd-5: rgba(126, 166, 222, 0.2);
+  --pf-bd-6: rgba(126, 166, 222, 0.24);
+
+  /* Ombres — le liseré `inset` est la signature 3D du design */
+  --pf-sh-tile: inset 0 1px 0 rgba(180, 215, 255, 0.1), 0 22px 34px -28px rgba(0, 0, 0, 0.95);
+  --pf-sh-tile-hover: inset 0 1px 0 rgba(180, 215, 255, 0.16), 0 26px 40px -24px rgba(0, 0, 0, 0.95);
+  --pf-sh-card: inset 0 1px 0 rgba(180, 215, 255, 0.1), 0 30px 46px -34px rgba(0, 0, 0, 0.95);
+  --pf-sh-globe: inset 0 1px 0 rgba(180, 215, 255, 0.1), 0 40px 70px -40px rgba(0, 0, 0, 1);
+  --pf-sh-popover: inset 0 1px 0 rgba(180, 215, 255, 0.16), 0 26px 44px -22px rgba(0, 0, 0, 1);
+}
+
+/* Tuile KPI (bande du haut) — spec handoff §3. On n'utilise PAS les
+   utilitaires bg-slate-900/border-slate-800 (qui portent l'auto-glow du bloc
+   override) : styling explicite via tokens --pf-*. */
+.pf-deck .pf-kpi {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  padding: 13px 14px 26px;
+  border: 1px solid var(--pf-bd-3);
+  background: var(--pf-panel-strong);
+  box-shadow: var(--pf-sh-tile);
+  text-align: left;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.2s ease;
+}
+.pf-deck .pf-kpi.is-interactive {
+  cursor: pointer;
+}
+.pf-deck .pf-kpi.is-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--pf-sh-tile-hover);
+  border-color: var(--pf-bd-5);
+}
+.pf-deck .pf-kpi.is-active {
+  border-color: rgba(108, 196, 247, 0.5);
+  box-shadow: var(--pf-sh-tile-hover), 0 0 0 1px rgba(108, 196, 247, 0.35);
+}
+.pf-deck .pf-kpi__label {
+  font: 500 9px var(--font-geist-mono), monospace;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  color: var(--pf-t6);
+}
+.pf-deck .pf-kpi__label.tone-bad {
+  color: var(--pf-red-bright);
+}
+.pf-deck .pf-kpi__value {
+  margin-top: 8px;
+  font-size: 29px;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--pf-t1);
+}
+.pf-deck .pf-kpi__value.tone-good {
+  color: var(--pf-green-bright);
+}
+.pf-deck .pf-kpi__value.tone-warn {
+  color: var(--pf-amber-bright);
+}
+.pf-deck .pf-kpi__value.tone-bad {
+  color: var(--pf-red-bright);
+}
+.pf-deck .pf-kpi__hint {
+  margin-top: 2px;
+  font: 400 10.5px var(--font-geist-mono), monospace;
+  color: var(--pf-t7);
+}
+
+/* Tuile alerte (7ᵉ cellule KPI) — spec handoff §3. */
+.pf-deck .pf-kpi-alert {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(242, 162, 60, 0.26);
+  background: linear-gradient(160deg, rgba(242, 162, 60, 0.16), rgba(20, 26, 34, 0.9) 62%);
+  box-shadow: inset 0 1px 0 rgba(255, 214, 150, 0.18), 0 22px 34px -28px rgba(0, 0, 0, 0.95);
+  transition:
+    transform 0.25s ease,
+    border-color 0.2s ease;
+}
+.pf-deck .pf-kpi-alert:hover {
+  transform: translateY(-2px);
+  border-color: rgba(242, 162, 60, 0.5);
+}
+.pf-deck .pf-kpi-alert__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 9px var(--font-geist-mono), monospace;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  color: #f2b567;
+}
+.pf-deck .pf-kpi-alert__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--pf-amber);
+  box-shadow: 0 0 8px rgba(242, 162, 60, 0.8);
+}
+.pf-deck .pf-kpi-alert__text {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #f6d9ae;
+  text-wrap: pretty;
+}
+.pf-deck .pf-kpi-alert__chips {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.pf-deck .pf-kpi-alert__chip {
+  padding: 4px 9px;
+  border-radius: 7px;
+  font: 500 9.5px var(--font-geist-mono), monospace;
+  color: #f6d9ae;
+  background: rgba(242, 162, 60, 0.16);
+  border: 1px solid rgba(242, 162, 60, 0.24);
+}
+
+/* Point « live » du handoff : pulsation opacité + échelle (distincte de
+   pf-pulse landing qui n'anime que l'opacité). */
+@keyframes pf-live-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.75);
+  }
+}
+/* Anneau qui s'évase (ping) autour d'un point live. */
+@keyframes pf-live-ring {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.6);
+  }
+  80%,
+  100% {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+
 /* Marquee du ticker landing + pulsation des pastilles live. */
 @keyframes pf-tick {
   0% {
