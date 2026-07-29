@@ -362,6 +362,7 @@ export default memo(function MapInner({
       attributionControl: { compact: true },
     });
     mapRef.current = map;
+    (window as unknown as { __m?: MLMap }).__m = map; // DEBUG temporaire (ports cliquables)
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-left");
 
     // Fiabilise le dimensionnement : si le conteneur reçoit sa hauteur après
