@@ -55,7 +55,6 @@ const EncountersLoiteringPanel = dynamic(
 import { CongestionGauge } from "./components/CongestionGauge";
 import {
   ContextPanel,
-  MixPanel,
   WorkspaceRail,
 } from "./components/WorkspacePanels";
 import { WeatherWidget } from "./components/WeatherWidget";
@@ -1105,18 +1104,6 @@ export default function Dashboard() {
       mmsi: e.mmsi,
     })),
   ];
-  const fleetMixData = (
-    ["cargo", "tanker", "passenger", "fishing", "tug", "pilot", "other"] as VesselClass[]
-  )
-    .map((c) => ({ label: classLabel(c), n: k?.byClass?.[c] ?? 0 }))
-    .filter((m) => m.n > 0);
-  const cargoMixData = [...TANKER_CARGO]
-    .map((c) => ({
-      label: CARGO_LABELS[c],
-      n: allVessels.filter((v) => v.cargoClass === c).length,
-    }))
-    .filter((m) => m.n > 0);
-
   return (
     <main className="pf-deck mx-auto flex w-full max-w-[1680px] flex-1 flex-col">
       <DegradationBanner />
@@ -1770,7 +1757,7 @@ export default function Dashboard() {
 
       <div
         id="voyages"
-        className="grid flex-none border-t border-slate-800 lg:h-[300px] lg:grid-cols-[1fr_384px]"
+        className="grid flex-none border-t border-slate-800 lg:h-[300px] lg:grid-cols-1"
       >
       <section className="min-h-[300px] lg:min-h-0 lg:overflow-y-auto">
         {showFavoritesPanel ? (
@@ -1797,12 +1784,8 @@ export default function Dashboard() {
           />
         )}
       </section>
-
-      <MixPanel
-        fleet={fleetMixData}
-        cargo={cargoMixData}
-        avgSpeed={k?.avgSpeedChannel ?? null}
-      />
+      {/* MixPanel compact retiré : le mix flotte + cargaisons complet vit dans
+          la ligne analytique (handoff §7), plus lisible. Évite le doublon. */}
       </div>
         </div>
       </div>
