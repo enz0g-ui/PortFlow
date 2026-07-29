@@ -1675,7 +1675,7 @@ export default function Dashboard() {
         </section>
       ) : null}
 
-      <div className="grid min-h-0 flex-1 border-t border-slate-800 lg:grid-cols-[1fr_384px]">
+      <div className="grid min-h-0 flex-1 border-t border-slate-800 lg:grid-cols-[minmax(0,1fr)_minmax(360px,430px)]">
       <section className="lg:h-full lg:min-h-0">
         {/* Mobile: the map is on-demand (numbers first on a phone). The
             toggle is invisible on lg+ where the map always mounts. */}
@@ -1743,19 +1743,29 @@ export default function Dashboard() {
         ) : null}
       </section>
 
-      <ContextPanel
-        vessel={contextVessel}
-        voyage={contextVoyage}
-        portName={`${port?.flag ?? ""} ${portName}`.trim()}
-        portBlurb={portBlurb}
-        darkCount={darkEvents.length}
-        stsCount={encounters.length}
-        loiterCount={loitering.length}
-        riskItems={riskFeedItems}
-        onSelectMmsi={setSelectedMmsi}
-        onOpenDetail={() => setDetailOpen(true)}
-        onClear={() => setSelectedMmsi(null)}
-      />
+      {/* Colonne décision (handoff §6) : jauge congestion + précision ETA +
+          risque à onglets, empilés à droite du globe, sous les abords en
+          transparence. Scroll interne sur lg pour tenir la hauteur du globe. */}
+      <div className="flex min-h-0 flex-col gap-3 border-l border-slate-800 p-3 lg:h-full lg:overflow-y-auto">
+        <CongestionGauge
+          anchored={k?.anchored ?? 0}
+          total={k?.totalVessels ?? 0}
+        />
+        <AccuracyPanel data={accuracyResp ?? null} />
+        <ContextPanel
+          vessel={contextVessel}
+          voyage={contextVoyage}
+          portName={`${port?.flag ?? ""} ${portName}`.trim()}
+          portBlurb={portBlurb}
+          darkCount={darkEvents.length}
+          stsCount={encounters.length}
+          loiterCount={loitering.length}
+          riskItems={riskFeedItems}
+          onSelectMmsi={setSelectedMmsi}
+          onOpenDetail={() => setDetailOpen(true)}
+          onClear={() => setSelectedMmsi(null)}
+        />
+      </div>
       </div>
 
       <div
@@ -1876,16 +1886,11 @@ export default function Dashboard() {
         </div>
       ) : null}
 
-      {/* Une seule rangée de 4 cartes compactes, alignées sur la hauteur
-          utile du panneau ETA precision (retour user 14/07). */}
-      <section className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <CongestionGauge
-          anchored={k?.anchored ?? 0}
-          total={k?.totalVessels ?? 0}
-        />
+      {/* Flux & météo — Congestion + Précision ETA ont migré dans la colonne
+          décision (à droite du globe), cf. handoff §6. */}
+      <section className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-2">
         <FlowChart history={histResp?.history ?? []} />
         <WeatherWidget data={weatherResp ?? null} />
-        <AccuracyPanel data={accuracyResp ?? null} />
       </section>
 
       <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
