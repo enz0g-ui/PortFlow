@@ -29,6 +29,7 @@ interface Props {
   trails?: Record<string, Array<[number, number, number]>>;
   panTo?: { lat: number; lon: number; tick: number };
   portCounts?: PortCount[];
+  onSelectPort?: (id: string) => void;
   selectedVesselClass?: import("@/lib/types").VesselClass | null;
   onSelectVesselClass?: (
     cls: import("@/lib/types").VesselClass | null,

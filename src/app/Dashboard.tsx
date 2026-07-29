@@ -1710,6 +1710,12 @@ export default function Dashboard() {
             sarDetections={undefined}
             panTo={panTo ?? undefined}
             portCounts={portCounts}
+            onSelectPort={(id) => {
+              // clic sur un port en vue monde : on sélectionne le port et on
+              // sort du mode monde pour atterrir sur sa vue détaillée.
+              trySelectPort(id);
+              setWorldView(false);
+            }}
             selectedVesselClass={selectedVesselClassFilter}
             onSelectVesselClass={setSelectedVesselClassFilter}
           />
@@ -1735,6 +1741,7 @@ export default function Dashboard() {
             trails={trails}
             panTo={panTo ?? undefined}
             portCounts={portCounts}
+            onSelectPort={trySelectPort}
             selectedVesselClass={selectedVesselClassFilter}
             onSelectVesselClass={setSelectedVesselClassFilter}
           />

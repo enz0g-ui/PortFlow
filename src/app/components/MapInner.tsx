@@ -78,6 +78,7 @@ interface Props {
   trails?: Record<string, Array<[number, number, number]>>;
   panTo?: { lat: number; lon: number; tick: number };
   portCounts?: PortCount[];
+  onSelectPort?: (id: string) => void;
 }
 
 /* Vue axée (non inclinée) : la profondeur vient de la projection globe,
@@ -222,6 +223,7 @@ function buildPortCountsFC(ports: PortCount[] | undefined): FC {
         type: "Feature",
         geometry: { type: "Point", coordinates: [p.center[1], p.center[0]] },
         properties: {
+          id: p.id,
           name: p.name.toUpperCase(),
           count: p.vesselCount,
           // taille du point proportionnelle au trafic (pavé « hub »)
@@ -322,6 +324,7 @@ export default memo(function MapInner({
   trails,
   panTo,
   portCounts,
+  onSelectPort,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
@@ -329,6 +332,8 @@ export default memo(function MapInner({
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const onSelectPortRef = useRef(onSelectPort);
+  onSelectPortRef.current = onSelectPort;
 
   // Refs vers les données dynamiques : `setup()` (défini dans l'effet d'init,
   // closure figée au mount) doit lire les valeurs COURANTES au moment où il
@@ -637,6 +642,21 @@ export default memo(function MapInner({
         const f = e.features?.[0];
         if (f && onSelectRef.current) onSelectRef.current(Number(f.properties!.mmsi));
       });
+
+      // interactions pavés de ports : curseur pointer + clic → sélection du
+      // port (le recadrage sur le port suit via l'effet [portKey, resetTick]).
+      const portEnter = () => (map.getCanvas().style.cursor = "pointer");
+      const portLeave = () => (map.getCanvas().style.cursor = "");
+      const portClick = (e: maplibregl.MapLayerMouseEvent) => {
+        const f = e.features?.[0];
+        const id = f?.properties?.id;
+        if (id && onSelectPortRef.current) onSelectPortRef.current(String(id));
+      };
+      for (const layer of ["portcount-dot", "portcount-label"]) {
+        map.on("mouseenter", layer, portEnter);
+        map.on("mouseleave", layer, portLeave);
+        map.on("click", layer, portClick);
+      }
      } catch (err) {
       console.error("[pf-map] init error:", err);
      }
