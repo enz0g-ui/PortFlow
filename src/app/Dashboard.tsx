@@ -1874,8 +1874,9 @@ export default function Dashboard() {
           juste en dessous (handoff §7). La météo rejoindra le bas du globe. */}
       <WeatherWidget data={weatherResp ?? null} />
 
-      {/* Ligne analytique (handoff §7) : Flux (1.55fr) · Mix flotte · Cargaisons. */}
-      <section className="grid grid-cols-1 gap-3 lg:grid-cols-[1.55fr_1fr_1fr]">
+      {/* Ligne analytique (handoff §7) : Flux (1.55fr) · Mix flotte · Cargaisons.
+          items-stretch : les 3 cartes alignent leur bord inférieur. */}
+      <section className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-[1.55fr_1fr_1fr]">
         <FlowChart history={histResp?.history ?? []} />
         <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
           <div className="mb-2 flex items-baseline justify-between text-xs">

@@ -33,11 +33,12 @@ export function FlowChart({ history }: Props) {
   }));
 
   return (
-    <div className="h-[210px] w-full rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+    <div className="flex h-full min-h-[210px] w-full flex-col rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <div className="mb-2 text-xs uppercase tracking-wider text-slate-400">
         {t("section.flow")}
       </div>
-      <ResponsiveContainer width="100%" height="85%">
+      <div className="min-h-0 flex-1">
+        <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data}>
           <defs>
             <linearGradient id="gIn" x1="0" y1="0" x2="0" y2="1">
@@ -86,7 +87,8 @@ export function FlowChart({ history }: Props) {
             name={t("kpi.anchored")}
           />
         </AreaChart>
-      </ResponsiveContainer>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
