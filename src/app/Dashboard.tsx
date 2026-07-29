@@ -835,6 +835,19 @@ export default function Dashboard() {
   const portsResp = usePolling<PortsResp>("/api/ports", 30_000);
   const ports = portsResp?.ports ?? [];
   const port = ports.find((p) => p.id === portId);
+  // Pavés compteurs de ports sur la carte (nom localisé + nb navires suivis),
+  // visibles en vue réseau (globe) et décluttrés au zoom port. Memoïsé sur la
+  // réponse /api/ports pour ne pas refaire tourner l'effet map à chaque render.
+  const portCounts = useMemo(
+    () =>
+      ports.map((p) => ({
+        id: p.id,
+        name: p.names[locale] ?? p.name,
+        center: p.center,
+        vesselCount: p.vesselCount,
+      })),
+    [portsResp, locale], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const portName = port ? (port.names[locale] ?? port.name) : "—";
   const portCountry = port
     ? (port.countryNames[locale] ?? port.country)
@@ -1696,6 +1709,7 @@ export default function Dashboard() {
             highlightedMmsis={undefined}
             sarDetections={undefined}
             panTo={panTo ?? undefined}
+            portCounts={portCounts}
             selectedVesselClass={selectedVesselClassFilter}
             onSelectVesselClass={setSelectedVesselClassFilter}
           />
@@ -1720,6 +1734,7 @@ export default function Dashboard() {
             }))}
             trails={trails}
             panTo={panTo ?? undefined}
+            portCounts={portCounts}
             selectedVesselClass={selectedVesselClassFilter}
             onSelectVesselClass={setSelectedVesselClassFilter}
           />

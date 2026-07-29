@@ -53,6 +53,15 @@ export interface SarDetection {
   sizePx?: number;
 }
 
+/* Pavé compteur de port sur le globe (comme /overview) : nom + nombre de
+   navires suivis. Rendu en vue large, décluttré au zoom port. */
+export interface PortCount {
+  id: string;
+  name: string;
+  center: [number, number]; // [lat, lon]
+  vesselCount: number;
+}
+
 interface Props {
   vessels: Vessel[];
   center: [number, number]; // [lat, lon] (ordre Leaflet, conservé)
@@ -68,6 +77,7 @@ interface Props {
   resetTick?: number;
   trails?: Record<string, Array<[number, number, number]>>;
   panTo?: { lat: number; lon: number; tick: number };
+  portCounts?: PortCount[];
 }
 
 /* Vue axée (non inclinée) : la profondeur vient de la projection globe,
@@ -83,6 +93,7 @@ const INTRO_ZOOM = 2.6;
 const MAX_TRAIL_ZOOM = 13;
 const MIN_TRAIL_ZOOM = 8;
 const MAX_CONTEXT_ZOOM = 7; // zones de guerre + chokepoints : vue régionale
+const MAX_PORTCOUNT_ZOOM = 6.5; // pavés compteurs : vue réseau, cachés au zoom port
 
 type FC = GeoJSON.FeatureCollection;
 const emptyFC = (): FC => ({ type: "FeatureCollection", features: [] });
@@ -201,6 +212,25 @@ function buildSarFC(sar: SarDetection[] | undefined): FC {
   };
 }
 
+function buildPortCountsFC(ports: PortCount[] | undefined): FC {
+  if (!ports) return emptyFC();
+  return {
+    type: "FeatureCollection",
+    features: ports
+      .filter((p) => p.vesselCount > 0)
+      .map((p) => ({
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [p.center[1], p.center[0]] },
+        properties: {
+          name: p.name.toUpperCase(),
+          count: p.vesselCount,
+          // taille du point proportionnelle au trafic (pavé « hub »)
+          rad: p.vesselCount >= 1500 ? 5 : p.vesselCount >= 500 ? 4 : 3,
+        },
+      })),
+  };
+}
+
 function buildLineFC(track: Array<[number, number]> | undefined): FC {
   if (!track || track.length < 2) return emptyFC();
   return {
@@ -287,6 +317,7 @@ export default memo(function MapInner({
   resetTick,
   trails,
   panTo,
+  portCounts,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
@@ -299,8 +330,8 @@ export default memo(function MapInner({
   // closure figée au mount) doit lire les valeurs COURANTES au moment où il
   // s'exécute — sinon, si l'API répond avant que le style soit chargé, setup
   // installe une source vide et la mise à jour intermédiaire est perdue.
-  const dataRef = useRef({ vessels, highlightedMmsis, zones, selectedMmsi, trails, selectedTrack, sarDetections });
-  dataRef.current = { vessels, highlightedMmsis, zones, selectedMmsi, trails, selectedTrack, sarDetections };
+  const dataRef = useRef({ vessels, highlightedMmsis, zones, selectedMmsi, trails, selectedTrack, sarDetections, portCounts });
+  dataRef.current = { vessels, highlightedMmsis, zones, selectedMmsi, trails, selectedTrack, sarDetections, portCounts };
 
   const classByMmsi = useMemo(() => {
     const m = new Map<number, VesselClass>();
@@ -345,6 +376,10 @@ export default memo(function MapInner({
       map.addSource("trails", { type: "geojson", data: emptyFC() });
       map.addSource("seltrack", { type: "geojson", data: emptyFC() });
       map.addSource("sar", { type: "geojson", data: emptyFC() });
+      map.addSource("portcounts", {
+        type: "geojson",
+        data: buildPortCountsFC(d.portCounts),
+      });
       // Pas de clustering : le worker de clustering (supercluster) ne produit
       // aucune tuile en maplibre 4.7.1 avec notre config, d'où des navires
       // invisibles. Sans cluster, les 943 points se rendent en dots lumineux
@@ -498,6 +533,53 @@ export default memo(function MapInner({
         },
       });
 
+      // Pavés compteurs de ports (comme /overview) — visibles en vue réseau
+      // (globe), cachés au zoom port. Point marqueur + label « NOM \ N navires ».
+      map.addLayer({
+        id: "portcount-dot",
+        type: "circle",
+        source: "portcounts",
+        maxzoom: MAX_PORTCOUNT_ZOOM,
+        paint: {
+          "circle-radius": ["get", "rad"],
+          "circle-color": "#6cc4f7",
+          "circle-opacity": 0.9,
+          "circle-stroke-color": "rgba(168,220,255,0.55)",
+          "circle-stroke-width": 1.4,
+          "circle-blur": 0.2,
+        },
+      });
+      map.addLayer({
+        id: "portcount-label",
+        type: "symbol",
+        source: "portcounts",
+        maxzoom: MAX_PORTCOUNT_ZOOM,
+        layout: {
+          "text-field": [
+            "format",
+            ["get", "name"],
+            {},
+            "\n",
+            {},
+            ["concat", ["to-string", ["get", "count"]], " navires"],
+            { "font-scale": 0.82 },
+          ],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 11,
+          "text-offset": [0.9, 0],
+          "text-anchor": "left",
+          "text-max-width": 12,
+          "text-allow-overlap": false,
+          "text-optional": true,
+        },
+        paint: {
+          "text-color": "#dbe6f5",
+          "text-halo-color": "rgba(6,12,22,0.9)",
+          "text-halo-width": 1.4,
+          "text-halo-blur": 0.5,
+        },
+      });
+
       readyRef.current = true;
 
       // hydrate les sources qui démarrent vides mais dont les données peuvent
@@ -507,6 +589,7 @@ export default memo(function MapInner({
       );
       (map.getSource("seltrack") as GeoJSONSource | undefined)?.setData(buildLineFC(d.selectedTrack));
       (map.getSource("sar") as GeoJSONSource | undefined)?.setData(buildSarFC(d.sarDetections));
+      (map.getSource("portcounts") as GeoJSONSource | undefined)?.setData(buildPortCountsFC(d.portCounts));
 
       // Pas de cadrage-port au chargement : on reste sur la vue d'accueil
       // globe (INTRO_ZOOM). L'utilisateur zoome via « Recentrer », un clic
@@ -591,6 +674,10 @@ export default memo(function MapInner({
   useEffect(() => {
     setData("vessels", buildVesselsFC(vessels, highlightedMmsis));
   }, [vessels, highlightedMmsis]);
+
+  useEffect(() => {
+    setData("portcounts", buildPortCountsFC(portCounts));
+  }, [portCounts]);
 
   useEffect(() => {
     setData(
