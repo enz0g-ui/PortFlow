@@ -544,6 +544,19 @@ export default memo(function MapInner({
 
       // Pavés compteurs de ports (comme /overview) — visibles en vue réseau
       // (globe), cachés au zoom port. Point marqueur + label « NOM \ N navires ».
+      // Zone de clic invisible large : les dots visibles font 3-5 px (durs à
+      // cliquer) ; ce cercle transparent de 16 px porte le hit-test.
+      map.addLayer({
+        id: "portcount-hit",
+        type: "circle",
+        source: "portcounts",
+        maxzoom: MAX_PORTCOUNT_ZOOM,
+        paint: {
+          "circle-radius": 16,
+          "circle-color": "#000000",
+          "circle-opacity": 0.01,
+        },
+      });
       map.addLayer({
         id: "portcount-dot",
         type: "circle",
@@ -652,7 +665,9 @@ export default memo(function MapInner({
         const id = f?.properties?.id;
         if (id && onSelectPortRef.current) onSelectPortRef.current(String(id));
       };
-      for (const layer of ["portcount-dot", "portcount-label"]) {
+      // hit-test sur la zone large invisible + le label (le dot est couvert
+      // par la zone large, inutile de l'écouter).
+      for (const layer of ["portcount-hit", "portcount-label"]) {
         map.on("mouseenter", layer, portEnter);
         map.on("mouseleave", layer, portLeave);
         map.on("click", layer, portClick);
