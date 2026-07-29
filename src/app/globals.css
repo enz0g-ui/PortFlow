@@ -671,6 +671,15 @@ path.leaflet-interactive {
 .pf-map .maplibregl-canvas {
   outline: none;
 }
+/* Curseur : on remplace la « main » (grab/grabbing de MapLibre) par le
+   pointeur flèche standard — sa pointe est bien plus précise pour viser un
+   petit navire ou un pavé de port (retour Laurent). Le survol d'un élément
+   cliquable passe en `pointer` via les handlers JS ; le drag pan reste actif. */
+.pf-map .maplibregl-canvas-container.maplibregl-interactive,
+.pf-map .maplibregl-canvas-container.maplibregl-interactive:active,
+.pf-map .maplibregl-canvas-container.maplibregl-interactive .maplibregl-canvas {
+  cursor: default;
+}
 /* Aurore + grille tactique, en fondu additif. */
 .pf-map-aurora {
   mix-blend-mode: screen;
