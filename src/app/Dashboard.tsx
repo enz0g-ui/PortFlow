@@ -1886,14 +1886,14 @@ export default function Dashboard() {
         </div>
       ) : null}
 
-      {/* Flux & météo — Congestion + Précision ETA ont migré dans la colonne
-          décision (à droite du globe), cf. handoff §6. */}
-      <section className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-2">
-        <FlowChart history={histResp?.history ?? []} />
-        <WeatherWidget data={weatherResp ?? null} />
-      </section>
+      {/* Météo (bandeau) — Congestion + Précision ETA ont migré dans la colonne
+          décision (handoff §6) ; la ligne analytique flux/mix/cargaisons est
+          juste en dessous (handoff §7). La météo rejoindra le bas du globe. */}
+      <WeatherWidget data={weatherResp ?? null} />
 
-      <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+      {/* Ligne analytique (handoff §7) : Flux (1.55fr) · Mix flotte · Cargaisons. */}
+      <section className="grid grid-cols-1 gap-3 lg:grid-cols-[1.55fr_1fr_1fr]">
+        <FlowChart history={histResp?.history ?? []} />
         <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
           <div className="mb-2 flex items-baseline justify-between text-xs">
             <span className="uppercase tracking-wider text-slate-400">
