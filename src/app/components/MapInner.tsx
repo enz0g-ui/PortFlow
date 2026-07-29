@@ -253,7 +253,11 @@ function buildLineFC(track: Array<[number, number]> | undefined): FC {
 function baseStyle(): maplibregl.StyleSpecification {
   return {
     version: 8,
-    glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
+    // Glyphes AUTO-HÉBERGÉS (public/fonts) : le serveur externe openmaptiles a
+    // changé d'API et laissait le texte des pavés non rendu (dots seuls). En
+    // local, plus aucune dépendance réseau fragile — cf. leçon tuiles/polices.
+    // Plage 0-511 embarquée : couvre tous les noms de ports (Latin + accents).
+    glyphs: "/fonts/{fontstack}/{range}.pbf",
     sources: {
       carto: {
         type: "raster",
