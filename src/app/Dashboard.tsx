@@ -1766,7 +1766,7 @@ export default function Dashboard() {
       {/* Colonne décision (handoff §6) : jauge congestion + précision ETA +
           risque à onglets, empilés à droite du globe, sous les abords en
           transparence. Scroll interne sur lg pour tenir la hauteur du globe. */}
-      <div className="flex min-h-0 flex-col gap-3 border-l border-slate-800 p-3 lg:h-full lg:overflow-y-auto">
+      <div className="flex min-h-0 flex-col gap-3 p-3 lg:h-full lg:overflow-y-auto lg:border-l lg:border-slate-800">
         <CongestionGauge
           anchored={k?.anchored ?? 0}
           total={k?.totalVessels ?? 0}
