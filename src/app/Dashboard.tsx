@@ -1676,7 +1676,7 @@ export default function Dashboard() {
       ) : null}
 
       <div className="grid min-h-0 flex-1 border-t border-slate-800 lg:grid-cols-[minmax(0,1fr)_minmax(360px,430px)]">
-      <section className="lg:h-full lg:min-h-0">
+      <section className="flex flex-col lg:h-full lg:min-h-0">
         {/* Mobile: the map is on-demand (numbers first on a phone). The
             toggle is invisible on lg+ where the map always mounts. */}
         <button
@@ -1689,7 +1689,7 @@ export default function Dashboard() {
           </span>
         </button>
         {showMap ? (
-        <div className="h-[440px] lg:h-full">
+        <div className="relative h-[440px] min-h-0 lg:h-auto lg:flex-1">
         {worldView ? (
           <MapView
             vessels={
@@ -1749,6 +1749,17 @@ export default function Dashboard() {
           <div className="flex h-full w-full items-center justify-center rounded-lg border border-slate-800 bg-slate-900/40 text-sm text-slate-500" />
         )}
         </div>
+        ) : null}
+        {/* Bandeau météo (handoff §5.9) : au bas du panneau globe, sous la carte
+            (flex-column). Solide, ne couvre ni la légende ni les contrôles. */}
+        {showMap ? (
+          <div className="hidden flex-none overflow-hidden rounded-b-lg lg:block">
+            <WeatherWidget
+              data={weatherResp ?? null}
+              variant="strip"
+              channelSpeed={k?.avgSpeedChannel ?? null}
+            />
+          </div>
         ) : null}
       </section>
 
@@ -1891,10 +1902,8 @@ export default function Dashboard() {
         </div>
       ) : null}
 
-      {/* Météo (bandeau) — Congestion + Précision ETA ont migré dans la colonne
-          décision (handoff §6) ; la ligne analytique flux/mix/cargaisons est
-          juste en dessous (handoff §7). La météo rejoindra le bas du globe. */}
-      <WeatherWidget data={weatherResp ?? null} />
+      {/* La météo a migré en bandeau au bas du panneau globe (handoff §5.9).
+          Congestion + Précision ETA sont dans la colonne décision (§6). */}
 
       {/* Ligne analytique (handoff §7) : Flux (1.55fr) · Mix flotte · Cargaisons.
           items-stretch : les 3 cartes alignent leur bord inférieur. */}

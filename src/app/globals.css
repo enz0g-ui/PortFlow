@@ -348,6 +348,62 @@ body {
   box-shadow: 0 0 10px rgba(108, 196, 247, 0.9);
 }
 
+/* ---------- Bandeau météo au bas du globe (handoff §5.9) ---------- */
+.pf-wx-strip {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(126, 166, 222, 0.12);
+  background: linear-gradient(180deg, rgba(8, 14, 24, 0.5), rgba(6, 11, 19, 0.9));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.pf-wx-grp {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+.pf-wx-lbl {
+  font: 500 9px var(--font-geist-mono), monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pf-t7);
+}
+.pf-wx-val {
+  font-size: 15px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--pf-t1);
+}
+.pf-wx-unit {
+  margin-left: 2px;
+  font-size: 10px;
+  color: var(--pf-t7);
+}
+.pf-wx-det {
+  font: 400 10px var(--font-geist-mono), monospace;
+  color: var(--pf-t5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pf-wx-sep {
+  flex: none;
+  width: 1px;
+  height: 16px;
+  background: rgba(126, 166, 222, 0.14);
+}
+.pf-wx-src {
+  margin-left: auto;
+  flex: none;
+  font: 400 9.5px var(--font-geist-mono), monospace;
+  color: var(--pf-t8);
+}
+
 /* Point « live » du handoff : pulsation opacité + échelle (distincte de
    pf-pulse landing qui n'anime que l'opacité). */
 @keyframes pf-live-dot {
