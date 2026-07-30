@@ -41,6 +41,31 @@ export interface Brief {
 
 export const BRIEFS: Brief[] = [
   {
+    slug: "singapore-anchor-share-july-2026",
+    title: "At Singapore, half the ships we track are sitting at anchor: 69 of 142",
+    dek: "A live snapshot of Port Flow's Singapore port view: 69 of the 142 vessels we're currently tracking there are at anchor — 49%. At the world's busiest transshipment and bunkering hub, that's a lot of steel waiting rather than working.",
+    publishedAt: "2026-07-30",
+    tags: ["congestion", "singapore"],
+    event: [
+      "Singapore is the pivot of Asian shipping — the top bunkering port and a transshipment giant. When ships pile up at anchor there, schedules slip across the region.",
+      "Right now, Port Flow's live view of the Singapore port area shows nearly half the vessels we track at anchor rather than alongside a berth.",
+    ],
+    dataIntro: "Live snapshot — Port Flow's Singapore port view:",
+    stats: [
+      { label: "At anchor", value: "69 vessels", sub: "not at berth" },
+      { label: "Total tracked in port", value: "142 vessels", sub: "Singapore port view" },
+      { label: "Share at anchor", value: "49%", sub: "live · 30 Jul 2026" },
+    ],
+    implication: [
+      "For a charterer or trader, anchor time is the tell: berth delays, demurrage exposure, cargo timing slipping. A ~50% anchor share is worth a second look before you commit a laycan.",
+      "It's a live number — check it yourself on the desk.",
+    ],
+    punchline:
+      "Right now at Singapore: 69 of the 142 vessels we're tracking in the port are at anchor — 49% waiting, not at berth. Live congestion, on the desk. portflow.uk",
+    disclaimer:
+      'Snapshot figures, dated 30 July 2026, for the vessels Port Flow tracks within its Singapore port area (public AIS). "At anchor" is the vessel\'s anchored navigation state — a proxy for waiting, distinct from berthed. It is not a count of the entire Singapore anchorage.',
+  },
+  {
     slug: "predicted-vs-broadcast-eta-june-2026",
     title: "We checked our ETA against the ship's own: 2.8 h vs 32.8 h",
     dek: "Across 371 closed voyages to Rotterdam over the last 30 days, Port Flow's predicted ETA was off by 2.8 hours on average. The crew-broadcast ETA those same ships transmit was off by 32.8.",
