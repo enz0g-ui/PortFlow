@@ -348,6 +348,20 @@ body {
   box-shadow: 0 0 10px rgba(108, 196, 247, 0.9);
 }
 
+/* ---------- Segmenté de la barre de filtres (handoff §4) ---------- */
+/* Onglet actif = pilule gradient cyan, texte sombre. Remplace la boîte
+   bordée. Le liseré + l'ombre donnent le relief « command deck ». */
+.pf-deck .pf-seg-on {
+  color: #0d1a28 !important;
+  background: linear-gradient(180deg, #9ad8fb, #63b5ea) !important;
+  border-color: transparent !important;
+  box-shadow: 0 6px 14px -8px rgba(108, 196, 247, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  font-weight: 500;
+}
+.pf-deck .pf-seg-on:hover {
+  color: #0d1a28 !important;
+}
+
 /* ---------- Bandeau météo au bas du globe (handoff §5.9) ---------- */
 .pf-wx-strip {
   display: flex;

@@ -1223,7 +1223,7 @@ export default function Dashboard() {
           <span
             className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs ${
               tone === "good"
-                ? "border-emerald-700 text-emerald-300"
+                ? "border-sky-600 text-sky-300"
                 : tone === "warn"
                   ? "border-amber-700 text-amber-300"
                   : "border-rose-700 text-rose-300"
@@ -1344,7 +1344,7 @@ export default function Dashboard() {
               }}
               className={`flex items-center justify-center whitespace-nowrap rounded border px-2 py-1.5 sm:border-0 sm:px-3 sm:py-1 ${
                 !tankersOnly && !fleetOnly
-                  ? "border-sky-700/60 bg-sky-500/15 text-sky-300"
+                  ? "pf-seg-on"
                   : "border-slate-800 text-slate-400 hover:text-slate-200"
               }`}
             >
@@ -1357,7 +1357,7 @@ export default function Dashboard() {
               }}
               className={`flex items-center justify-center whitespace-nowrap rounded border px-2 py-1.5 sm:border-0 sm:px-3 sm:py-1 ${
                 tankersOnly && !fleetOnly
-                  ? "border-sky-700/60 bg-sky-500/15 text-sky-300"
+                  ? "pf-seg-on"
                   : "border-slate-800 text-slate-400 hover:text-slate-200"
               }`}
             >
