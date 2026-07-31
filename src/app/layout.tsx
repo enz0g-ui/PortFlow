@@ -3,6 +3,7 @@ import { IBM_Plex_Mono, IBM_Plex_Sans, Space_Grotesk } from "next/font/google";
 import { I18nProvider } from "@/lib/i18n/context";
 import { AuthShell } from "./components/AuthShell";
 import { DemoBanner } from "./components/DemoBanner";
+import { GlobalRail } from "./components/GlobalRail";
 import "./globals.css";
 
 // Design system « la preuve d'abord » (refonte 13/07/2026) : Space Grotesk
@@ -136,7 +137,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${plexSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      {/* lg:pl-[60px] : réserve la gouttière gauche pour le rail de navigation
+          global (position fixed), présent sur toutes les pages (lg+). */}
+      <body className="min-h-full flex flex-col lg:pl-[60px]">
         {/* LCP on the dashboard is a Leaflet basemap tile from CARTO's
             sharded CDN (a–d.basemaps.cartocdn.com). RUM showed the tile as
             the largest element with a slow/variable load. Preconnecting the
@@ -170,6 +173,7 @@ export default function RootLayout({
         />
         <AuthShell>
           <I18nProvider>
+            <GlobalRail />
             <DemoBanner />
             {children}
           </I18nProvider>

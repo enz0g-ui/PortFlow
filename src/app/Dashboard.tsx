@@ -53,10 +53,7 @@ const EncountersLoiteringPanel = dynamic(
   { ssr: false, loading: () => <PanelSkeleton /> },
 );
 import { CongestionGauge } from "./components/CongestionGauge";
-import {
-  ContextPanel,
-  WorkspaceRail,
-} from "./components/WorkspacePanels";
+import { ContextPanel } from "./components/WorkspacePanels";
 import { WeatherWidget } from "./components/WeatherWidget";
 import { VesselDetailPanel } from "./components/VesselDetailPanel";
 import { PortSelector, type PortInfo } from "./components/PortSelector";
@@ -1255,8 +1252,9 @@ export default function Dashboard() {
           rail | KPI strip → filtres → carte + panneau contexte → voyages +
           mix. Hauteur viewport sur desktop — la table défile, pas la page.
           Les panneaux détaillés historiques restent SOUS le workspace. ═══ */}
+      {/* Le rail de navigation est désormais GLOBAL (rendu dans le layout
+          racine, position fixed) — plus de rail interne au dashboard. */}
       <div id="top" className="flex min-h-0 flex-1 lg:h-[calc(100dvh-3.25rem)]">
-        <WorkspaceRail portId={portId} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
 
       <section className="grid flex-none grid-cols-2 gap-[11px] px-5 pt-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-[repeat(7,minmax(0,1fr))_minmax(230px,290px)]">
