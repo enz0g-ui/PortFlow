@@ -261,12 +261,12 @@ body {
 /* Logo carré en tête du rail. */
 .pf-rail__logo {
   display: block;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   border-radius: 9px;
   margin-bottom: 14px;
-  background: linear-gradient(150deg, #5fb7f0, #2b6cc4);
-  box-shadow: 0 8px 18px -8px rgba(95, 183, 240, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  background: #1094d4 url("/portflow-mark.png") center / cover no-repeat;
+  box-shadow: 0 8px 18px -8px rgba(95, 183, 240, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 .pf-rail__logo:hover {
