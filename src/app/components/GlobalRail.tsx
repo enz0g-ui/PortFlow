@@ -38,23 +38,47 @@ export function GlobalRail() {
   const isActive = (m?: string) =>
     !!m && (pathname === m || pathname.startsWith(m + "/"));
 
+  // Sous-ensemble pour la barre d'onglets mobile (l'app Android est une TWA
+  // du site : sans elle, aucun moyen de naviguer sur téléphone).
+  const mobileItems = items.filter((it) =>
+    ["LIVE", "GLOBE", "PORTS", "NEWS"].includes(it.label),
+  );
+
   return (
-    <nav
-      className="pf-deck pf-rail fixed left-0 top-0 z-[1200] hidden h-screen w-[60px] flex-col items-center gap-0.5 py-3.5 lg:flex"
-      aria-label={t("ws.rail.nav")}
-    >
-      <Link href="/" className="pf-rail__logo" title={t("ws.rail.home")} aria-label={t("ws.rail.home")} />
-      {items.map((it) => (
-        <Link
-          key={it.label}
-          href={it.href}
-          title={it.tip}
-          className={`pf-rail__item${isActive(it.match) ? " is-active" : ""}`}
-        >
-          <span className={`pf-rail__glyph pf-rail__glyph--${it.glyph}`} aria-hidden />
-          <span className="pf-rail__label">{it.label}</span>
-        </Link>
-      ))}
-    </nav>
+    <>
+      <nav
+        className="pf-deck pf-rail fixed left-0 top-0 z-[1200] hidden h-screen w-[60px] flex-col items-center gap-0.5 py-3.5 lg:flex"
+        aria-label={t("ws.rail.nav")}
+      >
+        <Link href="/" className="pf-rail__logo" title={t("ws.rail.home")} aria-label={t("ws.rail.home")} />
+        {items.map((it) => (
+          <Link
+            key={it.label}
+            href={it.href}
+            title={it.tip}
+            className={`pf-rail__item${isActive(it.match) ? " is-active" : ""}`}
+          >
+            <span className={`pf-rail__glyph pf-rail__glyph--${it.glyph}`} aria-hidden />
+            <span className="pf-rail__label">{it.label}</span>
+          </Link>
+        ))}
+      </nav>
+      <nav
+        className="pf-deck pf-tabbar fixed inset-x-0 bottom-0 z-[1200] flex lg:hidden"
+        aria-label={t("ws.rail.nav")}
+      >
+        {mobileItems.map((it) => (
+          <Link
+            key={it.label}
+            href={it.href}
+            title={it.tip}
+            className={`pf-tabbar__item${isActive(it.match) ? " is-active" : ""}`}
+          >
+            <span className={`pf-rail__glyph pf-rail__glyph--${it.glyph}`} aria-hidden />
+            <span className="pf-rail__label">{it.label}</span>
+          </Link>
+        ))}
+      </nav>
+    </>
   );
 }

@@ -370,6 +370,46 @@ body {
   box-shadow: 0 0 10px rgba(108, 196, 247, 0.9);
 }
 
+/* ---------- Barre d'onglets mobile (pendant du rail, < lg) ----------
+   L'app Android (TWA) EST le site mobile : sans elle, un utilisateur
+   Play Store n'a aucune navigation. Fond verre + liseré, items glyphe +
+   label, actif cyan comme le rail. ---------------------------------- */
+.pf-tabbar {
+  background: linear-gradient(0deg, rgba(6, 11, 19, 0.97), rgba(13, 21, 36, 0.92));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(126, 166, 222, 0.14);
+  box-shadow: 0 -10px 30px rgba(2, 6, 16, 0.55);
+  /* encoche iOS / barre gestuelle Android */
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.pf-tabbar__item {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 0 7px;
+  color: var(--pf-t7);
+  transition: color 0.2s;
+}
+.pf-tabbar__item.is-active {
+  color: var(--pf-cyan-bright);
+}
+.pf-tabbar__item.is-active .pf-rail__glyph--live {
+  background: var(--pf-cyan);
+  box-shadow: 0 0 0 3px rgba(108, 196, 247, 0.18);
+}
+.pf-tabbar__item.is-active::after {
+  content: "";
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--pf-cyan);
+  box-shadow: 0 0 8px rgba(108, 196, 247, 0.9);
+  margin-top: 1px;
+}
+
 /* ---------- Segmenté de la barre de filtres (handoff §4) ---------- */
 /* Onglet actif = pilule gradient cyan, texte sombre. Remplace la boîte
    bordée. Le liseré + l'ombre donnent le relief « command deck ». */

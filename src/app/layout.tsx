@@ -137,9 +137,10 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${plexSans.variable} h-full antialiased`}
     >
-      {/* lg:pl-[60px] : réserve la gouttière gauche pour le rail de navigation
-          global (position fixed), présent sur toutes les pages (lg+). */}
-      <body className="min-h-full flex flex-col lg:pl-[60px]">
+      {/* lg:pl-[60px] : gouttière gauche pour le rail de navigation global
+          (fixed, lg+). pb-[52px] : place pour la barre d'onglets mobile
+          (fixed bottom, < lg). */}
+      <body className="min-h-full flex flex-col pb-[52px] lg:pb-0 lg:pl-[60px]">
         {/* LCP on the dashboard is a Leaflet basemap tile from CARTO's
             sharded CDN (a–d.basemaps.cartocdn.com). RUM showed the tile as
             the largest element with a slow/variable load. Preconnecting the
