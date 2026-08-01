@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { DemoButton } from "./components/DemoButton";
 import { LiveBenchmark } from "./components/LiveBenchmark";
 import { GlobeBackdrop } from "./components/GlobeBackdrop";
+import { DashboardCarousel } from "./components/DashboardCarousel";
 import { NewsletterForm } from "./components/NewsletterForm";
 import { TickerBar } from "./components/TickerBar";
 
@@ -169,6 +170,19 @@ export default async function Home({
               <p className="mt-auto text-[13px] leading-relaxed text-slate-400">{p.gain}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Dashboard en action — carrousel de captures (lien vers /app) */}
+      <section className="border-t border-slate-800 bg-slate-900/40">
+        <div className="mx-auto max-w-6xl px-6 py-16">
+          <div className="mb-3 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-sky-500">
+            The command deck, live
+          </div>
+          <h2 className="mb-8 text-2xl font-semibold text-slate-100 sm:text-3xl">
+            One screen from globe to berth
+          </h2>
+          <DashboardCarousel />
         </div>
       </section>
 
