@@ -53,11 +53,7 @@ const EncountersLoiteringPanel = dynamic(
   { ssr: false, loading: () => <PanelSkeleton /> },
 );
 import { CongestionGauge } from "./components/CongestionGauge";
-import {
-  ContextPanel,
-  MixPanel,
-  WorkspaceRail,
-} from "./components/WorkspacePanels";
+import { ContextPanel } from "./components/WorkspacePanels";
 import { WeatherWidget } from "./components/WeatherWidget";
 import { VesselDetailPanel } from "./components/VesselDetailPanel";
 import { PortSelector, type PortInfo } from "./components/PortSelector";
@@ -836,6 +832,19 @@ export default function Dashboard() {
   const portsResp = usePolling<PortsResp>("/api/ports", 30_000);
   const ports = portsResp?.ports ?? [];
   const port = ports.find((p) => p.id === portId);
+  // Pavés compteurs de ports sur la carte (nom localisé + nb navires suivis),
+  // visibles en vue réseau (globe) et décluttrés au zoom port. Memoïsé sur la
+  // réponse /api/ports pour ne pas refaire tourner l'effet map à chaque render.
+  const portCounts = useMemo(
+    () =>
+      ports.map((p) => ({
+        id: p.id,
+        name: p.names[locale] ?? p.name,
+        center: p.center,
+        vesselCount: p.vesselCount,
+      })),
+    [portsResp, locale], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const portName = port ? (port.names[locale] ?? port.name) : "—";
   const portCountry = port
     ? (port.countryNames[locale] ?? port.country)
@@ -1105,20 +1114,8 @@ export default function Dashboard() {
       mmsi: e.mmsi,
     })),
   ];
-  const fleetMixData = (
-    ["cargo", "tanker", "passenger", "fishing", "tug", "pilot", "other"] as VesselClass[]
-  )
-    .map((c) => ({ label: classLabel(c), n: k?.byClass?.[c] ?? 0 }))
-    .filter((m) => m.n > 0);
-  const cargoMixData = [...TANKER_CARGO]
-    .map((c) => ({
-      label: CARGO_LABELS[c],
-      n: allVessels.filter((v) => v.cargoClass === c).length,
-    }))
-    .filter((m) => m.n > 0);
-
   return (
-    <main className="mx-auto flex w-full max-w-[1680px] flex-1 flex-col">
+    <main className="pf-deck mx-auto flex w-full max-w-[1680px] flex-1 flex-col">
       <DegradationBanner />
       {/* Command bar — mockup « la preuve d'abord » : barre dense, port +
           badge MAE proéminent, nav condensée. Full-bleed dans le <main> padded
@@ -1223,7 +1220,7 @@ export default function Dashboard() {
           <span
             className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs ${
               tone === "good"
-                ? "border-emerald-700 text-emerald-300"
+                ? "border-sky-600 text-sky-300"
                 : tone === "warn"
                   ? "border-amber-700 text-amber-300"
                   : "border-rose-700 text-rose-300"
@@ -1255,11 +1252,12 @@ export default function Dashboard() {
           rail | KPI strip → filtres → carte + panneau contexte → voyages +
           mix. Hauteur viewport sur desktop — la table défile, pas la page.
           Les panneaux détaillés historiques restent SOUS le workspace. ═══ */}
+      {/* Le rail de navigation est désormais GLOBAL (rendu dans le layout
+          racine, position fixed) — plus de rail interne au dashboard. */}
       <div id="top" className="flex min-h-0 flex-1 lg:h-[calc(100dvh-3.25rem)]">
-        <WorkspaceRail portId={portId} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
 
-      <section className="grid flex-none grid-cols-2 gap-px border-b border-slate-800 bg-slate-800/40 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8">
+      <section className="grid flex-none grid-cols-2 gap-[11px] px-5 pt-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-[repeat(7,minmax(0,1fr))_minmax(230px,290px)]">
         <KpiCard
           label={t("kpi.totalVessels")}
           value={k?.totalVessels ?? "—"}
@@ -1316,22 +1314,18 @@ export default function Dashboard() {
         {/* Promo alertes — la feature la plus différenciante est invisible
             pour un visiteur pressé : cellule accrocheuse, cloche pulsante,
             même vocabulaire que la cloche de la command bar. */}
-        <Link
-          href="/account"
-          title={t("kpi.alertPromoHint")}
-          className="rounded-md border border-amber-400/40 bg-amber-400/10 px-3.5 py-2.5 text-left transition-colors hover:border-amber-400 hover:bg-amber-400/15"
-        >
-          <div className="font-mono text-[9px] font-medium uppercase tracking-[0.1em] text-amber-300">
+        <Link href="/account" title={t("kpi.alertPromoHint")} className="pf-kpi-alert">
+          <div className="pf-kpi-alert__title">
+            <span className="pf-kpi-alert__dot animate-[pf-live-dot_2s_ease-in-out_infinite]" />
             {t("kpi.alertPromo")}
           </div>
-          <div className="flex items-baseline gap-1.5 font-mono text-[21px] font-semibold text-amber-300">
-            <span className="inline-block animate-[pf-pulse_2s_infinite]">🔔</span>
-            <span className="font-sans text-[12px] font-semibold leading-tight">
-              {t("kpi.alertPromoHint").split("—")[0].trim()}
-            </span>
+          <div className="pf-kpi-alert__text">
+            {t("kpi.alertPromoHint").split("—")[0].trim()}
           </div>
-          <div className="mt-0.5 font-mono text-[10px] text-amber-300/60">
-            Slack · Telegram · Email →
+          <div className="pf-kpi-alert__chips">
+            <span className="pf-kpi-alert__chip">SLACK</span>
+            <span className="pf-kpi-alert__chip">TELEGRAM</span>
+            <span className="pf-kpi-alert__chip">EMAIL</span>
           </div>
         </Link>
       </section>
@@ -1348,7 +1342,7 @@ export default function Dashboard() {
               }}
               className={`flex items-center justify-center whitespace-nowrap rounded border px-2 py-1.5 sm:border-0 sm:px-3 sm:py-1 ${
                 !tankersOnly && !fleetOnly
-                  ? "border-sky-700/60 bg-sky-500/15 text-sky-300"
+                  ? "pf-seg-on"
                   : "border-slate-800 text-slate-400 hover:text-slate-200"
               }`}
             >
@@ -1361,7 +1355,7 @@ export default function Dashboard() {
               }}
               className={`flex items-center justify-center whitespace-nowrap rounded border px-2 py-1.5 sm:border-0 sm:px-3 sm:py-1 ${
                 tankersOnly && !fleetOnly
-                  ? "border-sky-700/60 bg-sky-500/15 text-sky-300"
+                  ? "pf-seg-on"
                   : "border-slate-800 text-slate-400 hover:text-slate-200"
               }`}
             >
@@ -1679,8 +1673,8 @@ export default function Dashboard() {
         </section>
       ) : null}
 
-      <div className="grid min-h-0 flex-1 border-t border-slate-800 lg:grid-cols-[1fr_384px]">
-      <section className="lg:h-full lg:min-h-0">
+      <div className="grid min-h-0 flex-1 border-t border-slate-800 lg:grid-cols-[minmax(0,1fr)_minmax(360px,430px)]">
+      <section className="flex flex-col lg:h-full lg:min-h-0">
         {/* Mobile: the map is on-demand (numbers first on a phone). The
             toggle is invisible on lg+ where the map always mounts. */}
         <button
@@ -1693,7 +1687,7 @@ export default function Dashboard() {
           </span>
         </button>
         {showMap ? (
-        <div className="h-[440px] lg:h-full">
+        <div className="relative h-[440px] min-h-0 lg:h-auto lg:flex-1">
         {worldView ? (
           <MapView
             vessels={
@@ -1713,6 +1707,13 @@ export default function Dashboard() {
             highlightedMmsis={undefined}
             sarDetections={undefined}
             panTo={panTo ?? undefined}
+            portCounts={portCounts}
+            onSelectPort={(id) => {
+              // clic sur un port en vue monde : on sélectionne le port et on
+              // sort du mode monde pour atterrir sur sa vue détaillée.
+              trySelectPort(id);
+              setWorldView(false);
+            }}
             selectedVesselClass={selectedVesselClassFilter}
             onSelectVesselClass={setSelectedVesselClassFilter}
           />
@@ -1737,6 +1738,8 @@ export default function Dashboard() {
             }))}
             trails={trails}
             panTo={panTo ?? undefined}
+            portCounts={portCounts}
+            onSelectPort={trySelectPort}
             selectedVesselClass={selectedVesselClassFilter}
             onSelectVesselClass={setSelectedVesselClassFilter}
           />
@@ -1745,26 +1748,47 @@ export default function Dashboard() {
         )}
         </div>
         ) : null}
+        {/* Bandeau météo (handoff §5.9) : au bas du panneau globe, sous la carte
+            (flex-column). Solide, ne couvre ni la légende ni les contrôles. */}
+        {showMap ? (
+          <div className="hidden flex-none overflow-hidden rounded-b-lg lg:block">
+            <WeatherWidget
+              data={weatherResp ?? null}
+              variant="strip"
+              channelSpeed={k?.avgSpeedChannel ?? null}
+            />
+          </div>
+        ) : null}
       </section>
 
-      <ContextPanel
-        vessel={contextVessel}
-        voyage={contextVoyage}
-        portName={`${port?.flag ?? ""} ${portName}`.trim()}
-        portBlurb={portBlurb}
-        darkCount={darkEvents.length}
-        stsCount={encounters.length}
-        loiterCount={loitering.length}
-        riskItems={riskFeedItems}
-        onSelectMmsi={setSelectedMmsi}
-        onOpenDetail={() => setDetailOpen(true)}
-        onClear={() => setSelectedMmsi(null)}
-      />
+      {/* Colonne décision (handoff §6) : jauge congestion + précision ETA +
+          risque à onglets, empilés à droite du globe, sous les abords en
+          transparence. Scroll interne sur lg pour tenir la hauteur du globe. */}
+      <div className="flex min-h-0 flex-col gap-3 p-3 lg:h-full lg:overflow-y-auto lg:border-l lg:border-slate-800">
+        <CongestionGauge
+          anchored={k?.anchored ?? 0}
+          total={k?.totalVessels ?? 0}
+        />
+        <AccuracyPanel data={accuracyResp ?? null} />
+        <ContextPanel
+          vessel={contextVessel}
+          voyage={contextVoyage}
+          portName={`${port?.flag ?? ""} ${portName}`.trim()}
+          portBlurb={portBlurb}
+          darkCount={darkEvents.length}
+          stsCount={encounters.length}
+          loiterCount={loitering.length}
+          riskItems={riskFeedItems}
+          onSelectMmsi={setSelectedMmsi}
+          onOpenDetail={() => setDetailOpen(true)}
+          onClear={() => setSelectedMmsi(null)}
+        />
+      </div>
       </div>
 
       <div
         id="voyages"
-        className="grid flex-none border-t border-slate-800 lg:h-[300px] lg:grid-cols-[1fr_384px]"
+        className="grid flex-none border-t border-slate-800 lg:h-[300px] lg:grid-cols-1"
       >
       <section className="min-h-[300px] lg:min-h-0 lg:overflow-y-auto">
         {showFavoritesPanel ? (
@@ -1791,12 +1815,8 @@ export default function Dashboard() {
           />
         )}
       </section>
-
-      <MixPanel
-        fleet={fleetMixData}
-        cargo={cargoMixData}
-        avgSpeed={k?.avgSpeedChannel ?? null}
-      />
+      {/* MixPanel compact retiré : le mix flotte + cargaisons complet vit dans
+          la ligne analytique (handoff §7), plus lisible. Évite le doublon. */}
       </div>
         </div>
       </div>
@@ -1880,19 +1900,13 @@ export default function Dashboard() {
         </div>
       ) : null}
 
-      {/* Une seule rangée de 4 cartes compactes, alignées sur la hauteur
-          utile du panneau ETA precision (retour user 14/07). */}
-      <section className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <CongestionGauge
-          anchored={k?.anchored ?? 0}
-          total={k?.totalVessels ?? 0}
-        />
-        <FlowChart history={histResp?.history ?? []} />
-        <WeatherWidget data={weatherResp ?? null} />
-        <AccuracyPanel data={accuracyResp ?? null} />
-      </section>
+      {/* La météo a migré en bandeau au bas du panneau globe (handoff §5.9).
+          Congestion + Précision ETA sont dans la colonne décision (§6). */}
 
-      <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+      {/* Ligne analytique (handoff §7) : Flux (1.55fr) · Mix flotte · Cargaisons.
+          items-stretch : les 3 cartes alignent leur bord inférieur. */}
+      <section className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-[1.55fr_1fr_1fr]">
+        <FlowChart history={histResp?.history ?? []} />
         <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
           <div className="mb-2 flex items-baseline justify-between text-xs">
             <span className="uppercase tracking-wider text-slate-400">

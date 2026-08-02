@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans, Space_Grotesk } from "next/font/google";
 import { I18nProvider } from "@/lib/i18n/context";
 import { AuthShell } from "./components/AuthShell";
 import { DemoBanner } from "./components/DemoBanner";
+import { GlobalRail } from "./components/GlobalRail";
 import "./globals.css";
 
 // Design system « la preuve d'abord » (refonte 13/07/2026) : Space Grotesk
@@ -19,6 +20,16 @@ const geistMono = IBM_Plex_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
+});
+
+// « Command deck » (handoff Modernisation dashboard, 26/07/2026) : IBM Plex
+// Sans pour le texte du dashboard uniquement. Chargée ici mais appliquée
+// seulement sous `.pf-deck` (globals.css) via un remap de --font-geist-sans,
+// pour ne pas toucher la landing / les pages publiques (restées Space Grotesk).
+const plexSans = IBM_Plex_Sans({
+  variable: "--font-plex-sans",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
 });
 
 // Search-engine ownership verification. Tokens are env-driven so they can be
@@ -124,9 +135,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${plexSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      {/* lg:pl-[60px] : gouttière gauche pour le rail de navigation global
+          (fixed, lg+). pb-[52px] : place pour la barre d'onglets mobile
+          (fixed bottom, < lg). */}
+      <body className="min-h-full flex flex-col pb-[52px] lg:pb-0 lg:pl-[60px]">
         {/* LCP on the dashboard is a Leaflet basemap tile from CARTO's
             sharded CDN (a–d.basemaps.cartocdn.com). RUM showed the tile as
             the largest element with a slow/variable load. Preconnecting the
@@ -160,6 +174,7 @@ export default function RootLayout({
         />
         <AuthShell>
           <I18nProvider>
+            <GlobalRail />
             <DemoBanner />
             {children}
           </I18nProvider>

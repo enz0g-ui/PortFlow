@@ -16,6 +16,11 @@ interface Weather {
 
 interface Props {
   data: Weather | null;
+  /** "card" (par défaut) ou "strip" = bandeau horizontal translucide posé au
+   *  bas du panneau globe (handoff §5.9). */
+  variant?: "card" | "strip";
+  /** Vitesse moyenne dans le chenal (kn), affichée dans la variante bandeau. */
+  channelSpeed?: number | null;
 }
 
 function tone(windKn: number): "good" | "warn" | "bad" {
@@ -29,9 +34,10 @@ const compass = (deg: number) => {
   return dirs[Math.round(deg / 45) % 8];
 };
 
-export function WeatherWidget({ data }: Props) {
+export function WeatherWidget({ data, variant = "card", channelSpeed }: Props) {
   const { t } = useI18n();
   if (!data) {
+    if (variant === "strip") return null;
     return (
       <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3 text-xs text-slate-500">
         {t("weather.loading")}
@@ -45,6 +51,67 @@ export function WeatherWidget({ data }: Props) {
       : wTone === "warn"
         ? "text-amber-400"
         : "text-rose-400";
+
+  // Bandeau horizontal (handoff §5.9) : VENT · TEMP · HOULE · CHENAL, séparés
+  // par des filets verticaux, sur fond translucide flouté au bas du globe.
+  if (variant === "strip") {
+    return (
+      <div className="pf-wx-strip">
+        <div className="pf-wx-grp">
+          <span className="pf-wx-lbl">{t("weather.wind")}</span>
+          <span className={`pf-wx-val ${windColor}`}>
+            {data.windSpeed.toFixed(0)}
+            <span className="pf-wx-unit">kn</span>
+          </span>
+          <span className="pf-wx-det">
+            {compass(data.windDirection)} ({Math.round(data.windDirection)}°)
+            {data.windGust > data.windSpeed + 2 ? (
+              <span className="ms-1.5 text-amber-400">
+                {t("weather.gust")} {data.windGust.toFixed(0)}
+              </span>
+            ) : null}
+          </span>
+        </div>
+        <span className="pf-wx-sep" />
+        <div className="pf-wx-grp">
+          <span className="pf-wx-lbl">{t("weather.temp")}</span>
+          <span className="pf-wx-val text-slate-100">{data.temperature.toFixed(0)}°</span>
+          <span className="pf-wx-det">
+            ☁ {Math.round(data.cloudCover)}% · ☂ {data.precipitation.toFixed(1)} mm
+          </span>
+        </div>
+        {data.waveHeight != null ? (
+          <>
+            <span className="pf-wx-sep" />
+            <div className="pf-wx-grp">
+              <span className="pf-wx-lbl">{t("weather.wave")}</span>
+              <span className="pf-wx-val text-slate-100">
+                {data.waveHeight.toFixed(1)}
+                <span className="pf-wx-unit">m</span>
+              </span>
+              {data.waveDirection != null ? (
+                <span className="pf-wx-det">{compass(data.waveDirection)}</span>
+              ) : null}
+            </div>
+          </>
+        ) : null}
+        {channelSpeed != null ? (
+          <>
+            <span className="pf-wx-sep" />
+            <div className="pf-wx-grp">
+              <span className="pf-wx-lbl">{t("channel.avgSpeed")}</span>
+              <span className="pf-wx-val text-slate-100">
+                {channelSpeed.toFixed(1)}
+                <span className="pf-wx-unit">kn</span>
+              </span>
+            </div>
+          </>
+        ) : null}
+        <span className="pf-wx-src">{t("weather.opMeteo")}</span>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <div className="mb-2 flex items-baseline justify-between text-xs">

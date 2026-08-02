@@ -17,45 +17,37 @@ import { useI18n } from "@/lib/i18n/context";
 
 export function WorkspaceRail({ portId }: { portId: string }) {
   const { t } = useI18n();
+  // Glyphes = formes géométriques CSS (handoff §1), pas d'icônes.
   const items: Array<{
-    icon: string;
+    glyph: string; // suffixe de classe .pf-rail__glyph--*
     label: string;
     tip: string;
     href: string;
     active?: boolean;
   }> = [
-    { icon: "◉", label: "LIVE", tip: t("ws.rail.live"), href: "#top", active: true },
-    { icon: "◷", label: "ETA", tip: t("ws.rail.eta"), href: `/precision?port=${portId}` },
-    { icon: "⚠", label: "RISK", tip: t("ws.rail.risk"), href: "#risk" },
-    { icon: "⚓", label: "PORTS", tip: t("ws.rail.ports"), href: "/ports" },
-    { icon: "≣", label: "LIST", tip: t("ws.rail.list"), href: "#voyages" },
+    { glyph: "live", label: "LIVE", tip: t("ws.rail.live"), href: "#top", active: true },
+    { glyph: "eta", label: "ETA", tip: t("ws.rail.eta"), href: `/precision?port=${portId}` },
+    { glyph: "risk", label: "RISK", tip: t("ws.rail.risk"), href: "#risk" },
+    { glyph: "ports", label: "PORTS", tip: t("ws.rail.ports"), href: "/ports" },
+    { glyph: "list", label: "LIST", tip: t("ws.rail.list"), href: "#voyages" },
   ];
   return (
-    <div className="hidden w-[52px] flex-none flex-col items-center gap-1 border-r border-slate-800 bg-slate-900/70 py-2.5 lg:flex">
+    <div className="pf-rail hidden h-full w-[60px] flex-none flex-col items-center gap-0.5 py-3.5 lg:flex">
+      <div className="pf-rail__logo" aria-hidden />
       {items.map((it) => (
         <Link
           key={it.label}
           href={it.href}
           title={it.tip}
-          className={`flex h-[42px] w-[42px] flex-col items-center justify-center gap-0.5 rounded-md border ${
-            it.active
-              ? "border-sky-500/40 bg-sky-500/15 text-sky-400"
-              : "border-transparent text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"
-          }`}
+          className={`pf-rail__item${it.active ? " is-active" : ""}`}
         >
-          <span className="text-[13px] leading-none">{it.icon}</span>
-          <span className="font-mono text-[7.5px] font-semibold tracking-[0.06em]">
-            {it.label}
-          </span>
+          <span className={`pf-rail__glyph pf-rail__glyph--${it.glyph}`} aria-hidden />
+          <span className="pf-rail__label">{it.label}</span>
         </Link>
       ))}
-      <Link
-        href="/api-docs"
-        title={t("ws.rail.api")}
-        className="mt-auto flex h-[42px] w-[42px] flex-col items-center justify-center gap-0.5 rounded-md text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"
-      >
-        <span className="text-[13px] leading-none">⚙</span>
-        <span className="font-mono text-[7.5px] font-semibold tracking-[0.06em]">API</span>
+      <Link href="/api-docs" title={t("ws.rail.api")} className="pf-rail__item mt-auto">
+        <span className="pf-rail__glyph pf-rail__glyph--api" aria-hidden />
+        <span className="pf-rail__label">API</span>
       </Link>
     </div>
   );
@@ -149,7 +141,7 @@ export function ContextPanel({
       : null;
 
   return (
-    <div className="flex min-h-0 flex-col border-t border-slate-800 bg-slate-900/40 lg:border-l lg:border-t-0">
+    <div className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-slate-800 bg-slate-900/60">
       <div className="flex flex-none items-center gap-2 border-b border-slate-800 px-4 py-2.5">
         <span className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-500">
           ◈ {t("ws.selectedVessel")}

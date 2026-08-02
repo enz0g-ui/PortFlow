@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import type { Vessel, Zone } from "@/lib/types";
 import { useI18n } from "@/lib/i18n/context";
-import type { SarDetection } from "./MapInner";
+import type { PortCount, SarDetection } from "./MapInner";
 
 const MapInner = dynamic(() => import("./MapInner"), {
   ssr: false,
@@ -28,6 +28,8 @@ interface Props {
   sarDetections?: SarDetection[];
   trails?: Record<string, Array<[number, number, number]>>;
   panTo?: { lat: number; lon: number; tick: number };
+  portCounts?: PortCount[];
+  onSelectPort?: (id: string) => void;
   selectedVesselClass?: import("@/lib/types").VesselClass | null;
   onSelectVesselClass?: (
     cls: import("@/lib/types").VesselClass | null,
