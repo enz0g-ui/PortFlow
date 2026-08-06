@@ -317,10 +317,24 @@ export function loadAllStatic(): StaticRow[] {
 }
 
 const POSITIONS_RETENTION_DAYS = 7;
+// Rétention étendue pour les navires en watchlist (tous propriétaires
+// confondus) : la chronologie fine est la matière première du « dossier
+// navire » — 7 jours ne permettent aucun dossier rétrospectif. 180 jours
+// pour la watchlist seulement : le disque du VPS ne paierait pas 180 jours
+// de flotte entière (~4-5k navires), et le dossier ne concerne que les
+// navires que les clients suivent.
+const WATCHLIST_RETENTION_DAYS = 180;
 
 export function pruneOldPositions(now = Date.now()): number {
   const cutoff = now - POSITIONS_RETENTION_DAYS * 24 * 60 * 60 * 1000;
-  const r = db().raw.prepare("DELETE FROM positions WHERE ts < ?").run(cutoff);
+  const watchlistCutoff = now - WATCHLIST_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  const r = db()
+    .raw.prepare(
+      `DELETE FROM positions
+       WHERE ts < ?
+         AND (ts < ? OR mmsi NOT IN (SELECT DISTINCT mmsi FROM watchlist WHERE mmsi IS NOT NULL))`,
+    )
+    .run(cutoff, watchlistCutoff);
   return Number(r.changes ?? 0);
 }
 
