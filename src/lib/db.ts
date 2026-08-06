@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS static_ships (
   draught REAL,
   length_m REAL,
   cargo_class TEXT,
-  updated_at INTEGER
+  updated_at INTEGER,
+  imo INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS positions (
@@ -153,6 +154,21 @@ function open(): DbHandle {
   const raw = new DatabaseSync(DB_PATH);
   raw.exec(SCHEMA);
 
+  // Évolution in-place : `imo` (dossier navire, 08/2026). PAS une migration
+  // classique — les prepared statements ci-dessous référencent la colonne et
+  // sont préparés AVANT que runMigrations() ne tourne (instrumentation) : une
+  // base existante non migrée ferait échouer open(). D'où l'auto-réparation
+  // gardée par PRAGMA, exécutée avant toute préparation.
+  const staticCols = raw
+    .prepare(`PRAGMA table_info(static_ships)`)
+    .all() as Array<{ name: string }>;
+  if (!staticCols.some((c) => c.name === "imo")) {
+    raw.exec(`ALTER TABLE static_ships ADD COLUMN imo INTEGER`);
+  }
+  // L'index vit ICI (pas dans SCHEMA) : sur une base ancienne, SCHEMA
+  // s'exécute avant l'ALTER ci-dessus — un index sur `imo` y planterait.
+  raw.exec(`CREATE INDEX IF NOT EXISTS idx_static_imo ON static_ships(imo)`);
+
   return {
     raw,
     insertKpi: raw.prepare(
@@ -162,8 +178,8 @@ function open(): DbHandle {
     ),
     upsertStatic: raw.prepare(
       `INSERT INTO static_ships
-       (mmsi, name, callsign, ship_type, destination, draught, length_m, cargo_class, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       (mmsi, name, callsign, ship_type, destination, draught, length_m, cargo_class, updated_at, imo)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(mmsi) DO UPDATE SET
          name = COALESCE(excluded.name, static_ships.name),
          callsign = COALESCE(excluded.callsign, static_ships.callsign),
@@ -172,7 +188,8 @@ function open(): DbHandle {
          draught = COALESCE(excluded.draught, static_ships.draught),
          length_m = COALESCE(excluded.length_m, static_ships.length_m),
          cargo_class = COALESCE(excluded.cargo_class, static_ships.cargo_class),
-         updated_at = excluded.updated_at`,
+         updated_at = excluded.updated_at,
+         imo = COALESCE(excluded.imo, static_ships.imo)`,
     ),
     insertPosition: raw.prepare(
       `INSERT OR IGNORE INTO positions
@@ -228,6 +245,8 @@ export interface StaticRow {
   length_m?: number;
   cargo_class?: string;
   updated_at?: number;
+  /** Numéro OMI (7 chiffres) — identifiant canonique, clé des listes de sanctions. */
+  imo?: number;
 }
 
 export interface VoyageRow {
@@ -275,6 +294,7 @@ export function persistStatic(row: StaticRow) {
     row.length_m ?? null,
     row.cargo_class ?? null,
     row.updated_at ?? Date.now(),
+    row.imo ?? null,
   );
 }
 

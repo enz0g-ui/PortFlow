@@ -49,6 +49,14 @@ function readStatic(payload: any): StaticInfo {
   const name = cleanAisString(payload?.Name);
   const shipType = typeof payload?.Type === "number" ? payload.Type : undefined;
   const destination = cleanAisString(payload?.Destination);
+  // IMO : identifiant canonique (clé des listes de sanctions — UKSL n'a
+  // souvent PAS de MMSI). 0 = « non disponible » dans le message AIS ; on ne
+  // retient qu'une valeur plausible à 7 chiffres. Non transmis en classe B.
+  const rawImo = payload?.ImoNumber;
+  const imo =
+    typeof rawImo === "number" && rawImo >= 1_000_000 && rawImo <= 9_999_999
+      ? rawImo
+      : undefined;
   return {
     name,
     callsign: cleanAisString(payload?.CallSign),
@@ -60,6 +68,7 @@ function readStatic(payload: any): StaticInfo {
         : undefined,
     lengthM,
     cargoClass: classifyCargo(shipType, name, destination),
+    imo,
   };
 }
 
@@ -167,6 +176,7 @@ function handleMessage(raw: WebSocket.RawData) {
           length_m: info.lengthM,
           cargo_class: info.cargoClass,
           updated_at: Date.now(),
+          imo: info.imo,
         });
       } catch (err) {
         console.error("[db] persistStatic failed", err);

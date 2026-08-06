@@ -98,6 +98,7 @@ export async function register() {
         draught: r.draught ?? undefined,
         lengthM: r.length_m ?? undefined,
         cargoClass: isCargoClass(r.cargo_class) ? r.cargo_class : undefined,
+        imo: r.imo ?? undefined,
       })),
     );
     const since = Date.now() - 7 * 24 * 60 * 60 * 1000;

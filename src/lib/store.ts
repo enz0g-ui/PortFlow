@@ -13,6 +13,8 @@ export interface StaticInfo {
   draught?: number;
   lengthM?: number;
   cargoClass?: CargoClass;
+  /** Numéro OMI (7 chiffres) — identifiant canonique du navire. */
+  imo?: number;
 }
 
 interface PortState {
