@@ -338,6 +338,34 @@ export function pruneOldPositions(now = Date.now()): number {
   return Number(r.changes ?? 0);
 }
 
+export interface LastKnownPositionRow {
+  mmsi: number;
+  ts: number;
+  lat: number | null;
+  lon: number | null;
+  sog: number | null;
+  cog: number | null;
+  nav_status: number | null;
+  zone: string | null;
+  state: string | null;
+}
+
+/**
+ * Dernière position connue de chaque navire (fallback « panne de flux » :
+ * mieux vaut une carte datée et honnête qu'une carte vide). Borné par
+ * `since` — la rétention de la table fait le reste.
+ */
+export function loadLastKnownPositions(since: number): LastKnownPositionRow[] {
+  return db()
+    .raw.prepare(
+      `SELECT p.mmsi, p.ts, p.lat, p.lon, p.sog, p.cog, p.nav_status, p.zone, p.state
+       FROM positions p
+       JOIN (SELECT mmsi, MAX(ts) AS mts FROM positions WHERE ts >= ? GROUP BY mmsi) last
+         ON last.mmsi = p.mmsi AND last.mts = p.ts`,
+    )
+    .all(since) as unknown as LastKnownPositionRow[];
+}
+
 export function loadKpisSince(
   portId: string,
   sinceMs: number,
