@@ -121,7 +121,7 @@ export default async function Home({
         <div>
           <div className="mb-5 inline-flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-sky-500">
             <span className="h-1.5 w-1.5 animate-[pf-pulse_2s_infinite] rounded-full bg-emerald-300" />
-            Real-time AIS · 51 ports · 12 chokepoints
+            Real-time AIS · 51 ports · 13 chokepoints
           </div>
           <h1 className="max-w-2xl text-4xl font-semibold leading-[1.08] tracking-[-0.03em] sm:text-[52px]">
             Crew-declared ETAs drift by{" "}
@@ -235,7 +235,7 @@ export default async function Home({
           </p>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              ["Free", "€0", "", "Read-only across all 51 ports & 12 chokepoints."],
+              ["Free", "€0", "", "Read-only across all 51 ports & 13 chokepoints."],
               ["Starter", "€97", "/mo", "Watchlist, alerts and a single seat for one desk."],
               ["Professional", "€149", "/mo", "Sanctions screening, 60-day history, CSV export, API."],
               ["Pro+", "€374", "/mo", "Dark-fleet detection, SAR fusion, priority support."],

@@ -121,7 +121,7 @@ const jsonLd = {
         price: "0",
         priceCurrency: "EUR",
         description:
-          "Free tier — full read-only access to all 51 ports and 12 chokepoints.",
+          "Free tier — full read-only access to all 51 ports and 13 chokepoints.",
       },
     },
   ],

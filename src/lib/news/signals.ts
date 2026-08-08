@@ -178,7 +178,7 @@ export function getNewsSignals(now = Date.now()): NewsSignals {
   const topChoke = chokepoints[0];
   if (topChoke && topChoke.transits7d > 0) {
     punchlines.push(
-      `${topChoke.label}: ${topChoke.transits7d} vessel transits tracked in the last 7 days. We watch 12 chokepoints live. portflow.uk`,
+      `${topChoke.label}: ${topChoke.transits7d} vessel transits tracked in the last 7 days. We watch 13 chokepoints live. portflow.uk`,
     );
   }
 

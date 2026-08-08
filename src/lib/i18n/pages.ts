@@ -25,7 +25,7 @@ const fr: PageMessages = {
   "pricing.tier.free.price": "0 €",
   "pricing.tier.free.period": "",
   "pricing.tier.free.features":
-    "Les 51 ports accessibles dès l'inscription|Dashboard live · ETA prédit · RMSE public · sanctions visuelles|12 chokepoints monitored|7 j d'historique voyages|Visualisation seule — pas de watchlist · pas d'alertes · pas d'API",
+    "Les 51 ports accessibles dès l'inscription|Dashboard live · ETA prédit · RMSE public · sanctions visuelles|13 chokepoints monitored|7 j d'historique voyages|Visualisation seule — pas de watchlist · pas d'alertes · pas d'API",
   "pricing.tier.free.cta": "Démarrer",
   "pricing.cycle.monthly": "Mensuel",
   "pricing.cycle.yearly": "Annuel",
@@ -316,7 +316,7 @@ const fr: PageMessages = {
   "methodology.chokepoints.title":
     "Détection de transit aux chokepoints maritimes",
   "methodology.chokepoints.intro":
-    "12 zones suivies en continu : Suez, Hormuz, Bab el-Mandeb, Malacca, Singapour, Bosphore-Dardanelles, Gibraltar, Skagerrak-Kattegat, Détroit du Pas-de-Calais, Panama, Cap de Bonne-Espérance, Magellan.",
+    "13 zones suivies en continu : Suez, Hormuz, Bab el-Mandeb, Malacca, Singapour, Bosphore-Dardanelles, Gibraltar, Skagerrak-Kattegat, Golfe de Finlande, Détroit du Pas-de-Calais, Panama, Cap de Bonne-Espérance, Magellan.",
   "methodology.chokepoints.detection":
     "Détection point-in-bbox en continu sur une fenêtre glissante de positions AIS.",
   "methodology.chokepoints.dedup":
@@ -673,7 +673,7 @@ const en: PageMessages = {
   "pricing.tier.free.price": "€0",
   "pricing.tier.free.period": "",
   "pricing.tier.free.features":
-    "All 51 ports accessible from day one|Live dashboard · predicted ETA · public RMSE · visual sanctions|12 chokepoints monitored|7-day voyage history|Read-only — no watchlist · no alerts · no API",
+    "All 51 ports accessible from day one|Live dashboard · predicted ETA · public RMSE · visual sanctions|13 chokepoints monitored|7-day voyage history|Read-only — no watchlist · no alerts · no API",
   "pricing.tier.free.cta": "Get started",
   "pricing.cycle.monthly": "Monthly",
   "pricing.cycle.yearly": "Yearly",
@@ -966,7 +966,7 @@ const en: PageMessages = {
   "methodology.chokepoints.title":
     "Maritime chokepoint transit detection",
   "methodology.chokepoints.intro":
-    "12 zones tracked continuously: Suez, Hormuz, Bab el-Mandeb, Malacca, Singapore, Bosphorus-Dardanelles, Gibraltar, Skagerrak-Kattegat, Dover Strait, Panama, Cape of Good Hope, Magellan.",
+    "13 zones tracked continuously: Suez, Hormuz, Bab el-Mandeb, Malacca, Singapore, Bosphorus-Dardanelles, Gibraltar, Skagerrak-Kattegat, Gulf of Finland, Dover Strait, Panama, Cape of Good Hope, Magellan.",
   "methodology.chokepoints.detection":
     "Continuous point-in-bbox detection over a rolling AIS window.",
   "methodology.chokepoints.dedup":
@@ -1511,7 +1511,7 @@ const nl: PageMessages = {
   "methodology.chokepoints.title":
     "Maritieme chokepoint-transit detectie",
   "methodology.chokepoints.intro":
-    "12 zones continu gevolgd: Suez, Hormuz, Bab el-Mandeb, Malacca, Singapore, Bosporus-Dardanellen, Gibraltar, Skagerrak-Kattegat, Nauw van Calais, Panama, Kaap de Goede Hoop, Magellaan.",
+    "13 zones continu gevolgd: Suez, Hormuz, Bab el-Mandeb, Malacca, Singapore, Bosporus-Dardanellen, Gibraltar, Skagerrak-Kattegat, Finse Golf, Nauw van Calais, Panama, Kaap de Goede Hoop, Magellaan.",
   "methodology.chokepoints.detection":
     "Continue point-in-bbox detectie over een glijdend AIS-venster.",
   "methodology.chokepoints.dedup":
@@ -1952,7 +1952,7 @@ const de: PageMessages = {
   "methodology.chokepoints.title":
     "Maritime Chokepoint-Transit-Erkennung",
   "methodology.chokepoints.intro":
-    "12 Zonen kontinuierlich verfolgt: Suez, Hormuz, Bab el-Mandeb, Malakka, Singapur, Bosporus-Dardanellen, Gibraltar, Skagerrak-Kattegat, Straße von Dover, Panama, Kap der Guten Hoffnung, Magellan.",
+    "13 Zonen kontinuierlich verfolgt: Suez, Hormuz, Bab el-Mandeb, Malakka, Singapur, Bosporus-Dardanellen, Gibraltar, Skagerrak-Kattegat, Finnischer Meerbusen, Straße von Dover, Panama, Kap der Guten Hoffnung, Magellan.",
   "methodology.chokepoints.detection":
     "Kontinuierliche Point-in-bbox-Erkennung über ein gleitendes AIS-Fenster.",
   "methodology.chokepoints.dedup":
@@ -2393,7 +2393,7 @@ const es: PageMessages = {
   "methodology.chokepoints.title":
     "Detección de tránsito en chokepoints marítimos",
   "methodology.chokepoints.intro":
-    "12 zonas vigiladas continuamente: Suez, Hormuz, Bab el-Mandeb, Malaca, Singapur, Bósforo-Dardanelos, Gibraltar, Skagerrak-Kattegat, Estrecho de Dover, Panamá, Cabo de Buena Esperanza, Magallanes.",
+    "13 zonas vigiladas continuamente: Suez, Hormuz, Bab el-Mandeb, Malaca, Singapur, Bósforo-Dardanelos, Gibraltar, Skagerrak-Kattegat, Golfo de Finlandia, Estrecho de Dover, Panamá, Cabo de Buena Esperanza, Magallanes.",
   "methodology.chokepoints.detection":
     "Detección point-in-bbox en continuo sobre una ventana deslizante de posiciones AIS.",
   "methodology.chokepoints.dedup":
@@ -2834,7 +2834,7 @@ const ar: PageMessages = {
   "methodology.chokepoints.title":
     "اكتشاف العبور في نقاط الاختناق البحرية",
   "methodology.chokepoints.intro":
-    "12 منطقة مراقَبة باستمرار: السويس، هرمز، باب المندب، ملقا، سنغافورة، البوسفور-الدردنيل، جبل طارق، Skagerrak-Kattegat، مضيق دوفر، بنما، رأس الرجاء الصالح، ماجلان.",
+    "13 منطقة مراقَبة باستمرار: السويس، هرمز، باب المندب، ملقا، سنغافورة، البوسفور-الدردنيل، جبل طارق، Skagerrak-Kattegat، خليج فنلندا، مضيق دوفر، بنما، رأس الرجاء الصالح، ماجلان.",
   "methodology.chokepoints.detection":
     "اكتشاف point-in-bbox باستمرار على نافذة منزلقة من مواقع AIS.",
   "methodology.chokepoints.dedup":
@@ -3067,7 +3067,7 @@ const zh: PageMessages = {
   "methodology.chokepoints.title":
     "海上咽喉点过境检测",
   "methodology.chokepoints.intro":
-    "持续跟踪 12 个区域：苏伊士、霍尔木兹、曼德海峡、马六甲、新加坡、博斯普鲁斯-达达尼尔、直布罗陀、Skagerrak-Kattegat、多佛海峡、巴拿马、好望角、麦哲伦。",
+    "持续跟踪 13 个区域：苏伊士、霍尔木兹、曼德海峡、马六甲、新加坡、博斯普鲁斯-达达尼尔、直布罗陀、Skagerrak-Kattegat、芬兰湾、多佛海峡、巴拿马、好望角、麦哲伦。",
   "methodology.chokepoints.detection":
     "在滑动 AIS 窗口上持续进行 point-in-bbox 检测。",
   "methodology.chokepoints.dedup":
@@ -3301,7 +3301,7 @@ const ja: PageMessages = {
   "methodology.chokepoints.title":
     "海上チョークポイント通過検出",
   "methodology.chokepoints.intro":
-    "12 ゾーンを継続的に追跡：スエズ、ホルムズ、バブ・エル・マンデブ、マラッカ、シンガポール、ボスポラス・ダーダネルス、ジブラルタル、Skagerrak-Kattegat、ドーバー海峡、パナマ、喜望峰、マゼラン。",
+    "13 ゾーンを継続的に追跡：スエズ、ホルムズ、バブ・エル・マンデブ、マラッカ、シンガポール、ボスポラス・ダーダネルス、ジブラルタル、Skagerrak-Kattegat、フィンランド湾、ドーバー海峡、パナマ、喜望峰、マゼラン。",
   "methodology.chokepoints.detection":
     "AIS ポジションのスライディングウィンドウで、point-in-bbox 検出を継続的に実施。",
   "methodology.chokepoints.dedup":

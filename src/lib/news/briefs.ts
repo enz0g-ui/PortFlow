@@ -99,7 +99,7 @@ export const BRIEFS: Brief[] = [
     tags: ["about"],
     event: [
       "The maritime headlines tell you something happened. They rarely tell you what the data underneath is doing — how many vessels are actually waiting, how many transits a strait saw this week, how far off the declared ETAs really are.",
-      "That's the gap these briefs fill. Port Flow already computes those signals live across 51 ports and 12 chokepoints. Each brief takes one of them, ties it to the news, and states the number — nothing inflated, nothing inferred.",
+      "That's the gap these briefs fill. Port Flow already computes those signals live across 51 ports and 13 chokepoints. Each brief takes one of them, ties it to the news, and states the number — nothing inflated, nothing inferred.",
     ],
     dataIntro: "What you'll find in every brief:",
     stats: [

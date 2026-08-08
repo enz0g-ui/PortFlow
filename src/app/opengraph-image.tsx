@@ -68,7 +68,7 @@ export default async function RootOg() {
         >
           {[
             "ETA precision (RMSE published)",
-            "12 chokepoints tracked",
+            "13 chokepoints tracked",
             "Multi-regime sanctions",
             "Webhooks · API · CSV export",
           ].map((label) => (

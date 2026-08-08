@@ -8,7 +8,7 @@ import { DemoButton } from "../components/DemoButton";
 const FAQ: ReadonlyArray<{ q: string; a: string }> = [
   {
     q: "Where does the data come from?",
-    a: "Public AIS (vessel transponders), aggregated live across 51 ports and 12 chokepoints. Our methodology and sources are public — limits included.",
+    a: "Public AIS (vessel transponders), aggregated live across 51 ports and 13 chokepoints. Our methodology and sources are public — limits included.",
   },
   {
     q: "How is this different from MarineTraffic or Kpler?",
