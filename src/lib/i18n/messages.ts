@@ -45,6 +45,10 @@ const fr: Messages = {
     "Flux AIS temporairement dégradé",
   "banner.aisDegraded.body":
     "Notre fournisseur AIS amont (en beta) connaît une interruption. L'historique, le screening sanctions et les autres sources restent opérationnels. Reconnexion automatique en cours.",
+  "banner.aisDegraded.asOfMin":
+    "Dernières positions connues : il y a {m} min.",
+  "banner.aisDegraded.asOfH":
+    "Dernières positions connues : il y a {h} h.",
   "nav.precision": "ETA precision",
   "nav.methodology": "Méthodologie",
   "nav.guide": "Guide",
@@ -333,6 +337,10 @@ const en: Messages = {
     "AIS feed temporarily degraded",
   "banner.aisDegraded.body":
     "Our upstream AIS provider (beta) is experiencing a service interruption. Historical data, sanctions screening and alternative sources remain operational. Reconnection is automatic.",
+  "banner.aisDegraded.asOfMin":
+    "Last known positions: {m} min ago.",
+  "banner.aisDegraded.asOfH":
+    "Last known positions: {h}h ago.",
   "nav.precision": "ETA precision",
   "nav.methodology": "Methodology",
   "nav.guide": "Guide",

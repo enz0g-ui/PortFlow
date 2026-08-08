@@ -1,5 +1,10 @@
-import { db } from "./db";
 import { invalidateSanctionedIndex } from "./uk-sanctions";
+import {
+  finishIngest,
+  recordFailedFetch,
+  sha256Hex,
+  type SanctionedEntry,
+} from "./sanctions-versions";
 
 /**
  * OFAC SDN ingestor — vessel-only filter.
@@ -34,6 +39,9 @@ interface IngestResult {
   inserted: number;
   url: string;
   error?: string;
+  versionId?: number;
+  unchanged?: boolean;
+  delisted?: number;
 }
 
 // Per data_spec.txt, the columns of sdn.csv (no header in the file):
@@ -142,6 +150,9 @@ export async function fetchOfac(): Promise<IngestResult> {
       headers: { "user-agent": "Octopode-PortFlow/1.0 (compliance ingest)" },
     });
     if (!res.ok) {
+      try {
+        recordFailedFetch({ source: "ofac", url }, `HTTP ${res.status}`);
+      } catch { /* le journal ne doit jamais masquer l'erreur d'origine */ }
       return {
         ok: false,
         totalRows: 0,
@@ -151,9 +162,15 @@ export async function fetchOfac(): Promise<IngestResult> {
         error: `HTTP ${res.status}`,
       };
     }
+    const etag = res.headers.get("etag");
+    const lastModified = res.headers.get("last-modified");
     const text = await res.text();
+    const sha256 = sha256Hex(text);
     const grid = parseCsv(text);
     if (grid.length < 1) {
+      try {
+        recordFailedFetch({ source: "ofac", url, etag, lastModified, sha256 }, "empty CSV");
+      } catch { /* idem */ }
       return {
         ok: false,
         totalRows: 0,
@@ -175,61 +192,58 @@ export async function fetchOfac(): Promise<IngestResult> {
       (r) => (r.sdn_type ?? "").trim().toLowerCase() === "vessel",
     );
 
-    const insert = db().raw.prepare(
-      `INSERT OR REPLACE INTO sanctioned_vessels
-         (source, source_id, ship_name, alt_names, imo, mmsi, flag,
-          vessel_type, tonnage, built_year, owner, operator, regime,
-          listed_on, reason, raw_json, ingested_at)
-       VALUES ('ofac', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    );
-
-    let inserted = 0;
-    const now = Date.now();
-    db().raw.exec("BEGIN");
-    try {
-      for (const r of vessels) {
-        const id = clean(r.ent_num);
-        if (!id) continue;
-        const remarks = clean(r.remarks);
-        const imo = extractImo(remarks);
-        const mmsi = extractMmsi(remarks);
-        const tonnage = parseFloatSafe(r.tonnage) ?? parseFloatSafe(r.grt);
-        insert.run(
-          id,
-          clean(r.sdn_name),
-          null,                       // alt_names — fed via alt.csv (future)
-          imo,
-          mmsi,
-          clean(r.vess_flag),
-          clean(r.vess_type),
-          tonnage,
-          null,                       // built_year not in basic SDN feed
-          clean(r.vess_owner),
-          null,                       // operator not in basic SDN feed
-          clean(r.program),           // e.g. "IRAN" "RUSSIA-EO14024" "VENEZUELA"
-          null,                       // listed_on not in basic SDN feed
-          remarks,
-          JSON.stringify(r),
-          now,
-        );
-        inserted++;
-      }
-      db().raw.exec("COMMIT");
-    } catch (err) {
-      db().raw.exec("ROLLBACK");
-      throw err;
+    const entries: SanctionedEntry[] = [];
+    for (const r of vessels) {
+      const id = clean(r.ent_num);
+      if (!id) continue;
+      const remarks = clean(r.remarks);
+      entries.push({
+        sourceId: id,
+        shipName: clean(r.sdn_name),
+        altNames: null,               // alt_names — fed via alt.csv (future)
+        imo: extractImo(remarks),
+        mmsi: extractMmsi(remarks),
+        flag: clean(r.vess_flag),
+        vesselType: clean(r.vess_type),
+        tonnage: parseFloatSafe(r.tonnage) ?? parseFloatSafe(r.grt),
+        builtYear: null,              // built_year not in basic SDN feed
+        owner: clean(r.vess_owner),
+        operator: null,               // operator not in basic SDN feed
+        regime: clean(r.program),     // e.g. "IRAN" "RUSSIA-EO14024" "VENEZUELA"
+        listedOn: null,               // listed_on not in basic SDN feed
+        reason: remarks,
+        rawJson: JSON.stringify(r),
+      });
     }
 
-    invalidateSanctionedIndex();
+    const fin = finishIngest({
+      meta: {
+        source: "ofac",
+        url,
+        etag,
+        lastModified,
+        sha256,
+        byteSize: Buffer.byteLength(text),
+      },
+      entries,
+    });
+
+    if (!fin.unchanged) invalidateSanctionedIndex();
 
     return {
       ok: true,
       totalRows: rows.length,
       vesselRows: vessels.length,
-      inserted,
+      inserted: fin.inserted,
+      versionId: fin.versionId,
+      unchanged: fin.unchanged,
+      delisted: fin.delisted,
       url,
     };
   } catch (err) {
+    try {
+      recordFailedFetch({ source: "ofac", url }, (err as Error).message);
+    } catch { /* idem */ }
     return {
       ok: false,
       totalRows: 0,

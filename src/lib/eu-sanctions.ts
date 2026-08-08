@@ -1,5 +1,10 @@
-import { db } from "./db";
 import { invalidateSanctionedIndex } from "./uk-sanctions";
+import {
+  finishIngest,
+  recordFailedFetch,
+  sha256Hex,
+  type SanctionedEntry,
+} from "./sanctions-versions";
 
 /**
  * EU Consolidated Financial Sanctions List ingestor — vessel-only filter.
@@ -39,6 +44,9 @@ interface IngestResult {
   inserted: number;
   url: string;
   error?: string;
+  versionId?: number;
+  unchanged?: boolean;
+  delisted?: number;
 }
 
 function pick(block: string, tag: string): string | null {
@@ -109,6 +117,9 @@ export async function fetchEu(): Promise<IngestResult> {
       headers: { "user-agent": "Octopode-PortFlow/1.0 (compliance ingest)" },
     });
     if (!res.ok) {
+      try {
+        recordFailedFetch({ source: "eu_consolidated", url }, `HTTP ${res.status}`);
+      } catch { /* le journal ne doit jamais masquer l'erreur d'origine */ }
       return {
         ok: false,
         totalEntities: 0,
@@ -118,7 +129,10 @@ export async function fetchEu(): Promise<IngestResult> {
         error: `HTTP ${res.status}`,
       };
     }
+    const etag = res.headers.get("etag");
+    const lastModified = res.headers.get("last-modified");
     const xml = await res.text();
+    const sha256 = sha256Hex(xml);
 
     const entityBlocks = xml
       .split(/<\/sanctionEntity>/i)
@@ -129,75 +143,70 @@ export async function fetchEu(): Promise<IngestResult> {
       .filter((b): b is string => b !== null);
 
     let vesselEntries = 0;
-    let inserted = 0;
-    const now = Date.now();
+    const entries: SanctionedEntry[] = [];
+    for (const block of entityBlocks) {
+      if (!isVesselEntity(block)) continue;
+      vesselEntries++;
+      const logicalId =
+        pickAttr(block, "sanctionEntity", "logicalId") ??
+        pickAttr(block, "sanctionEntity", "euReferenceNumber") ??
+        // fallback to a hash of the block
+        `eu-${Buffer.from(block).toString("base64").slice(0, 24)}`;
 
-    const insert = db().raw.prepare(
-      `INSERT OR REPLACE INTO sanctioned_vessels
-         (source, source_id, ship_name, alt_names, imo, mmsi, flag,
-          vessel_type, tonnage, built_year, owner, operator, regime,
-          listed_on, reason, raw_json, ingested_at)
-       VALUES ('eu_consolidated', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    );
+      const aliases = pickAllAttr(block, "nameAlias", "wholeName");
+      const primaryName = aliases[0] ?? null;
+      const altNames =
+        aliases.length > 1 ? aliases.slice(1).join(" | ") : null;
 
-    db().raw.exec("BEGIN");
-    try {
-      for (const block of entityBlocks) {
-        if (!isVesselEntity(block)) continue;
-        vesselEntries++;
-        const logicalId =
-          pickAttr(block, "sanctionEntity", "logicalId") ??
-          pickAttr(block, "sanctionEntity", "euReferenceNumber") ??
-          // fallback to a hash of the block
-          `eu-${Buffer.from(block).toString("base64").slice(0, 24)}`;
-
-        const aliases = pickAllAttr(block, "nameAlias", "wholeName");
-        const primaryName = aliases[0] ?? null;
-        const altNames =
-          aliases.length > 1 ? aliases.slice(1).join(" | ") : null;
-        const imo = extractImoFromIdentification(block);
-        const programme = pickAttr(block, "regulation", "programme");
-        const remark = pick(block, "remark");
-        const flag =
+      entries.push({
+        sourceId: logicalId,
+        shipName: primaryName,
+        altNames,
+        imo: extractImoFromIdentification(block),
+        mmsi: null,
+        flag:
           pickAttr(block, "citizenship", "country") ??
-          pickAttr(block, "address", "countryDescription");
-
-        insert.run(
-          logicalId,
-          primaryName,
-          altNames,
-          imo,
-          null,
-          flag,
-          null,
-          null,
-          null,
-          null,
-          null,
-          programme,
-          null,
-          remark,
-          JSON.stringify({ block: block.slice(0, 5000) }),
-          now,
-        );
-        inserted++;
-      }
-      db().raw.exec("COMMIT");
-    } catch (err) {
-      db().raw.exec("ROLLBACK");
-      throw err;
+          pickAttr(block, "address", "countryDescription"),
+        vesselType: null,
+        tonnage: null,
+        builtYear: null,
+        owner: null,
+        operator: null,
+        regime: pickAttr(block, "regulation", "programme"),
+        listedOn: null,
+        reason: pick(block, "remark"),
+        rawJson: JSON.stringify({ block: block.slice(0, 5000) }),
+      });
     }
 
-    invalidateSanctionedIndex();
+    const fin = finishIngest({
+      meta: {
+        source: "eu_consolidated",
+        url,
+        etag,
+        lastModified,
+        sha256,
+        byteSize: Buffer.byteLength(xml),
+      },
+      entries,
+    });
+
+    if (!fin.unchanged) invalidateSanctionedIndex();
 
     return {
       ok: true,
       totalEntities: entityBlocks.length,
       vesselEntries,
-      inserted,
+      inserted: fin.inserted,
+      versionId: fin.versionId,
+      unchanged: fin.unchanged,
+      delisted: fin.delisted,
       url,
     };
   } catch (err) {
+    try {
+      recordFailedFetch({ source: "eu_consolidated", url }, (err as Error).message);
+    } catch { /* idem */ }
     return {
       ok: false,
       totalEntities: 0,

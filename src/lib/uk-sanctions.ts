@@ -1,4 +1,10 @@
 import { db } from "./db";
+import {
+  createStreamHasher,
+  finishIngest,
+  recordFailedFetch,
+  type SanctionedEntry,
+} from "./sanctions-versions";
 
 /**
  * UK Sanctions List (UKSL) ingestor — vessel-only filter.
@@ -58,6 +64,11 @@ interface IngestResult {
   inserted: number;
   url: string;
   error?: string;
+  /** Version journalisée dans sanctions_list_versions (traçabilité dossier). */
+  versionId?: number;
+  /** Vrai si le fichier était identique (sha256) à la dernière version ok. */
+  unchanged?: boolean;
+  delisted?: number;
 }
 
 /**
@@ -107,6 +118,7 @@ function parseCsvLine(line: string): string[] {
  */
 async function* streamCsvLines(
   response: Response,
+  onChunk?: (bytes: Uint8Array) => void,
 ): AsyncGenerator<string, void, unknown> {
   if (!response.body) return;
   const reader = response.body.getReader();
@@ -116,6 +128,9 @@ async function* streamCsvLines(
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
+    // Empreinte SHA-256 du fichier brut, calculée au fil de l'eau (le
+    // fichier fait ~50 Mo — jamais bufferisé entier, cf. OOM historique).
+    onChunk?.(value);
     buffer += decoder.decode(value, { stream: true });
     let lineStart = 0;
     for (let i = 0; i < buffer.length; i++) {
@@ -204,6 +219,9 @@ export async function fetchUksl(): Promise<IngestResult> {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!res.ok) {
+      try {
+        recordFailedFetch({ source: "uksl", url }, `HTTP ${res.status}`);
+      } catch { /* le journal ne doit jamais masquer l'erreur d'origine */ }
       return {
         ok: false,
         totalRows: 0,
@@ -214,6 +232,10 @@ export async function fetchUksl(): Promise<IngestResult> {
         error: `HTTP ${res.status}`,
       };
     }
+
+    const etag = res.headers.get("etag");
+    const lastModified = res.headers.get("last-modified");
+    const hasher = createStreamHasher();
 
     // Stream the body line by line. Memory stays bounded — never load the
     // 50 MB file into a single string. Pre-2026 fix: eager parseCsv would
@@ -231,7 +253,7 @@ export async function fetchUksl(): Promise<IngestResult> {
         .reduce<number>((a, b) => a + b, 0);
 
     let lineIdx = 0;
-    for await (const line of streamCsvLines(res)) {
+    for await (const line of streamCsvLines(res, (bytes) => hasher.update(bytes))) {
       lineIdx++;
       if (!line || line.trim() === "") continue;
 
@@ -305,6 +327,9 @@ export async function fetchUksl(): Promise<IngestResult> {
     }
 
     if (!headers) {
+      try {
+        recordFailedFetch({ source: "uksl", url, etag, lastModified }, "no header row found");
+      } catch { /* idem */ }
       return {
         ok: false,
         totalRows: 0,
@@ -316,67 +341,69 @@ export async function fetchUksl(): Promise<IngestResult> {
       };
     }
 
-    const insert = db().raw.prepare(
-      `INSERT OR REPLACE INTO sanctioned_vessels
-         (source, source_id, ship_name, alt_names, imo, mmsi, flag,
-          vessel_type, tonnage, built_year, owner, operator, regime,
-          listed_on, reason, raw_json, ingested_at)
-       VALUES ('uksl', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    );
+    const entries: SanctionedEntry[] = [];
+    for (const [id, r] of byId) {
+      const aliases = aliasesById.get(id) ?? new Set<string>();
+      const primaryName = pickString(r["Name 6"], r["Name 1"], r["Name"]);
+      if (primaryName) aliases.delete(primaryName);
 
-    let inserted = 0;
-    const now = Date.now();
-    db().raw.exec("BEGIN");
-    try {
-      for (const [id, r] of byId) {
-        const aliases = aliasesById.get(id) ?? new Set<string>();
-        const primaryName = pickString(r["Name 6"], r["Name 1"], r["Name"]);
-        if (primaryName) aliases.delete(primaryName);
-
-        const imo = parseImo(r["IMO number"] ?? r["IMO Number"]);
-        const tonnage =
-          parseFloatSafe(r["Tonnage of ship"]) ??
-          parseFloatSafe(r["Tonnage"]) ??
-          parseFloatSafe(r["Gross Registered Tonnage"]);
-        insert.run(
+      const imo = parseImo(r["IMO number"] ?? r["IMO Number"]);
+      const tonnage =
+        parseFloatSafe(r["Tonnage of ship"]) ??
+        parseFloatSafe(r["Tonnage"]) ??
+        parseFloatSafe(r["Gross Registered Tonnage"]);
+      entries.push({
+        sourceId: id,
+        shipName: primaryName ?? null,
+        altNames: aliases.size > 0 ? Array.from(aliases).join(" | ") : null,
+        imo,
+        mmsi: null, // MMSI rarely in UKSL
+        flag: pickString(r["Current believed flag of ship"], r["Vessel Flag"]) ?? null,
+        vesselType: pickString(r["Type of ship"], r["Vessel Type"]) ?? null,
+        tonnage,
+        builtYear: parseIntSafe(r["Year built"] ?? r["Build Year"]),
+        owner: pickString(r["Vessel Owner"]) ?? null,
+        operator: pickString(r["Vessel Operator"]) ?? null,
+        regime: pickString(r["Regime Name"], r["Regime"]) ?? null,
+        listedOn: parseDate(r["Listed On"] ?? r["Last Updated"]),
+        reason:
+          pickString(r["UK Statement of Reasons"], r["Statement of Reasons"], r["Other Information"]) ??
+          null,
+        // Don't dump the full row to raw_json — it can be very large
+        // since UKSL has ~70 columns. Keep a compact projection.
+        rawJson: JSON.stringify({
           id,
-          primaryName,
-          aliases.size > 0 ? Array.from(aliases).join(" | ") : null,
+          name: primaryName,
           imo,
-          null, // MMSI rarely in UKSL
-          pickString(r["Current believed flag of ship"], r["Vessel Flag"]),
-          pickString(r["Type of ship"], r["Vessel Type"]),
-          tonnage,
-          parseIntSafe(r["Year built"] ?? r["Build Year"]),
-          pickString(r["Vessel Owner"]),
-          pickString(r["Vessel Operator"]),
-          pickString(r["Regime Name"], r["Regime"]),
-          parseDate(r["Listed On"] ?? r["Last Updated"]),
-          pickString(r["UK Statement of Reasons"], r["Statement of Reasons"], r["Other Information"]),
-          // Don't dump the full row to raw_json — it can be very large
-          // since UKSL has ~70 columns. Keep a compact projection.
-          JSON.stringify({
-            id,
-            name: primaryName,
-            imo,
-            type: r["Type of ship"],
-            flag: r["Current believed flag of ship"],
-            regime: r["Regime Name"],
-          }),
-          now,
-        );
-        inserted++;
-      }
-      db().raw.exec("COMMIT");
-    } catch (err) {
-      db().raw.exec("ROLLBACK");
-      throw err;
+          type: r["Type of ship"],
+          flag: r["Current believed flag of ship"],
+          regime: r["Regime Name"],
+        }),
+      });
     }
 
-    invalidateSanctionedIndex();
+    // Diff versionné : journal sanctions_list_versions + upsert préservant
+    // first_seen_at + délistage des disparus (cf. sanctions-versions.ts).
+    const fin = finishIngest({
+      meta: {
+        source: "uksl",
+        url,
+        etag,
+        lastModified,
+        sha256: hasher.digestHex(),
+        byteSize: hasher.bytes,
+      },
+      entries,
+    });
+    const inserted = fin.inserted;
+
+    if (!fin.unchanged) invalidateSanctionedIndex();
 
     return {
       ok: true,
+      versionId: fin.versionId,
+      unchanged: fin.unchanged,
+      delisted: fin.delisted,
       totalRows,
       shipRows,
       uniqueShips: byId.size,
@@ -384,6 +411,9 @@ export async function fetchUksl(): Promise<IngestResult> {
       url,
     };
   } catch (err) {
+    try {
+      recordFailedFetch({ source: "uksl", url }, (err as Error).message);
+    } catch { /* le journal ne doit jamais masquer l'erreur d'origine */ }
     return {
       ok: false,
       totalRows: 0,
@@ -418,7 +448,8 @@ function loadSanctionedIndex(): { mmsis: Set<number>; imos: Set<number> } {
   const rows = db()
     .raw.prepare(
       `SELECT imo, mmsi FROM sanctioned_vessels
-       WHERE imo IS NOT NULL OR mmsi IS NOT NULL`,
+       WHERE (imo IS NOT NULL OR mmsi IS NOT NULL)
+         AND delisted_at IS NULL`,
     )
     .all() as Array<{ imo: number | null; mmsi: number | null }>;
   const mmsis = new Set<number>();
@@ -496,7 +527,7 @@ export function findSanctionsForVessel(opts: {
       `SELECT id, source, source_id, ship_name, alt_names, imo, mmsi, flag,
               regime, listed_on, reason
        FROM sanctioned_vessels
-       WHERE ${where.join(" OR ")}`,
+       WHERE (${where.join(" OR ")}) AND delisted_at IS NULL`,
     )
     .all(...params) as unknown as Array<{
     id: number;
@@ -531,7 +562,7 @@ export function listSanctionedVessels(opts: {
   source?: string;
   limit?: number;
 }): SanctionedVessel[] {
-  const where: string[] = [];
+  const where: string[] = ["delisted_at IS NULL"];
   const params: (string | number)[] = [];
   if (opts.regime) {
     where.push("regime = ?");

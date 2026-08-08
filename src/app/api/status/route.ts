@@ -1,13 +1,35 @@
 import { meta } from "@/lib/store";
+import { db } from "@/lib/db";
 import { getScannerStatus } from "@/lib/sar/scanner";
 import { sanctionsStatus } from "@/lib/sanctions";
 import { PORTS } from "@/lib/ports";
 
 export const dynamic = "force-dynamic";
 
+// Après un reboot en pleine panne de flux, lastMessageAt est null alors que
+// la base connaît l'âge réel des données — c'est lui que le bandeau visiteur
+// doit afficher. MAX(ts) est instantané (borne d'index), cache 60 s.
+let _lastStoredTs: { at: number; ts: number | null } | null = null;
+function lastStoredPositionTs(): number | null {
+  if (!_lastStoredTs || Date.now() - _lastStoredTs.at > 60_000) {
+    let ts: number | null = null;
+    try {
+      const row = db()
+        .raw.prepare(`SELECT MAX(ts) AS ts FROM positions`)
+        .get() as { ts: number | null } | undefined;
+      ts = row?.ts ?? null;
+    } catch {
+      /* base indisponible — le statut reste null */
+    }
+    _lastStoredTs = { at: Date.now(), ts };
+  }
+  return _lastStoredTs.ts;
+}
+
 export async function GET() {
   const ais = meta.status();
-  const aisAge = ais.lastMessageAt ? Date.now() - ais.lastMessageAt : null;
+  const lastData = ais.lastMessageAt ?? lastStoredPositionTs();
+  const aisAge = lastData ? Date.now() - lastData : null;
   const aisHealthy = ais.started && (aisAge ?? Infinity) < 60_000;
 
   const sar = getScannerStatus();

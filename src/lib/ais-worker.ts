@@ -23,7 +23,12 @@ import { observeVoyage } from "./voyages";
 
 const STREAM_URL = "wss://stream.aisstream.io/v0/stream";
 const MIN_RECONNECT_MS = 1_000;
-const MAX_RECONNECT_MS = 60_000;
+// Plafond long : pendant la panne AISStream du 05-08/08/2026, le plafond de
+// 60 s combiné au reset-sur-open a fait marteler le serveur toutes les ~90 s
+// pendant 3 jours → HTTP 429 à l'upgrade WebSocket (mise au piquet).
+const MAX_RECONNECT_MS = 10 * 60_000;
+// Un refus 429 explicite vaut au minimum cette attente avant de réessayer.
+const RATE_LIMIT_FLOOR_MS = 5 * 60_000;
 
 /**
  * AIS strings (Name, CallSign, Destination) are encoded in 6-bit ASCII per
@@ -49,6 +54,14 @@ function readStatic(payload: any): StaticInfo {
   const name = cleanAisString(payload?.Name);
   const shipType = typeof payload?.Type === "number" ? payload.Type : undefined;
   const destination = cleanAisString(payload?.Destination);
+  // IMO : identifiant canonique (clé des listes de sanctions — UKSL n'a
+  // souvent PAS de MMSI). 0 = « non disponible » dans le message AIS ; on ne
+  // retient qu'une valeur plausible à 7 chiffres. Non transmis en classe B.
+  const rawImo = payload?.ImoNumber;
+  const imo =
+    typeof rawImo === "number" && rawImo >= 1_000_000 && rawImo <= 9_999_999
+      ? rawImo
+      : undefined;
   return {
     name,
     callsign: cleanAisString(payload?.CallSign),
@@ -60,6 +73,7 @@ function readStatic(payload: any): StaticInfo {
         : undefined,
     lengthM,
     cargoClass: classifyCargo(shipType, name, destination),
+    imo,
   };
 }
 
@@ -139,17 +153,33 @@ function shouldWriteChokepointPosition(mmsi: number, ts: number): boolean {
   return true;
 }
 
-function handleMessage(raw: WebSocket.RawData) {
+let lastUnknownPayloadLogAt = 0;
+
+/** Retourne true si le message était une vraie donnée AIS (MMSI présent). */
+function handleMessage(raw: WebSocket.RawData): boolean {
   let msg: any;
   try {
     msg = JSON.parse(raw.toString());
   } catch {
-    return;
+    return false;
   }
-  meta.recordMessage();
 
   const mmsi = msg?.MetaData?.MMSI;
-  if (typeof mmsi !== "number") return;
+  if (typeof mmsi !== "number") {
+    // AISStream signale « clé invalide », quota, etc. par un payload SANS
+    // MetaData — l'avaler sans trace rend toute panne muette. Loggué
+    // throttlé, et PAS compté comme trafic : le watchdog mesure la
+    // fraîcheur des données, pas la présence de messages d'erreur.
+    const now = Date.now();
+    if (now - lastUnknownPayloadLogAt > 60_000) {
+      lastUnknownPayloadLogAt = now;
+      console.warn(
+        `[ais] payload sans MMSI (erreur serveur ?): ${raw.toString().slice(0, 300)}`,
+      );
+    }
+    return false;
+  }
+  meta.recordMessage();
 
   if (msg.MessageType === "ShipStaticData") {
     const payload = msg.Message?.ShipStaticData;
@@ -167,6 +197,7 @@ function handleMessage(raw: WebSocket.RawData) {
           length_m: info.lengthM,
           cargo_class: info.cargoClass,
           updated_at: Date.now(),
+          imo: info.imo,
         });
       } catch (err) {
         console.error("[db] persistStatic failed", err);
@@ -182,17 +213,17 @@ function handleMessage(raw: WebSocket.RawData) {
         }
       }
     }
-    return;
+    return true;
   }
 
-  if (msg.MessageType !== "PositionReport") return;
+  if (msg.MessageType !== "PositionReport") return true;
 
   const pr = msg.Message?.PositionReport;
-  if (!pr) return;
+  if (!pr) return true;
 
   const lat = msg.MetaData?.latitude ?? pr.Latitude;
   const lon = msg.MetaData?.longitude ?? pr.Longitude;
-  if (typeof lat !== "number" || typeof lon !== "number") return;
+  if (typeof lat !== "number" || typeof lon !== "number") return true;
 
   const port = findPortByPosition(lat, lon);
   if (!port) {
@@ -202,9 +233,9 @@ function handleMessage(raw: WebSocket.RawData) {
     // the transit. Skip all the port-specific bookkeeping (zones,
     // anchor transitions, voyages, KPIs).
     const cp = findChokepoint(lat, lon);
-    if (!cp) return;
+    if (!cp) return true;
     const ts = Date.now();
-    if (!shouldWriteChokepointPosition(mmsi, ts)) return;
+    if (!shouldWriteChokepointPosition(mmsi, ts)) return true;
     const sogRaw = typeof pr.Sog === "number" ? pr.Sog : 0;
     const sog = sogRaw >= 0 && sogRaw < 60 ? sogRaw : 0;
     const cog = typeof pr.Cog === "number" && pr.Cog < 360 ? pr.Cog : 0;
@@ -223,7 +254,7 @@ function handleMessage(raw: WebSocket.RawData) {
     } catch (err) {
       console.error("[db] chokepoint persistPosition failed", err);
     }
-    return;
+    return true;
   }
 
   const sogRaw = typeof pr.Sog === "number" ? pr.Sog : 0;
@@ -288,6 +319,7 @@ function handleMessage(raw: WebSocket.RawData) {
   } catch (err) {
     console.error("[voyage] observe failed", err);
   }
+  return true;
 }
 
 // Watchdog: AISStream sends 50-300 msg/s on a global subscription, so
@@ -307,6 +339,7 @@ export function startAisWorker(apiKey: string) {
     const ws = new WebSocket(STREAM_URL);
     let watchdog: NodeJS.Timeout | undefined;
     let closedByUs = false;
+    let rateLimited = false;
 
     const armWatchdog = () => {
       if (watchdog) clearTimeout(watchdog);
@@ -327,7 +360,9 @@ export function startAisWorker(apiKey: string) {
 
     ws.on("open", () => {
       meta.recordConnection();
-      reconnectMs = MIN_RECONNECT_MS;
+      // NE PAS réarmer le backoff ici : une connexion « ouverte » peut
+      // rester muette (panne amont). Le reset se fait à la réception de
+      // vraies données, dans le handler message ci-dessous.
       const portBboxes: Array<[[number, number], [number, number]]> = PORTS.map(
         (p) => [
           [p.bbox[0], p.bbox[1]],
@@ -352,15 +387,22 @@ export function startAisWorker(apiKey: string) {
       armWatchdog();
     });
 
-    ws.on("message", handleMessage);
+    ws.on("message", (data) => {
+      if (handleMessage(data) && reconnectMs !== MIN_RECONNECT_MS) {
+        reconnectMs = MIN_RECONNECT_MS;
+      }
+    });
 
     ws.on("error", (err) => {
       console.error("[ais] error", err.message);
+      // « Unexpected server response: 429 » à l'upgrade WebSocket.
+      if (err.message.includes("429")) rateLimited = true;
     });
 
     ws.on("close", (code, reason) => {
       if (watchdog) clearTimeout(watchdog);
       const trigger = closedByUs ? "watchdog" : "upstream";
+      if (rateLimited) reconnectMs = Math.max(reconnectMs, RATE_LIMIT_FLOOR_MS);
       console.warn(
         `[ais] closed code=${code} reason=${reason?.toString() || "n/a"} trigger=${trigger}; reconnecting in ${reconnectMs}ms`,
       );
@@ -370,4 +412,70 @@ export function startAisWorker(apiKey: string) {
   };
 
   connect();
+  startFeedAlerts();
+}
+
+// ---------------------------------------------------------------------------
+// Alerte « flux muet » — le propriétaire doit savoir AVANT les visiteurs.
+// Push via ntfy.sh (topic dans NTFY_TOPIC ; non configuré = no-op).
+// Anti-spam : 1 alerte/heure max, + notification de rétablissement.
+
+const ALERT_MUTE_MS = 15 * 60_000;
+const ALERT_RESEND_MS = 60 * 60_000;
+
+let _alertsStarted = false;
+
+function startFeedAlerts() {
+  if (_alertsStarted) return;
+  _alertsStarted = true;
+  const topic = process.env.NTFY_TOPIC;
+  if (!topic) {
+    console.log("[ais-alert] NTFY_TOPIC non défini — alertes téléphone désactivées");
+    return;
+  }
+  const bootAt = Date.now();
+  let lastAlertAt = 0;
+  let alerting = false;
+
+  const push = async (title: string, body: string, priority: string, tags: string) => {
+    try {
+      await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
+        method: "POST",
+        body,
+        // En-têtes ASCII uniquement (les titres UTF-8 passent mal en header).
+        headers: { Title: title, Priority: priority, Tags: tags },
+        signal: AbortSignal.timeout(10_000),
+      });
+    } catch (err) {
+      console.error("[ais-alert] envoi ntfy échoué:", (err as Error).message);
+    }
+  };
+
+  setInterval(() => {
+    const last = meta.status().lastMessageAt ?? bootAt;
+    const ageMs = Date.now() - last;
+    if (ageMs > ALERT_MUTE_MS) {
+      if (Date.now() - lastAlertAt > ALERT_RESEND_MS) {
+        lastAlertAt = Date.now();
+        alerting = true;
+        const min = Math.round(ageMs / 60_000);
+        console.warn(`[ais-alert] flux muet depuis ${min} min — push ntfy`);
+        void push(
+          "Port Flow: AIS feed DOWN",
+          `Aucun message AIS depuis ${min} min. Verifier aisstream.io et les logs pm2.`,
+          "high",
+          "warning,anchor",
+        );
+      }
+    } else if (alerting && ageMs < 2 * 60_000) {
+      alerting = false;
+      lastAlertAt = 0;
+      void push(
+        "Port Flow: AIS feed OK",
+        "Le flux AIS est retabli, les positions arrivent de nouveau.",
+        "default",
+        "white_check_mark",
+      );
+    }
+  }, 60_000).unref();
 }

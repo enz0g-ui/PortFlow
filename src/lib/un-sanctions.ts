@@ -1,5 +1,10 @@
-import { db } from "./db";
 import { invalidateSanctionedIndex } from "./uk-sanctions";
+import {
+  finishIngest,
+  recordFailedFetch,
+  sha256Hex,
+  type SanctionedEntry,
+} from "./sanctions-versions";
 
 /**
  * UN Security Council Consolidated Sanctions List ingestor — vessel filter.
@@ -39,6 +44,9 @@ interface IngestResult {
   inserted: number;
   url: string;
   error?: string;
+  versionId?: number;
+  unchanged?: boolean;
+  delisted?: number;
 }
 
 /**
@@ -84,6 +92,9 @@ export async function fetchUnSc(): Promise<IngestResult> {
       headers: { "user-agent": "Octopode-PortFlow/1.0 (compliance ingest)" },
     });
     if (!res.ok) {
+      try {
+        recordFailedFetch({ source: "un_sc", url }, `HTTP ${res.status}`);
+      } catch { /* le journal ne doit jamais masquer l'erreur d'origine */ }
       return {
         ok: false,
         totalEntities: 0,
@@ -93,7 +104,10 @@ export async function fetchUnSc(): Promise<IngestResult> {
         error: `HTTP ${res.status}`,
       };
     }
+    const etag = res.headers.get("etag");
+    const lastModified = res.headers.get("last-modified");
     const xml = await res.text();
+    const sha256 = sha256Hex(xml);
 
     // Split on </ENTITY> — every block before is one ENTITY record.
     // Vessels can also appear in the INDIVIDUALS section occasionally
@@ -112,67 +126,67 @@ export async function fetchUnSc(): Promise<IngestResult> {
       .filter((b): b is string => b !== null);
 
     let vesselEntries = 0;
-    let inserted = 0;
-    const now = Date.now();
-
-    const insert = db().raw.prepare(
-      `INSERT OR REPLACE INTO sanctioned_vessels
-         (source, source_id, ship_name, alt_names, imo, mmsi, flag,
-          vessel_type, tonnage, built_year, owner, operator, regime,
-          listed_on, reason, raw_json, ingested_at)
-       VALUES ('un_sc', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    );
-
-    db().raw.exec("BEGIN");
-    try {
-      for (const block of entityBlocks) {
-        const dataid = pick(block, "DATAID");
-        if (!dataid) continue;
-        const comments1 = pick(block, "COMMENTS1");
-        const c1Lower = (comments1 ?? "").toLowerCase();
-        const looksLikeVessel =
-          /\b(vessel|tanker|cargo ship|m\/?v |m\/?t |imo number)\b/.test(
-            c1Lower,
-          );
-        const imo = extractImo(comments1);
-        if (!looksLikeVessel && imo === null) continue;
-        vesselEntries++;
-        insert.run(
-          dataid,
-          pick(block, "FIRST_NAME") ?? pick(block, "NAME_ORIGINAL_SCRIPT"),
-          null,
-          imo,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          pick(block, "UN_LIST_TYPE"),
-          parseDate(pick(block, "LISTED_ON")),
-          comments1,
-          JSON.stringify({ block: block.slice(0, 5000) }), // truncate for safety
-          now,
+    const entries: SanctionedEntry[] = [];
+    for (const block of entityBlocks) {
+      const dataid = pick(block, "DATAID");
+      if (!dataid) continue;
+      const comments1 = pick(block, "COMMENTS1");
+      const c1Lower = (comments1 ?? "").toLowerCase();
+      const looksLikeVessel =
+        /\b(vessel|tanker|cargo ship|m\/?v |m\/?t |imo number)\b/.test(
+          c1Lower,
         );
-        inserted++;
-      }
-      db().raw.exec("COMMIT");
-    } catch (err) {
-      db().raw.exec("ROLLBACK");
-      throw err;
+      const imo = extractImo(comments1);
+      if (!looksLikeVessel && imo === null) continue;
+      vesselEntries++;
+      entries.push({
+        sourceId: dataid,
+        shipName:
+          pick(block, "FIRST_NAME") ?? pick(block, "NAME_ORIGINAL_SCRIPT"),
+        altNames: null,
+        imo,
+        mmsi: null,
+        flag: null,
+        vesselType: null,
+        tonnage: null,
+        builtYear: null,
+        owner: null,
+        operator: null,
+        regime: pick(block, "UN_LIST_TYPE"),
+        listedOn: parseDate(pick(block, "LISTED_ON")),
+        reason: comments1,
+        rawJson: JSON.stringify({ block: block.slice(0, 5000) }), // truncate for safety
+      });
     }
 
-    invalidateSanctionedIndex();
+    const fin = finishIngest({
+      meta: {
+        source: "un_sc",
+        url,
+        etag,
+        lastModified,
+        sha256,
+        byteSize: Buffer.byteLength(xml),
+      },
+      entries,
+    });
+
+    if (!fin.unchanged) invalidateSanctionedIndex();
 
     return {
       ok: true,
       totalEntities: entityBlocks.length,
       vesselEntries,
-      inserted,
+      inserted: fin.inserted,
+      versionId: fin.versionId,
+      unchanged: fin.unchanged,
+      delisted: fin.delisted,
       url,
     };
   } catch (err) {
+    try {
+      recordFailedFetch({ source: "un_sc", url }, (err as Error).message);
+    } catch { /* idem */ }
     return {
       ok: false,
       totalEntities: 0,
