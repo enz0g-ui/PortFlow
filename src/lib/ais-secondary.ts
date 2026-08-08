@@ -40,25 +40,40 @@ export interface SecondarySourceStatus {
   lastError: string | null;
 }
 
-const _status: Record<"barentswatch" | "digitraffic", SecondarySourceStatus> = {
-  barentswatch: {
-    configured: false,
-    lastPollAt: null,
-    lastCount: null,
-    lastIngested: null,
-    lastError: null,
-  },
-  digitraffic: {
-    configured: true,
-    lastPollAt: null,
-    lastCount: null,
-    lastIngested: null,
-    lastError: null,
-  },
+// Singleton via globalThis (même pattern que db.ts) : en Next.js, les routes
+// API et l'instrumentation peuvent charger des instances séparées de ce
+// module — un état module-local n'y serait pas partagé et /api/status
+// afficherait des null alors que les pollers tournent.
+const STATUS_KEY = Symbol.for("portflow.aisSecondaryStatus");
+type WithStatus = typeof globalThis & {
+  [STATUS_KEY]?: Record<"barentswatch" | "digitraffic", SecondarySourceStatus>;
 };
 
+function statusStore() {
+  const g = globalThis as WithStatus;
+  if (!g[STATUS_KEY]) {
+    g[STATUS_KEY] = {
+      barentswatch: {
+        configured: false,
+        lastPollAt: null,
+        lastCount: null,
+        lastIngested: null,
+        lastError: null,
+      },
+      digitraffic: {
+        configured: true,
+        lastPollAt: null,
+        lastCount: null,
+        lastIngested: null,
+        lastError: null,
+      },
+    };
+  }
+  return g[STATUS_KEY];
+}
+
 export function secondarySourcesStatus() {
-  return _status;
+  return statusStore();
 }
 
 // ---------------------------------------------------------------------------
@@ -111,8 +126,10 @@ interface BwPosition {
   msgtime?: string | null;
 }
 
+let _bwFirstOk = false;
+
 async function pollBarentswatch(clientId: string, clientSecret: string) {
-  const s = _status.barentswatch;
+  const s = statusStore().barentswatch;
   s.lastPollAt = Date.now();
   try {
     const token = await barentswatchToken(clientId, clientSecret);
@@ -148,6 +165,12 @@ async function pollBarentswatch(clientId: string, clientSecret: string) {
     }
     s.lastIngested = ingested;
     s.lastError = null;
+    if (!_bwFirstOk) {
+      _bwFirstOk = true;
+      console.log(
+        `[ais-bw] premier poll OK : ${rows.length} positions, ${ingested} dans nos zones`,
+      );
+    }
   } catch (err) {
     s.lastError = (err as Error).message;
     console.error("[ais-bw] poll failed:", s.lastError);
@@ -172,8 +195,10 @@ interface DtFeature {
   };
 }
 
+let _dtFirstOk = false;
+
 async function pollDigitraffic() {
-  const s = _status.digitraffic;
+  const s = statusStore().digitraffic;
   s.lastPollAt = Date.now();
   try {
     const res = await fetch(DT_LOCATIONS_URL, {
@@ -213,6 +238,12 @@ async function pollDigitraffic() {
     }
     s.lastIngested = ingested;
     s.lastError = null;
+    if (!_dtFirstOk) {
+      _dtFirstOk = true;
+      console.log(
+        `[ais-dt] premier poll OK : ${feats.length} positions, ${ingested} dans nos zones`,
+      );
+    }
   } catch (err) {
     s.lastError = (err as Error).message;
     console.error("[ais-dt] poll failed:", s.lastError);
@@ -229,9 +260,9 @@ export function startSecondarySources() {
 
   const bwId = process.env.BARENTSWATCH_CLIENT_ID;
   const bwSecret = process.env.BARENTSWATCH_CLIENT_SECRET;
-  _status.barentswatch.configured = Boolean(bwId && bwSecret);
+  statusStore().barentswatch.configured = Boolean(bwId && bwSecret);
 
-  if (_status.barentswatch.configured) {
+  if (statusStore().barentswatch.configured) {
     console.log("[ais-bw] BarentsWatch secondary source started (60s poll)");
     setInterval(() => {
       void pollBarentswatch(bwId!, bwSecret!);
@@ -264,5 +295,7 @@ export function secondaryActive(): boolean {
     s.lastPollAt != null &&
     Date.now() - s.lastPollAt < 5 * 60_000 &&
     (s.lastIngested ?? 0) > 0;
-  return recent(_status.barentswatch) || recent(_status.digitraffic);
+  return (
+    recent(statusStore().barentswatch) || recent(statusStore().digitraffic)
+  );
 }
