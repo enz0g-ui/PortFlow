@@ -267,7 +267,17 @@ export interface NormalizedPosition {
 // déjà en mémoire : le primaire (temps réel) garde la priorité.
 const SECONDARY_FRESHNESS_MS = 5_000;
 
-export function processPosition(p: NormalizedPosition) {
+/**
+ * Verdict d'ingestion — permet aux pollers secondaires de compter ce qui a
+ * réellement atterri dans nos zones (« dropped » = hors ports/chokepoints).
+ */
+export type PositionOutcome =
+  | "port"
+  | "chokepoint"
+  | "dropped"
+  | "stale-skip";
+
+export function processPosition(p: NormalizedPosition): PositionOutcome {
   const { mmsi, lat, lon } = p;
   const ts = p.ts ?? Date.now();
   const sogRaw = p.sog ?? 0;
@@ -285,8 +295,8 @@ export function processPosition(p: NormalizedPosition) {
     // the transit. Skip all the port-specific bookkeeping (zones,
     // anchor transitions, voyages, KPIs).
     const cp = findChokepoint(lat, lon);
-    if (!cp) return;
-    if (!shouldWriteChokepointPosition(mmsi, ts)) return;
+    if (!cp) return "dropped";
+    if (!shouldWriteChokepointPosition(mmsi, ts)) return "chokepoint";
     try {
       db().insertPosition.run(
         mmsi,
@@ -303,12 +313,14 @@ export function processPosition(p: NormalizedPosition) {
     } catch (err) {
       console.error("[db] chokepoint persistPosition failed", err);
     }
-    return;
+    return "chokepoint";
   }
 
   if (p.source) {
     const existing = getVessel(port.id, mmsi);
-    if (existing && existing.lastUpdate >= ts - SECONDARY_FRESHNESS_MS) return;
+    if (existing && existing.lastUpdate >= ts - SECONDARY_FRESHNESS_MS) {
+      return "stale-skip";
+    }
   }
 
   const stat = getStatic(mmsi) ?? {};
@@ -362,6 +374,7 @@ export function processPosition(p: NormalizedPosition) {
   } catch (err) {
     console.error("[voyage] observe failed", err);
   }
+  return "port";
 }
 
 // Watchdog: AISStream sends 50-300 msg/s on a global subscription, so

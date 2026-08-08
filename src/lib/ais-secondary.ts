@@ -149,7 +149,7 @@ async function pollBarentswatch(clientId: string, clientSecret: string) {
       if (typeof r.latitude !== "number" || typeof r.longitude !== "number")
         continue;
       const ts = r.msgtime ? Date.parse(r.msgtime) : NaN;
-      processPosition({
+      const outcome = processPosition({
         mmsi: r.mmsi,
         lat: r.latitude,
         lon: r.longitude,
@@ -161,7 +161,7 @@ async function pollBarentswatch(clientId: string, clientSecret: string) {
         ts: Number.isFinite(ts) ? ts : undefined,
         source: "barentswatch",
       });
-      ingested++;
+      if (outcome === "port" || outcome === "chokepoint") ingested++;
     }
     s.lastIngested = ingested;
     s.lastError = null;
@@ -223,7 +223,7 @@ async function pollDigitraffic() {
       if (typeof lat !== "number" || typeof lon !== "number") continue;
       const p = f.properties ?? {};
       // heading 511 = « non disponible » (ITU-R M.1371)
-      processPosition({
+      const outcome = processPosition({
         mmsi,
         lat,
         lon,
@@ -234,7 +234,7 @@ async function pollDigitraffic() {
         ts: p.timestampExternal,
         source: "digitraffic",
       });
-      ingested++;
+      if (outcome === "port" || outcome === "chokepoint") ingested++;
     }
     s.lastIngested = ingested;
     s.lastError = null;
