@@ -384,6 +384,20 @@ export default function SourcesPage() {
                 Source principale temps réel.
               </li>
               <li>
+                <strong className="text-slate-200">BarentsWatch</strong> —
+                flux AIS secondaire (redondance), ZEE norvégienne dont
+                Skagerrak. Data via BarentsWatch, licence NLOD, attribution
+                requise. Chaque position est tracée avec sa provenance.
+              </li>
+              <li>
+                <strong className="text-slate-200">
+                  Fintraffic / digitraffic.fi
+                </strong>{" "}
+                — flux AIS secondaire (redondance), golfe de Finlande /
+                Baltique. Licence CC BY 4.0. Les navires de pêche sont
+                filtrés à la source par Fintraffic.
+              </li>
+              <li>
                 <strong className="text-slate-200">
                   Sanctions multi-régime
                 </strong>{" "}

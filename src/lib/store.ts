@@ -143,6 +143,10 @@ export function upsertVessel(portId: string, v: Vessel) {
   ps(portId).vessels.set(v.mmsi, v);
 }
 
+export function getVessel(portId: string, mmsi: number): Vessel | undefined {
+  return ps(portId).vessels.get(mmsi);
+}
+
 export function getVessels(portId: string): Vessel[] {
   const cutoff = Date.now() - STALE_MS;
   return [...ps(portId).vessels.values()].filter(

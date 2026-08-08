@@ -2,6 +2,10 @@ import { meta } from "@/lib/store";
 import { db } from "@/lib/db";
 import { getScannerStatus } from "@/lib/sar/scanner";
 import { sanctionsStatus } from "@/lib/sanctions";
+import {
+  secondaryActive,
+  secondarySourcesStatus,
+} from "@/lib/ais-secondary";
 import { PORTS } from "@/lib/ports";
 
 export const dynamic = "force-dynamic";
@@ -53,6 +57,11 @@ export async function GET() {
         lastMessageAgeSeconds: aisAge != null ? Math.round(aisAge / 1000) : null,
         vesselCount: ais.vesselCount,
         messageCount: ais.messageCount,
+        // Redondance : sources secondaires open-data (attribution requise —
+        // « data via BarentsWatch » NLOD ; « Fintraffic / digitraffic.fi »
+        // CC BY 4.0). failoverActive = primaire muet mais secondaires vivants.
+        failoverActive: secondaryActive(),
+        secondarySources: secondarySourcesStatus(),
       },
       sar: {
         healthy: sarHealthy,

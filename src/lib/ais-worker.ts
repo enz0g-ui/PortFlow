@@ -6,6 +6,7 @@ import { db } from "./db";
 import {
   getPreviousZone,
   getStatic,
+  getVessel,
   meta,
   recordFlow,
   setPreviousZone,
@@ -225,6 +226,57 @@ function handleMessage(raw: WebSocket.RawData): boolean {
   const lon = msg.MetaData?.longitude ?? pr.Longitude;
   if (typeof lat !== "number" || typeof lon !== "number") return true;
 
+  processPosition({
+    mmsi,
+    lat,
+    lon,
+    sog: typeof pr.Sog === "number" ? pr.Sog : undefined,
+    cog: typeof pr.Cog === "number" ? pr.Cog : undefined,
+    heading: typeof pr.TrueHeading === "number" ? pr.TrueHeading : undefined,
+    navStatus:
+      typeof pr.NavigationalStatus === "number"
+        ? pr.NavigationalStatus
+        : undefined,
+    shipName: cleanAisString(msg.MetaData?.ShipName),
+  });
+  return true;
+}
+
+/**
+ * Position normalisée, indépendante de la source. `source` absent =
+ * aisstream (flux primaire) ; les pollers secondaires (BarentsWatch,
+ * Digitraffic…) passent leur identifiant, propagé jusqu'à la colonne
+ * `positions.source` (provenance : attribution légale NLOD/CC-BY et
+ * traçabilité dossier navire).
+ */
+export interface NormalizedPosition {
+  mmsi: number;
+  lat: number;
+  lon: number;
+  sog?: number;
+  cog?: number;
+  heading?: number;
+  navStatus?: number;
+  shipName?: string;
+  /** Horodatage du message (défaut : maintenant). */
+  ts?: number;
+  source?: string;
+}
+
+// Une source secondaire ne remplace jamais une donnée à peine plus vieille
+// déjà en mémoire : le primaire (temps réel) garde la priorité.
+const SECONDARY_FRESHNESS_MS = 5_000;
+
+export function processPosition(p: NormalizedPosition) {
+  const { mmsi, lat, lon } = p;
+  const ts = p.ts ?? Date.now();
+  const sogRaw = p.sog ?? 0;
+  const sog = sogRaw >= 0 && sogRaw < 60 ? sogRaw : 0;
+  const cog = typeof p.cog === "number" && p.cog < 360 ? p.cog : 0;
+  const heading =
+    typeof p.heading === "number" && p.heading < 360 ? p.heading : undefined;
+  const navStatus = p.navStatus;
+
   const port = findPortByPosition(lat, lon);
   if (!port) {
     // Position is outside any subscribed port bbox. If it falls inside a
@@ -233,12 +285,8 @@ function handleMessage(raw: WebSocket.RawData): boolean {
     // the transit. Skip all the port-specific bookkeeping (zones,
     // anchor transitions, voyages, KPIs).
     const cp = findChokepoint(lat, lon);
-    if (!cp) return true;
-    const ts = Date.now();
-    if (!shouldWriteChokepointPosition(mmsi, ts)) return true;
-    const sogRaw = typeof pr.Sog === "number" ? pr.Sog : 0;
-    const sog = sogRaw >= 0 && sogRaw < 60 ? sogRaw : 0;
-    const cog = typeof pr.Cog === "number" && pr.Cog < 360 ? pr.Cog : 0;
+    if (!cp) return;
+    if (!shouldWriteChokepointPosition(mmsi, ts)) return;
     try {
       db().insertPosition.run(
         mmsi,
@@ -250,32 +298,27 @@ function handleMessage(raw: WebSocket.RawData): boolean {
         null,
         null,
         "transit",
+        p.source ?? null,
       );
     } catch (err) {
       console.error("[db] chokepoint persistPosition failed", err);
     }
-    return true;
+    return;
   }
 
-  const sogRaw = typeof pr.Sog === "number" ? pr.Sog : 0;
-  const sog = sogRaw >= 0 && sogRaw < 60 ? sogRaw : 0;
-  const cog = typeof pr.Cog === "number" && pr.Cog < 360 ? pr.Cog : 0;
-  const heading =
-    typeof pr.TrueHeading === "number" && pr.TrueHeading < 360
-      ? pr.TrueHeading
-      : undefined;
-  const navStatus =
-    typeof pr.NavigationalStatus === "number" ? pr.NavigationalStatus : undefined;
+  if (p.source) {
+    const existing = getVessel(port.id, mmsi);
+    if (existing && existing.lastUpdate >= ts - SECONDARY_FRESHNESS_MS) return;
+  }
 
   const stat = getStatic(mmsi) ?? {};
   const vesselClass = classifyShip(stat.shipType);
   const zone = findZone(port, lat, lon);
   const state = inferState(sog, navStatus, zone);
-  const ts = Date.now();
 
   const vessel: Vessel = {
     mmsi,
-    name: stat.name ?? cleanAisString(msg.MetaData?.ShipName),
+    name: stat.name ?? p.shipName,
     callsign: stat.callsign,
     shipType: stat.shipType,
     vesselClass,
@@ -303,7 +346,7 @@ function handleMessage(raw: WebSocket.RawData): boolean {
 
   if (shouldPersistPosition(port.id, mmsi, ts)) {
     try {
-      persistPosition(vessel);
+      persistPosition(vessel, p.source);
     } catch (err) {
       console.error("[db] persistPosition failed", err);
     }
@@ -319,7 +362,6 @@ function handleMessage(raw: WebSocket.RawData): boolean {
   } catch (err) {
     console.error("[voyage] observe failed", err);
   }
-  return true;
 }
 
 // Watchdog: AISStream sends 50-300 msg/s on a global subscription, so

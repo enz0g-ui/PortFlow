@@ -169,6 +169,16 @@ function open(): DbHandle {
   // s'exécute avant l'ALTER ci-dessus — un index sur `imo` y planterait.
   raw.exec(`CREATE INDEX IF NOT EXISTS idx_static_imo ON static_ships(imo)`);
 
+  // Évolution in-place : `source` sur positions (provenance multi-sources,
+  // redondance AIS 08/2026). NULL = aisstream (historique). Même contrainte
+  // que `imo` : insertPosition la référence avant runMigrations().
+  const posCols = raw
+    .prepare(`PRAGMA table_info(positions)`)
+    .all() as Array<{ name: string }>;
+  if (!posCols.some((c) => c.name === "source")) {
+    raw.exec(`ALTER TABLE positions ADD COLUMN source TEXT`);
+  }
+
   return {
     raw,
     insertKpi: raw.prepare(
@@ -193,8 +203,8 @@ function open(): DbHandle {
     ),
     insertPosition: raw.prepare(
       `INSERT OR IGNORE INTO positions
-       (mmsi, ts, lat, lon, sog, cog, nav_status, zone, state)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (mmsi, ts, lat, lon, sog, cog, nav_status, zone, state, source)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ),
     selectStaticAll: raw.prepare(`SELECT * FROM static_ships`),
     selectKpisSince: raw.prepare(
@@ -298,7 +308,7 @@ export function persistStatic(row: StaticRow) {
   );
 }
 
-export function persistPosition(v: Vessel) {
+export function persistPosition(v: Vessel, source?: string) {
   db().insertPosition.run(
     v.mmsi,
     v.lastUpdate,
@@ -309,6 +319,8 @@ export function persistPosition(v: Vessel) {
     v.navStatus ?? null,
     v.zone ?? null,
     v.state,
+    // NULL = aisstream (convention historique, cf. évolution in-place)
+    source ?? null,
   );
 }
 

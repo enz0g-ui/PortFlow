@@ -129,6 +129,11 @@ export async function register() {
   const { startAisWorker } = await import("./lib/ais-worker");
   startAisWorker(apiKey);
 
+  // Sources AIS secondaires (redondance) — toujours actives, priorité au
+  // primaire assurée par la règle de fraîcheur de processPosition.
+  const { startSecondarySources } = await import("./lib/ais-secondary");
+  startSecondarySources();
+
   const { startSarScanner } = await import("./lib/sar/scanner");
   startSarScanner();
 
