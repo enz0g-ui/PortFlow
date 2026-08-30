@@ -197,16 +197,14 @@ function DrawerTab({
           strokeLinejoin="round"
         />
       </svg>
-      <span
-        className="absolute font-mono text-[8px] uppercase tracking-[0.18em] text-slate-600 transition-colors group-hover:text-sky-400/70"
-        style={{
-          writingMode: "vertical-rl",
-          transform: `translateY(${open ? "0" : "0"}) rotate(180deg)`,
-          bottom: 6,
-        }}
-      >
-        {open ? "" : label}
-      </span>
+      {!open ? (
+        <span
+          className="absolute bottom-1.5 font-mono text-[8px] uppercase tracking-[0.18em] text-slate-600 transition-colors group-hover:text-sky-400/70"
+          style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+        >
+          {label}
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -747,11 +745,16 @@ export function GlobeOverview() {
       />
       <aside
         aria-hidden={!leftOpen}
-        className={`absolute bottom-6 left-6 top-24 z-10 flex w-[288px] flex-col gap-3 overflow-hidden rounded-xl border border-slate-700/60 bg-slate-950/45 p-4 shadow-2xl shadow-slate-950/50 backdrop-blur-xl transition-all duration-300 ease-out ${
-          leftOpen
-            ? "translate-x-0 opacity-100"
-            : "pointer-events-none -translate-x-[calc(100%+2rem)] opacity-0"
-        }`}
+        // Glissement/opacité en style inline plutôt qu'en utilitaires
+        // conditionnels : les classes arbitraires (translate en calc) et
+        // opacity-0 ne survivent pas au build de production ici.
+        style={{
+          transform: leftOpen ? "translateX(0)" : "translateX(calc(-100% - 2rem))",
+          opacity: leftOpen ? 1 : 0,
+          pointerEvents: leftOpen ? "auto" : "none",
+          transition: "transform .3s ease-out, opacity .3s ease-out",
+        }}
+        className="absolute bottom-6 left-6 top-24 z-10 flex w-[288px] flex-col gap-3 overflow-hidden rounded-xl border border-slate-700/60 bg-slate-950/45 p-4 shadow-2xl shadow-slate-950/50 backdrop-blur-xl"
       >
         <div className="flex justify-around">
           <Ring pct={(stats.liveP / 51) * 100} color="#4fc3f7" label="Ports actifs" />
@@ -821,11 +824,13 @@ export function GlobeOverview() {
       />
       <aside
         aria-hidden={!rightOpen}
-        className={`absolute bottom-6 right-6 top-24 z-10 flex w-[368px] flex-col overflow-hidden rounded-xl border border-slate-700/60 bg-slate-950/45 p-4 shadow-2xl shadow-slate-950/50 backdrop-blur-xl transition-all duration-300 ease-out ${
-          rightOpen
-            ? "translate-x-0 opacity-100"
-            : "pointer-events-none translate-x-[calc(100%+2rem)] opacity-0"
-        }`}
+        style={{
+          transform: rightOpen ? "translateX(0)" : "translateX(calc(100% + 2rem))",
+          opacity: rightOpen ? 1 : 0,
+          pointerEvents: rightOpen ? "auto" : "none",
+          transition: "transform .3s ease-out, opacity .3s ease-out",
+        }}
+        className="absolute bottom-6 right-6 top-24 z-10 flex w-[368px] flex-col overflow-hidden rounded-xl border border-slate-700/60 bg-slate-950/45 p-4 shadow-2xl shadow-slate-950/50 backdrop-blur-xl"
       >
         <div className="mb-1 flex items-baseline justify-between">
           <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">Mouvements navires</span>
