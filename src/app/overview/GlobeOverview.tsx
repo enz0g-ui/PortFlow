@@ -238,6 +238,26 @@ export function GlobeOverview() {
   leftOpenRef.current = leftOpen;
   rightOpenRef.current = rightOpen;
 
+  /**
+   * Ouverture mutuellement exclusive tant que les tiroirs se superposent au
+   * globe (sous WIDE_MIN_W) : déplier l'un replie l'autre, sinon deux
+   * calques s'empilent par-dessus la sphère. Au-dessus du seuil chacun a sa
+   * place réservée, ils restent donc indépendants (les deux ouverts est la
+   * vue par défaut sur grand écran).
+   */
+  const toggleDrawer = useCallback((side: "left" | "right") => {
+    const exclusive = window.innerWidth < WIDE_MIN_W;
+    if (side === "left") {
+      const next = !leftOpenRef.current;
+      setLeftOpen(next);
+      if (next && exclusive) setRightOpen(false);
+    } else {
+      const next = !rightOpenRef.current;
+      setRightOpen(next);
+      if (next && exclusive) setLeftOpen(false);
+    }
+  }, []);
+
   useEffect(() => {
     const narrow = window.matchMedia("(max-width: 1279px)");
     const apply = () => {
@@ -767,7 +787,7 @@ export function GlobeOverview() {
       <DrawerTab
         side="left"
         open={leftOpen}
-        onToggle={() => setLeftOpen((o) => !o)}
+        onToggle={() => toggleDrawer("left")}
         label="Indicateurs"
       />
       <aside
@@ -848,7 +868,7 @@ export function GlobeOverview() {
       <DrawerTab
         side="right"
         open={rightOpen}
-        onToggle={() => setRightOpen((o) => !o)}
+        onToggle={() => toggleDrawer("right")}
         label="Mouvements"
       />
       <aside
