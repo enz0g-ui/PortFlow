@@ -184,14 +184,16 @@ function DrawerTab({
       onClick={onToggle}
       aria-expanded={open}
       title={`${open ? "Replier" : "Déplier"} — ${label}`}
-      className={`group absolute top-1/2 z-20 flex h-24 w-7 -translate-y-1/2 items-center justify-center rounded-md border border-slate-700/60 bg-slate-950/55 text-slate-400 backdrop-blur-md transition-colors hover:border-sky-500/60 hover:text-sky-300 ${
+      // Hauteur libre (pas de h-24 fixe) : le libellé vertical est plus long
+      // que 96 px et débordait de la pastille sur téléphone.
+      className={`group absolute top-1/2 z-20 flex w-7 -translate-y-1/2 flex-col items-center justify-center gap-2 rounded-md border border-slate-700/60 bg-slate-950/55 py-3 text-slate-400 backdrop-blur-md transition-colors hover:border-sky-500/60 hover:text-sky-300 ${
         side === "left" ? "left-2" : "right-2"
       }`}
     >
       <span className="sr-only">
         {open ? "Replier" : "Déplier"} le panneau {label}
       </span>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
         <path
           d={pointsRight ? "M9 5l7 7-7 7" : "M15 5l-7 7 7 7"}
           stroke="currentColor"
@@ -202,7 +204,7 @@ function DrawerTab({
       </svg>
       {!open ? (
         <span
-          className="absolute bottom-1.5 font-mono text-[8px] uppercase tracking-[0.18em] text-slate-600 transition-colors group-hover:text-sky-400/70"
+          className="font-mono text-[8px] uppercase leading-none tracking-[0.16em] text-slate-500 transition-colors group-hover:text-sky-400/70"
           style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
         >
           {label}
@@ -710,38 +712,53 @@ export function GlobeOverview() {
       <canvas ref={canvasRef} className="absolute inset-0 z-0 cursor-grab active:cursor-grabbing" />
 
       {/* Repères décoratifs — masqués quand le tiroir du même côté les
-          recouvrirait (ils vivent sous les panneaux). */}
+          recouvrirait, et sous lg : sur un écran de téléphone les deux
+          libellés se rejoignent au centre et se superposent en bouillie. */}
       {!leftOpen ? (
-        <div className="pointer-events-none absolute left-12 top-1/3 z-[5] font-mono text-[12px] uppercase tracking-[0.28em] text-[rgba(150,190,225,.45)]">
+        <div className="pointer-events-none absolute left-12 top-1/3 z-[5] hidden font-mono text-[12px] uppercase tracking-[0.28em] text-[rgba(150,190,225,.45)] lg:block">
           Bassin Atlantique
         </div>
       ) : null}
       {!rightOpen ? (
-        <div className="pointer-events-none absolute right-12 top-1/3 z-[5] font-mono text-[12px] uppercase tracking-[0.28em] text-[rgba(150,190,225,.45)]">
+        <div className="pointer-events-none absolute right-12 top-1/3 z-[5] hidden font-mono text-[12px] uppercase tracking-[0.28em] text-[rgba(150,190,225,.45)] lg:block">
           Corridor Suez · Asie
         </div>
       ) : null}
 
-      <div className="pointer-events-none absolute inset-x-0 top-16 z-[5] text-center">
-        <div className="font-mono text-[11px] uppercase tracking-[0.4em] text-slate-500">Réseau</div>
-        <div className="mt-1 text-[28px] font-light tracking-[0.32em] text-slate-100">PORT FLOW MESH</div>
-        <div className="mt-1 font-mono text-[12px] tracking-[0.14em] text-slate-500">
-          Maillage mondial · {stats.total.toLocaleString("fr-FR")} navires suivis · {stats.liveP}/51 terminaux actifs
+      {/* Descendu sous l'en-tête et rétréci sur téléphone (le titre et les
+          compteurs débordaient sur deux lignes par-dessus l'en-tête). */}
+      <div className="pointer-events-none absolute inset-x-0 top-20 z-[5] px-4 text-center lg:top-16">
+        <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-slate-500 lg:text-[11px] lg:tracking-[0.4em]">
+          Réseau
+        </div>
+        <div className="mt-1 text-[19px] font-light tracking-[0.18em] text-slate-100 lg:text-[28px] lg:tracking-[0.32em]">
+          PORT FLOW MESH
+        </div>
+        <div className="mt-1 font-mono text-[10px] tracking-[0.08em] text-slate-500 lg:text-[12px] lg:tracking-[0.14em]">
+          {stats.total.toLocaleString("fr-FR")} navires suivis · {stats.liveP}/51 terminaux actifs
         </div>
       </div>
 
-      <header className="absolute inset-x-0 top-0 z-10 flex h-[70px] items-center justify-between px-7">
-        <div>
-          <div className="text-[20px] font-semibold tracking-[0.2em] text-slate-100">PORT FLOW</div>
-          <div className="text-[12px] text-slate-500">Vue mondiale · maillage AIS temps réel</div>
+      {/* Sur téléphone : sous-titre et horloge masqués, libellé du bouton
+          raccourci et insécable — sinon le titre se coupait et chevauchait
+          le bloc « PORT FLOW MESH ». */}
+      <header className="absolute inset-x-0 top-0 z-10 flex h-[70px] items-center justify-between gap-3 px-4 lg:px-7">
+        <div className="min-w-0">
+          <div className="whitespace-nowrap text-[16px] font-semibold tracking-[0.14em] text-slate-100 lg:text-[20px] lg:tracking-[0.2em]">
+            PORT FLOW
+          </div>
+          <div className="hidden text-[12px] text-slate-500 sm:block">
+            Vue mondiale · maillage AIS temps réel
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-[11px] text-slate-500">{clock}</span>
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="hidden font-mono text-[11px] text-slate-500 lg:inline">{clock}</span>
           <Link
             href="/app"
-            className="rounded-md border border-sky-500/50 bg-sky-500/10 px-3.5 py-1.5 text-[12.5px] text-sky-300 backdrop-blur transition-colors hover:bg-sky-500/20"
+            className="whitespace-nowrap rounded-md border border-sky-500/50 bg-sky-500/10 px-3 py-1.5 text-[12px] text-sky-300 backdrop-blur transition-colors hover:bg-sky-500/20 lg:px-3.5 lg:text-[12.5px]"
           >
-            Ouvrir le tableau de bord →
+            <span className="lg:hidden">Tableau de bord →</span>
+            <span className="hidden lg:inline">Ouvrir le tableau de bord →</span>
           </Link>
         </div>
       </header>
