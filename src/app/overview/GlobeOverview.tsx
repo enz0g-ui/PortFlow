@@ -102,6 +102,9 @@ const PANEL_R = 368;
 const PANEL_MARGIN = 24;
 /** Largeur de l'onglet quand le tiroir est replié. */
 const COLLAPSED_W = 44;
+/** Seuil « écran large » : au-dessus, les tiroirs réservent leur place ;
+ *  en dessous (téléphone / app Android TWA) ils passent en calque. */
+const WIDE_MIN_W = 1280;
 
 /** Interpolateur le long d'un couloir (suit exactement la polyligne). */
 function makeLaneInterp(lane: LL[]) {
@@ -326,8 +329,14 @@ export function GlobeOverview() {
     const wrap = wrapRef.current;
     const W = wrap?.clientWidth ?? 1200;
     const H = wrap?.clientHeight ?? 800;
-    const x0 = leftOpenRef.current ? PANEL_L + PANEL_MARGIN * 2 : COLLAPSED_W;
-    const x1 = W - (rightOpenRef.current ? PANEL_R + PANEL_MARGIN * 2 : COLLAPSED_W);
+    // Sous 1280 px (téléphone, app Android TWA) un tiroir ouvert occupe
+    // presque tout l'écran : on ne lui réserve PAS d'espace, il se comporte
+    // en calque au-dessus du globe — sinon la sphère serait écrasée dans la
+    // bande résiduelle. Le globe reste donc plein écran, centré.
+    const reserve = W >= WIDE_MIN_W;
+    const x0 = reserve && leftOpenRef.current ? PANEL_L + PANEL_MARGIN * 2 : COLLAPSED_W;
+    const x1 =
+      W - (reserve && rightOpenRef.current ? PANEL_R + PANEL_MARGIN * 2 : COLLAPSED_W);
     return { x0, x1, w: Math.max(180, x1 - x0), h: H };
   }, []);
 
@@ -430,8 +439,9 @@ export function GlobeOverview() {
       // Centrage sur l'espace libre entre les tiroirs (pas sur la fenêtre) :
       // replier un panneau recentre et agrandit le globe, l'ouvrir le décale
       // pour qu'il reste entièrement visible.
-      const padL = leftOpenRef.current ? PANEL_L + PANEL_MARGIN * 2 : COLLAPSED_W;
-      const padR = rightOpenRef.current ? PANEL_R + PANEL_MARGIN * 2 : COLLAPSED_W;
+      const reserve = W >= WIDE_MIN_W;
+      const padL = reserve && leftOpenRef.current ? PANEL_L + PANEL_MARGIN * 2 : COLLAPSED_W;
+      const padR = reserve && rightOpenRef.current ? PANEL_R + PANEL_MARGIN * 2 : COLLAPSED_W;
       const cx = padL + Math.max(180, W - padL - padR) / 2;
       const cy = H * 0.56;
       const R = v.scale;
@@ -753,6 +763,8 @@ export function GlobeOverview() {
           opacity: leftOpen ? 1 : 0,
           pointerEvents: leftOpen ? "auto" : "none",
           transition: "transform .3s ease-out, opacity .3s ease-out",
+          // Le tiroir ne déborde jamais d'un écran de téléphone.
+          maxWidth: "calc(100vw - 5rem)",
         }}
         className="absolute bottom-6 left-6 top-24 z-10 flex w-[288px] flex-col gap-3 overflow-hidden rounded-xl border border-slate-700/60 bg-slate-950/45 p-4 shadow-2xl shadow-slate-950/50 backdrop-blur-xl"
       >
@@ -829,6 +841,7 @@ export function GlobeOverview() {
           opacity: rightOpen ? 1 : 0,
           pointerEvents: rightOpen ? "auto" : "none",
           transition: "transform .3s ease-out, opacity .3s ease-out",
+          maxWidth: "calc(100vw - 5rem)",
         }}
         className="absolute bottom-6 right-6 top-24 z-10 flex w-[368px] flex-col overflow-hidden rounded-xl border border-slate-700/60 bg-slate-950/45 p-4 shadow-2xl shadow-slate-950/50 backdrop-blur-xl"
       >
@@ -877,7 +890,9 @@ export function GlobeOverview() {
 
       {/* Aide de manipulation — sortie du tiroir droit : elle doit rester
           lisible quand les panneaux sont repliés. */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-4 z-[5] text-center font-mono text-[9px] text-slate-600">
+      {/* bottom-20 sous lg : la barre d'onglets mobile (.pf-tabbar) occupe
+          le bas de l'écran dans l'app Android. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-20 z-[5] px-4 text-center font-mono text-[9px] text-slate-600 lg:bottom-4">
         Glissez pour tourner · molette pour zoomer · cliquez un port pour vous y rendre
       </div>
     </div>
