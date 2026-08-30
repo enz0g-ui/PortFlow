@@ -96,6 +96,13 @@ function pickColor(): string {
 const norm180 = (d: number) => ((((d + 180) % 360) + 360) % 360) - 180;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
+/* Géométrie des tiroirs — partagée entre la mise en page et le rendu canvas. */
+const PANEL_L = 288;
+const PANEL_R = 368;
+const PANEL_MARGIN = 24;
+/** Largeur de l'onglet quand le tiroir est replié. */
+const COLLAPSED_W = 44;
+
 /** Interpolateur le long d'un couloir (suit exactement la polyligne). */
 function makeLaneInterp(lane: LL[]) {
   const segs: Array<{ a: LL; b: LL; d: number; acc: number }> = [];
@@ -152,6 +159,58 @@ function Ring({ pct, color, label }: { pct: number; color: string; label: string
   );
 }
 
+/**
+ * Onglet de tiroir — reste visible quand le panneau est replié, ancré au
+ * bord de l'écran. Chevron orienté vers l'action (ouvrir / fermer).
+ */
+function DrawerTab({
+  side,
+  open,
+  onToggle,
+  label,
+}: {
+  side: "left" | "right";
+  open: boolean;
+  onToggle: () => void;
+  label: string;
+}) {
+  const pointsRight = side === "left" ? !open : open;
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      title={`${open ? "Replier" : "Déplier"} — ${label}`}
+      className={`group absolute top-1/2 z-20 flex h-24 w-7 -translate-y-1/2 items-center justify-center rounded-md border border-slate-700/60 bg-slate-950/55 text-slate-400 backdrop-blur-md transition-colors hover:border-sky-500/60 hover:text-sky-300 ${
+        side === "left" ? "left-2" : "right-2"
+      }`}
+    >
+      <span className="sr-only">
+        {open ? "Replier" : "Déplier"} le panneau {label}
+      </span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d={pointsRight ? "M9 5l7 7-7 7" : "M15 5l-7 7 7 7"}
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <span
+        className="absolute font-mono text-[8px] uppercase tracking-[0.18em] text-slate-600 transition-colors group-hover:text-sky-400/70"
+        style={{
+          writingMode: "vertical-rl",
+          transform: `translateY(${open ? "0" : "0"}) rotate(180deg)`,
+          bottom: 6,
+        }}
+      >
+        {open ? "" : label}
+      </span>
+    </button>
+  );
+}
+
 /* ---------- composant principal ---------- */
 
 export function GlobeOverview() {
@@ -162,6 +221,35 @@ export function GlobeOverview() {
   const [selected, setSelected] = useState<ApiPort | null>(null);
   const [voyages, setVoyages] = useState<ApiVoyage[]>([]);
   const [clock, setClock] = useState("");
+
+  // Tiroirs latéraux. Le globe se recentre sur l'espace RÉELLEMENT libre
+  // (cf. padL/padR dans draw) : replier un tiroir agrandit la sphère au lieu
+  // de la laisser sous un panneau. Fermés par défaut sous 1280 px, où deux
+  // panneaux (288 + 368 px) ne laissent plus de place à un globe lisible.
+  const [leftOpen, setLeftOpen] = useState(true);
+  const [rightOpen, setRightOpen] = useState(true);
+  // Miroirs en ref : la boucle de rendu canvas lit l'état sans être
+  // recréée à chaque bascule (elle ne dépend pas de React).
+  const leftOpenRef = useRef(true);
+  const rightOpenRef = useRef(true);
+  leftOpenRef.current = leftOpen;
+  rightOpenRef.current = rightOpen;
+
+  useEffect(() => {
+    const narrow = window.matchMedia("(max-width: 1279px)");
+    const apply = () => {
+      if (narrow.matches) {
+        setLeftOpen(false);
+        setRightOpen(false);
+      } else {
+        setLeftOpen(true);
+        setRightOpen(true);
+      }
+    };
+    apply();
+    narrow.addEventListener("change", apply);
+    return () => narrow.removeEventListener("change", apply);
+  }, []);
 
   const view = useRef({ lambda: -8, phi: -44, scale: 0, drag: false, lastInteract: 0 });
   const landRef = useRef<GeoJSON.FeatureCollection | null>(null);
@@ -231,11 +319,41 @@ export function GlobeOverview() {
     };
   }, [ports]);
 
-  const baseScale = useCallback(() => {
+  /**
+   * Boîte réellement libre entre les tiroirs. Tant que le globe se centrait
+   * sur la fenêtre entière, les panneaux (288 + 368 px) le recouvraient dès
+   * qu'on descendait sous ~1500 px de large.
+   */
+  const freeBox = useCallback(() => {
     const wrap = wrapRef.current;
-    if (!wrap) return 300;
-    return Math.min(wrap.clientWidth, wrap.clientHeight) * 0.62;
+    const W = wrap?.clientWidth ?? 1200;
+    const H = wrap?.clientHeight ?? 800;
+    const x0 = leftOpenRef.current ? PANEL_L + PANEL_MARGIN * 2 : COLLAPSED_W;
+    const x1 = W - (rightOpenRef.current ? PANEL_R + PANEL_MARGIN * 2 : COLLAPSED_W);
+    return { x0, x1, w: Math.max(180, x1 - x0), h: H };
   }, []);
+
+  const baseScale = useCallback(() => {
+    const { w, h } = freeBox();
+    // Le diamètre ne dépasse jamais la largeur libre ; la hauteur garde le
+    // cadrage « grand globe » d'origine (légèrement rogné haut/bas).
+    return Math.min((w / 2) * 0.98, h * 0.62);
+  }, [freeBox]);
+
+  // À chaque bascule de tiroir, on ré-adapte l'échelle en CONSERVANT le
+  // facteur de zoom choisi par l'utilisateur (rapport à l'échelle de base).
+  const lastBaseRef = useRef(0);
+  useEffect(() => {
+    const next = baseScale();
+    const prev = lastBaseRef.current;
+    lastBaseRef.current = next;
+    const v = view.current;
+    if (!v.scale || !prev) {
+      v.scale = next;
+      return;
+    }
+    v.scale = clamp((v.scale / prev) * next, next, next * 5);
+  }, [leftOpen, rightOpen, baseScale]);
 
   /* -- vol vers un port (clic) -- */
   const flyTo = useCallback(
@@ -311,7 +429,12 @@ export function GlobeOverview() {
 
     const draw = () => {
       const v = view.current;
-      const cx = W / 2;
+      // Centrage sur l'espace libre entre les tiroirs (pas sur la fenêtre) :
+      // replier un panneau recentre et agrandit le globe, l'ouvrir le décale
+      // pour qu'il reste entièrement visible.
+      const padL = leftOpenRef.current ? PANEL_L + PANEL_MARGIN * 2 : COLLAPSED_W;
+      const padR = rightOpenRef.current ? PANEL_R + PANEL_MARGIN * 2 : COLLAPSED_W;
+      const cx = padL + Math.max(180, W - padL - padR) / 2;
       const cy = H * 0.56;
       const R = v.scale;
       proj.scale(R).translate([cx, cy]).rotate([v.lambda, v.phi, 0]);
@@ -578,12 +701,18 @@ export function GlobeOverview() {
     <div ref={wrapRef} className="relative h-screen w-full overflow-hidden">
       <canvas ref={canvasRef} className="absolute inset-0 z-0 cursor-grab active:cursor-grabbing" />
 
-      <div className="pointer-events-none absolute left-8 top-1/3 z-[5] font-mono text-[12px] uppercase tracking-[0.28em] text-[rgba(150,190,225,.45)]">
-        Bassin Atlantique
-      </div>
-      <div className="pointer-events-none absolute right-8 top-1/3 z-[5] font-mono text-[12px] uppercase tracking-[0.28em] text-[rgba(150,190,225,.45)]">
-        Corridor Suez · Asie
-      </div>
+      {/* Repères décoratifs — masqués quand le tiroir du même côté les
+          recouvrirait (ils vivent sous les panneaux). */}
+      {!leftOpen ? (
+        <div className="pointer-events-none absolute left-12 top-1/3 z-[5] font-mono text-[12px] uppercase tracking-[0.28em] text-[rgba(150,190,225,.45)]">
+          Bassin Atlantique
+        </div>
+      ) : null}
+      {!rightOpen ? (
+        <div className="pointer-events-none absolute right-12 top-1/3 z-[5] font-mono text-[12px] uppercase tracking-[0.28em] text-[rgba(150,190,225,.45)]">
+          Corridor Suez · Asie
+        </div>
+      ) : null}
 
       <div className="pointer-events-none absolute inset-x-0 top-16 z-[5] text-center">
         <div className="font-mono text-[11px] uppercase tracking-[0.4em] text-slate-500">Réseau</div>
@@ -609,8 +738,21 @@ export function GlobeOverview() {
         </div>
       </header>
 
-      {/* panneau gauche */}
-      <aside className="absolute bottom-6 left-6 top-24 z-10 flex w-[288px] flex-col gap-3 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/35 p-4 backdrop-blur-md">
+      {/* tiroir gauche */}
+      <DrawerTab
+        side="left"
+        open={leftOpen}
+        onToggle={() => setLeftOpen((o) => !o)}
+        label="Indicateurs"
+      />
+      <aside
+        aria-hidden={!leftOpen}
+        className={`absolute bottom-6 left-6 top-24 z-10 flex w-[288px] flex-col gap-3 overflow-hidden rounded-xl border border-slate-700/60 bg-slate-950/45 p-4 shadow-2xl shadow-slate-950/50 backdrop-blur-xl transition-all duration-300 ease-out ${
+          leftOpen
+            ? "translate-x-0 opacity-100"
+            : "pointer-events-none -translate-x-[calc(100%+2rem)] opacity-0"
+        }`}
+      >
         <div className="flex justify-around">
           <Ring pct={(stats.liveP / 51) * 100} color="#4fc3f7" label="Ports actifs" />
           <Ring
@@ -670,8 +812,21 @@ export function GlobeOverview() {
         </div>
       </aside>
 
-      {/* panneau droit */}
-      <aside className="absolute bottom-6 right-6 top-24 z-10 flex w-[368px] flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900/35 p-4 backdrop-blur-md">
+      {/* tiroir droit */}
+      <DrawerTab
+        side="right"
+        open={rightOpen}
+        onToggle={() => setRightOpen((o) => !o)}
+        label="Mouvements"
+      />
+      <aside
+        aria-hidden={!rightOpen}
+        className={`absolute bottom-6 right-6 top-24 z-10 flex w-[368px] flex-col overflow-hidden rounded-xl border border-slate-700/60 bg-slate-950/45 p-4 shadow-2xl shadow-slate-950/50 backdrop-blur-xl transition-all duration-300 ease-out ${
+          rightOpen
+            ? "translate-x-0 opacity-100"
+            : "pointer-events-none translate-x-[calc(100%+2rem)] opacity-0"
+        }`}
+      >
         <div className="mb-1 flex items-baseline justify-between">
           <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">Mouvements navires</span>
           {selected ? (
@@ -713,10 +868,13 @@ export function GlobeOverview() {
             </tbody>
           </table>
         </div>
-        <div className="mt-2 border-t border-slate-800 pt-2 font-mono text-[9px] text-slate-600">
-          Glissez pour tourner · molette pour zoomer · cliquez un port pour vous y rendre
-        </div>
       </aside>
+
+      {/* Aide de manipulation — sortie du tiroir droit : elle doit rester
+          lisible quand les panneaux sont repliés. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-4 z-[5] text-center font-mono text-[9px] text-slate-600">
+        Glissez pour tourner · molette pour zoomer · cliquez un port pour vous y rendre
+      </div>
     </div>
   );
 }
