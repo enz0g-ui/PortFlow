@@ -84,6 +84,9 @@ export default async function Home({
             <Link href="/precision" className="hidden rounded px-3 py-1.5 text-slate-300 hover:text-white sm:inline">
               Benchmark
             </Link>
+            <Link href="/about" className="hidden rounded px-3 py-1.5 text-slate-300 hover:text-white lg:inline">
+              Who&nbsp;we&nbsp;are
+            </Link>
             <Link href="/ports" className="hidden rounded px-3 py-1.5 text-slate-300 hover:text-white sm:inline">
               Ports
             </Link>
@@ -147,8 +150,19 @@ export default async function Home({
               Demurrage calculator — free
             </Link>
           </div>
+          {/* Le lien « limits » pointe vers /about : la page de responsabilite
+              existait mais n'etait atteignable que depuis le pied de page, donc
+              invisible — un audit externe (09/2026) a conclu a tort a une
+              « absence totale de credibilite institutionnelle ». */}
           <p className="mt-4 font-mono text-[11.5px] text-slate-600">
-            open methodology · documented limits · no card for the demo
+            <Link href="/methodology" className="hover:text-slate-400">
+              open methodology
+            </Link>{" "}
+            ·{" "}
+            <Link href="/about" className="hover:text-slate-400">
+              documented limits
+            </Link>{" "}
+            · no card for the demo
           </p>
         </div>
         <LiveBenchmark />
@@ -238,7 +252,7 @@ export default async function Home({
               ["Free", "€0", "", "Read-only across all 51 ports & 13 chokepoints."],
               ["Starter", "€97", "/mo", "Watchlist, alerts and a single seat for one desk."],
               ["Professional", "€149", "/mo", "Sanctions screening, 60-day history, CSV export, API."],
-              ["Pro+", "€374", "/mo", "Dark-fleet detection, SAR fusion, priority support."],
+              ["Pro+", "€374", "/mo", "Dark-fleet detection, delay attribution, priority support."],
             ].map(([name, price, suffix, body]) => {
               const popular = name === "Professional";
               return (

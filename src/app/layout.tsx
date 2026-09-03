@@ -114,7 +114,7 @@ const jsonLd = {
       operatingSystem: "Web",
       url: "https://portflow.uk",
       description:
-        "Real-time multi-port AIS tanker intelligence — predicted ETA with a published RMSE benchmark, multi-regime sanctions screening (UKSL, OFAC, UN-SC, EU FSF), chokepoint transit alerts, and dark fleet detection via Sentinel-1 SAR fusion.",
+        "Real-time multi-port AIS tanker intelligence — predicted ETA with a published RMSE benchmark, multi-regime sanctions screening (UKSL, OFAC, UN-SC, EU FSF), chokepoint transit alerts, and dark fleet detection from AIS gap analysis.",
       publisher: { "@id": "https://portflow.uk/#organization" },
       offers: {
         "@type": "Offer",

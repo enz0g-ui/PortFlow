@@ -96,16 +96,91 @@ export default function AboutPage() {
             <Link href="/precision" className="text-sky-400 hover:text-sky-300">
               benchmark page
             </Link>
-            , measured against the broadcast ETA — not hidden.
+            , measured against the broadcast ETA on the same closed voyages —
+            not hidden, and recomputed as voyages close.
           </li>
           <li>
-            <span className="font-medium text-slate-200">Documented limits.</span>{" "}
-            Where AIS coverage is weak, we say so. We&apos;d rather show a small
-            honest sample than a big misleading one.
+            <span className="font-medium text-slate-200">Auditable screening.</span>{" "}
+            Every sanctions list we ingest is versioned: fetch timestamp,
+            SHA-256 of the source file, entry count. A vessel that leaves a list
+            is dated as delisted rather than silently deleted, so a past
+            screening can be reproduced.
+          </li>
+          <li>
+            <span className="font-medium text-slate-200">Stated provenance.</span>{" "}
+            Every stored position carries its source. Open data is used under
+            its licence with visible attribution — see{" "}
+            <Link href="/sources" className="text-sky-400 hover:text-sky-300">
+              sources
+            </Link>
+            .
           </li>
           <li>
             <span className="font-medium text-slate-200">No lock-in.</span> Monthly
             plans cancel anytime. A 10-minute demo needs no signup and no card.
+          </li>
+        </ul>
+      </section>
+
+      {/* Section « limites » — l'audit externe du site (09/2026) a montre que
+          l'absence de limites ecrites nourrit le soupcon. Chaque ligne ici est
+          verifiable en production ; ne jamais y ecrire une capacite qui ne
+          produit pas de resultat mesurable. */}
+      <section className="rounded-2xl border border-amber-800/40 bg-amber-500/[0.04] p-7">
+        <h2 className="text-lg font-semibold text-slate-100">
+          What Port Flow does <em>not</em> do
+        </h2>
+        <p className="mt-2 text-sm text-slate-400">
+          The limits below cost us sales. We publish them anyway — a benchmark
+          means nothing if the boundaries around it are hidden.
+        </p>
+        <ul className="mt-4 space-y-3 text-sm text-slate-400">
+          <li>
+            <span className="font-medium text-slate-200">
+              Terrestrial AIS only — no satellite AIS.
+            </span>{" "}
+            Coverage is strong near coasts and in the straits we track, and
+            thins out in the open ocean. Mid-ocean STS transfers can be missed
+            entirely. We do not resell satellite AIS today.
+          </li>
+          <li>
+            <span className="font-medium text-slate-200">
+              Radar (SAR) is experimental, not a product feature.
+            </span>{" "}
+            A free Sentinel-1 pipeline runs on a handful of areas, but its
+            detector is not calibrated and it has produced{" "}
+            <strong className="text-slate-200">no confirmed detections</strong>{" "}
+            to date. Nothing in the paid plans depends on it. Dark-vessel
+            findings you see come from AIS gap analysis, not from radar.
+          </li>
+          <li>
+            <span className="font-medium text-slate-200">
+              A dark-fleet signal is an observation, not a verdict.
+            </span>{" "}
+            We report what the transponder did — a gap, a jump, a rendezvous.
+            Intent, ownership and legality are for your compliance team to
+            establish.
+          </li>
+          <li>
+            <span className="font-medium text-slate-200">
+              Upstream feeds can fail, and we say when they do.
+            </span>{" "}
+            Our primary AIS provider went dark for three days in August 2026.
+            The site kept serving last-known positions with a visible staleness
+            banner rather than an empty map, and a second open-data feed now
+            runs alongside it. Current state is always on the{" "}
+            <Link href="/status" className="text-sky-400 hover:text-sky-300">
+              status page
+            </Link>
+            .
+          </li>
+          <li>
+            <span className="font-medium text-slate-200">
+              Not a navigation or safety system.
+            </span>{" "}
+            Port Flow is decision support for commercial and compliance work.
+            It must never be used for piloting, collision avoidance or any
+            safety-critical decision.
           </li>
         </ul>
       </section>
