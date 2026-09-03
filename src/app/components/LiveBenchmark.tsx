@@ -1,47 +1,59 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
-
-interface AccuracyResp {
-  windowDays: number;
-  sampleCount: number;
-  maeHours: number | null;
-  baselineMaeHours: number | null;
-  baselineCount: number | null;
-  modelMaeOnBaselineHours: number | null;
-}
+import { getVoyageAccuracy } from "@/lib/voyages";
+import { DEFAULT_PORT_ID } from "@/lib/ports";
 
 /**
  * Live, honest ETA benchmark card for the landing hero — mockup « la preuve
  * d'abord » : our MAE vs the broadcast MAE on the SAME closed voyages,
  * bars + verdict, Rotterdam last 30 days.
  *
+ * COMPOSANT SERVEUR (depuis le 03/09/2026). Il était client (useEffect +
+ * fetch), donc le HTML servi ne contenait que « Loading the live benchmark… » :
+ * tout lecteur qui n'exécute pas JavaScript — crawlers, aperçus de liens et
+ * surtout les assistants IA, devenus un canal de découverte réel — ne voyait
+ * jamais notre meilleure preuve. Un audit externe du site a d'ailleurs conclu
+ * que le benchmark « ne chargeait pas », alors que l'API répond en ~0,4 s.
+ * Rendu côté serveur, le chiffre est désormais dans le HTML pour tout le monde.
+ *
  * Integrity rule unchanged: never inflate. Without enough closed voyages we
  * say so and link the methodology instead of showing a hollow number.
  */
-export function LiveBenchmark() {
-  const [d, setD] = useState<AccuracyResp | null>(null);
-  const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/voyages/accuracy?port=rotterdam&days=30", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => {
-        if (cancelled) return;
-        setD(j);
-        setLoaded(true);
-      })
-      .catch(() => !cancelled && setLoaded(true));
-    return () => {
-      cancelled = true;
+const WINDOW_DAYS = 30;
+// Le calcul tape la base à chaque rendu ; la landing est dynamique (cookies)
+// et peut être martelée par les crawlers. 5 min de cache mémoire suffisent :
+// le benchmark n'évolue qu'à la clôture d'un voyage.
+const TTL_MS = 5 * 60_000;
+
+interface Snapshot {
+  ours: number | null;
+  broadcast: number | null;
+  n: number;
+}
+
+let cache: { at: number; data: Snapshot } | null = null;
+
+function snapshot(): Snapshot {
+  if (cache && Date.now() - cache.at < TTL_MS) return cache.data;
+  let data: Snapshot = { ours: null, broadcast: null, n: 0 };
+  try {
+    const since = Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    const r = getVoyageAccuracy(DEFAULT_PORT_ID, since);
+    data = {
+      ours: r.modelMaeOnBaselineHours,
+      broadcast: r.baselineMaeHours,
+      n: r.baselineCount ?? 0,
     };
-  }, []);
+  } catch {
+    // Base indisponible : on retombe sur le renvoi vers la méthodologie
+    // plutôt que d'afficher un chiffre creux ou de casser la page.
+  }
+  cache = { at: Date.now(), data };
+  return data;
+}
 
-  const ours = d?.modelMaeOnBaselineHours;
-  const broadcast = d?.baselineMaeHours;
-  const n = d?.baselineCount ?? 0;
+export function LiveBenchmark() {
+  const { ours, broadcast, n } = snapshot();
   const haveHeadToHead =
     typeof ours === "number" && typeof broadcast === "number" && n > 0;
 
@@ -115,14 +127,11 @@ export function LiveBenchmark() {
         </>
       ) : (
         <p className="rounded border border-slate-800 bg-slate-950/60 p-4 text-sm text-slate-400">
-          {loaded
-            ? "The published benchmark builds continuously as voyages close. See exactly how it's measured —"
-            : "Loading the live benchmark…"}{" "}
-          {loaded ? (
-            <Link href="/precision" className="text-sky-400 hover:text-sky-300">
-              methodology &amp; current numbers →
-            </Link>
-          ) : null}
+          The published benchmark builds continuously as voyages close. See
+          exactly how it&apos;s measured —{" "}
+          <Link href="/precision" className="text-sky-400 hover:text-sky-300">
+            methodology &amp; current numbers →
+          </Link>
         </p>
       )}
     </div>
