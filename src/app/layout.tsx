@@ -172,6 +172,19 @@ export default function RootLayout({
             __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
           }}
         />
+        {/* Cloudflare Web Analytics — mesure d'audience sans cookie ni
+            empreinte (pas de consentement RGPD requis). Le jeton du beacon
+            est public par nature (il figure dans le HTML de toute page).
+            Piloté par env pour que staging/dev ne polluent pas les stats. */}
+        {process.env.NEXT_PUBLIC_CF_BEACON_TOKEN ? (
+          <script
+            defer
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            data-cf-beacon={JSON.stringify({
+              token: process.env.NEXT_PUBLIC_CF_BEACON_TOKEN,
+            })}
+          />
+        ) : null}
         <AuthShell>
           <I18nProvider>
             <GlobalRail />
