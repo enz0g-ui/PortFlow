@@ -29,6 +29,33 @@ import type {
 // Below-the-fold detection panels: deferred so their JS leaves the initial
 // bundle (lower TBT) and a reserved-height skeleton with a loading spinner
 // holds their space (lower CLS) instead of the page jumping when they fill.
+/**
+ * Balayage radar au centre de la zone carte tant que les premiers navires ne
+ * sont pas arrivés (bundle + hydratation + /api/vessels : 2 à 4 s mesurées).
+ * Les chiffres du haut, eux, sont déjà dans le HTML serveur : cette animation
+ * ne couvre que la carte, et disparaît d'elle-même à la première donnée live.
+ */
+function MapWarmup({ label }: { label: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center"
+    >
+      <div className="flex flex-col items-center gap-3">
+        <div className="pf-radar">
+          <span className="pf-radar__ring" />
+          <span className="pf-radar__ring" style={{ animationDelay: "0.9s" }} />
+          <span className="pf-radar__sweep" />
+          <span className="pf-radar__dot" />
+        </div>
+        <div className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-slate-400">
+          {label}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PanelSkeleton() {
   return (
     <div className="flex min-h-[160px] items-center justify-center gap-2 rounded-lg border border-slate-800 bg-slate-900/60 text-xs text-slate-500">
@@ -85,7 +112,7 @@ interface PortsResp {
   ports: PortInfoFull[];
 }
 
-interface KpiResponse {
+export interface KpiResponse {
   port: string;
   snapshot: KpiSnapshot;
   worker: {
@@ -186,15 +213,23 @@ function writeCache<T>(url: string, data: T) {
   }
 }
 
-function usePolling<T>(url: string | null, intervalMs: number): T | null {
-  const [data, setData] = useState<T | null>(null);
+function usePolling<T>(
+  url: string | null,
+  intervalMs: number,
+  // Valeur rendue côté serveur (cf. app/page.tsx) : elle est dans le HTML
+  // avant tout JavaScript, et sert d'état initial identique à l'hydratation.
+  initial: T | null = null,
+): T | null {
+  const [data, setData] = useState<T | null>(initial);
 
   useEffect(() => {
     if (!url) {
       setData(null);
       return;
     }
-    const cached = readCache<T>(url);
+    // Le cache local (localStorage, ≤ 30 min) ne doit pas écraser un
+    // snapshot serveur calculé à l'instant : on ne s'en sert qu'à défaut.
+    const cached = initial ? null : readCache<T>(url);
     if (cached) setData(cached);
 
     let cancelled = false;
@@ -253,10 +288,22 @@ function workerTone(
   return "bad";
 }
 
-export default function Dashboard() {
+/**
+ * `initialPort` / `initialKpi` viennent du composant serveur app/page.tsx :
+ * la bande KPI est ainsi rendue AVEC ses chiffres dans le HTML initial
+ * (≈0,3 s), au lieu d'attendre bundle + hydratation + /api/kpis (mesuré
+ * 3 à 7 s de tirets « — » qui donnaient l'impression d'un site cassé).
+ */
+export default function Dashboard({
+  initialPort,
+  initialKpi = null,
+}: {
+  initialPort?: string;
+  initialKpi?: KpiResponse | null;
+} = {}) {
   const { t, locale } = useI18n();
   const [tankersOnly, setTankersOnly] = useState(false);
-  const [portId, setPortId] = useState<string>("rotterdam");
+  const [portId, setPortId] = useState<string>(initialPort ?? "rotterdam");
   const [selectedMmsi, setSelectedMmsi] = useState<number | null>(null);
   const [stateFilter, setStateFilter] = useState<
     "anchored" | "underway" | "moored" | null
@@ -862,7 +909,12 @@ export default function Dashboard() {
     `/api/vessels${q}`,
     5000,
   );
-  const kpiResp = usePolling<KpiResponse>(`/api/kpis${q}`, 5000);
+  const kpiResp = usePolling<KpiResponse>(
+    `/api/kpis${q}`,
+    5000,
+    // Le snapshot serveur ne vaut que pour le port avec lequel il a été rendu.
+    initialKpi && initialKpi.port === portId ? initialKpi : null,
+  );
   const histResp = usePolling<{ history: KpiSnapshot[] }>(
     `/api/history${q}&hours=6`,
     60_000,
@@ -1688,6 +1740,7 @@ export default function Dashboard() {
         </button>
         {showMap ? (
         <div className="relative h-[440px] min-h-0 lg:h-auto lg:flex-1">
+        {vesselsResp === null ? <MapWarmup label={t("map.warmup")} /> : null}
         {worldView ? (
           <MapView
             vessels={

@@ -49,6 +49,7 @@ const fr: Messages = {
     "Dernières positions connues : il y a {m} min.",
   "banner.aisDegraded.asOfH":
     "Dernières positions connues : il y a {h} h.",
+  "map.warmup": "Connexion au flux AIS…",
   "nav.precision": "ETA precision",
   "nav.methodology": "Méthodologie",
   "nav.guide": "Guide",
@@ -341,6 +342,7 @@ const en: Messages = {
     "Last known positions: {m} min ago.",
   "banner.aisDegraded.asOfH":
     "Last known positions: {h}h ago.",
+  "map.warmup": "Connecting to the AIS feed…",
   "nav.precision": "ETA precision",
   "nav.methodology": "Methodology",
   "nav.guide": "Guide",
