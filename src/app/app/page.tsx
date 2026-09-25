@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import Dashboard, { type KpiResponse } from "../Dashboard";
+import Dashboard, { type KpiResponse, type VoyagesResp } from "../Dashboard";
 import { computeKpiSnapshot } from "@/lib/kpi";
+import { computeActiveVoyages } from "@/lib/active-voyages";
 import { meta } from "@/lib/store";
 import { DEFAULT_PORT_ID, getPort } from "@/lib/ports";
 
@@ -27,16 +28,27 @@ export default async function AppPage({
   const portId = requested && getPort(requested) ? requested : DEFAULT_PORT_ID;
 
   let initialKpi: KpiResponse | null = null;
+  let initialVoyages: VoyagesResp | null = null;
   try {
     initialKpi = {
       port: portId,
       snapshot: computeKpiSnapshot(portId),
       worker: meta.status(),
     };
+    // Même calcul que /api/voyages/active (une requête SQL bornée à 500
+    // lignes + lecture mémoire) : les tuiles « voyages actifs » et « en
+    // attente en rade » arrivent avec leurs chiffres dans le HTML.
+    initialVoyages = computeActiveVoyages(portId) as VoyagesResp | null;
   } catch {
     // Store pas encore hydraté (tout premier instant après un boot) : le
     // client retombe sur le comportement d'origine, tirets puis polling.
   }
 
-  return <Dashboard initialPort={portId} initialKpi={initialKpi} />;
+  return (
+    <Dashboard
+      initialPort={portId}
+      initialKpi={initialKpi}
+      initialVoyages={initialVoyages}
+    />
+  );
 }

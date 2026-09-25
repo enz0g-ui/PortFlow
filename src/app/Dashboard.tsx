@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { KpiCard } from "./components/KpiCard";
@@ -123,7 +123,7 @@ export interface KpiResponse {
   };
 }
 
-interface VoyagesResp {
+export interface VoyagesResp {
   count: number;
   inboundCount?: number;
   waitingCount?: number;
@@ -221,6 +221,8 @@ function usePolling<T>(
   initial: T | null = null,
 ): T | null {
   const [data, setData] = useState<T | null>(initial);
+  // Lu une seule fois (au montage) : pas une dépendance de l'effet.
+  const hadInitial = useRef(initial != null);
 
   useEffect(() => {
     if (!url) {
@@ -229,7 +231,11 @@ function usePolling<T>(
     }
     // Le cache local (localStorage, ≤ 30 min) ne doit pas écraser un
     // snapshot serveur calculé à l'instant : on ne s'en sert qu'à défaut.
-    const cached = initial ? null : readCache<T>(url);
+    // Seul le premier montage saute le cache ; un changement de port (url)
+    // retrouve le comportement d'origine (chiffres du cache immédiatement).
+    const skipCache = hadInitial.current;
+    hadInitial.current = false;
+    const cached = skipCache ? null : readCache<T>(url);
     if (cached) setData(cached);
 
     let cancelled = false;
@@ -297,9 +303,11 @@ function workerTone(
 export default function Dashboard({
   initialPort,
   initialKpi = null,
+  initialVoyages = null,
 }: {
   initialPort?: string;
   initialKpi?: KpiResponse | null;
+  initialVoyages?: VoyagesResp | null;
 } = {}) {
   const { t, locale } = useI18n();
   const [tankersOnly, setTankersOnly] = useState(false);
@@ -922,6 +930,10 @@ export default function Dashboard({
   const voyagesResp = usePolling<VoyagesResp>(
     `/api/voyages/active${q}${tankersOnly ? "&tankersOnly=1" : ""}`,
     10_000,
+    // Snapshot serveur valable uniquement pour le port rendu, sans filtre.
+    initialVoyages && !tankersOnly && initialKpi?.port === portId
+      ? initialVoyages
+      : null,
   );
   const accuracyResp = usePolling<AccuracyResp>(
     `/api/voyages/accuracy${q}&days=30`,
