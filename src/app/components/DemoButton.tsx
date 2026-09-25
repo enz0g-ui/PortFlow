@@ -44,7 +44,11 @@ function DemoButtonInner({ compact = false }: { compact?: boolean }) {
       onClick={onClick}
       disabled={pending}
       title="10-minute preview, no signup required (one per network per 24 h)"
-      className="rounded border border-emerald-700/60 bg-emerald-950/40 px-2 py-1 text-xs font-medium text-emerald-200 hover:border-emerald-500 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+      // pf-shine : reflet lumineux qui balaie le bouton toutes les ~4,5 s
+      // (globals.css). Sur la landing, ce bouton est le premier appel à
+      // l'action : ~400 visiteurs/jour le voient, ~1 l'ouvre. pf-shine-glow
+      // ajoute un halo pulsé, réservé à la version pleine taille.
+      className={`pf-shine${compact ? "" : " pf-shine-glow"} rounded border border-emerald-700/60 bg-emerald-950/40 px-2 py-1 text-xs font-medium text-emerald-200 hover:border-emerald-500 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50`}
     >
       {pending ? "Starting…" : compact ? "Demo" : "Try demo (10 min)"}
     </button>
