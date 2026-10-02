@@ -100,7 +100,7 @@ export function detectDarkEvents(opts: {
   // each candidate gap as it appears.
   const stmt = db().raw.prepare(
     `SELECT mmsi, ts, lat, lon, state, zone
-     FROM positions
+     FROM positions INDEXED BY idx_positions_ts
      WHERE ts >= ?
      ORDER BY mmsi ASC, ts ASC`,
   );

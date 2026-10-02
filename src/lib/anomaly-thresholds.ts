@@ -154,62 +154,81 @@ export function getThreshold(
  * idle longer than Rotterdam tankers because Houston has bigger
  * anchorages, but the relative shape is similar.
  */
-export function recomputeThresholds(): {
+export async function recomputeThresholds(): Promise<{
   rowsWritten: number;
   durationMs: number;
-} {
+  rowsScanned: number;
+}> {
   const t0 = Date.now();
   const since = t0 - RECOMPUTE_WINDOW_DAYS * 86_400_000;
   const dbi = db();
 
-  // Pull all anchored positions in the window, ordered by (mmsi, ts).
-  // Join static_ships for cargo_class.
-  const rows = dbi.raw
-    .prepare(
-      `SELECT p.mmsi, p.ts, s.cargo_class
-       FROM positions p
-       LEFT JOIN static_ships s ON s.mmsi = p.mmsi
-       WHERE p.state = 'anchored' AND p.ts >= ?
-       ORDER BY p.mmsi, p.ts`,
-    )
-    .all(since) as Array<{ mmsi: number; ts: number; cargo_class: string | null }>;
+  // cargo_class par navire : static_ships est petite, on la charge en Map
+  // plutôt que de joindre sur chaque ligne de positions.
+  const cargoByMmsi = new Map<number, string | null>();
+  for (const r of dbi.raw
+    .prepare(`SELECT mmsi, cargo_class FROM static_ships`)
+    .all() as Array<{ mmsi: number; cargo_class: string | null }>) {
+    cargoByMmsi.set(r.mmsi, r.cargo_class);
+  }
 
-  // Group consecutive anchored rows per mmsi into sessions. A new session
-  // starts when the previous row was >2h ago (vessel left and came back).
+  // Lecture SÉQUENTIELLE par tranches de rowid (NOT INDEXED : la clé primaire
+  // (mmsi, ts) ferait sauter la lecture partout dans un fichier de plusieurs
+  // Go), en rendant la main à la boucle d'événements entre deux tranches.
+  // Avant : une seule requête synchrone ORDER BY mmsi, ts → 5 min de gel
+  // complet du serveur (HTTP + flux AIS) après chaque déploiement, le temps
+  // que le cache disque se réchauffe. Les lignes arrivent ~par ts croissant,
+  // pas par navire : on tient une session ouverte par MMSI.
+  const chunk = dbi.raw.prepare(
+    `SELECT rowid AS rid, mmsi, ts, state
+     FROM positions NOT INDEXED
+     WHERE rowid > ? AND ts >= ?
+     ORDER BY rowid
+     LIMIT ?`,
+  );
+  const CHUNK_ROWS = 40_000;
   const SESSION_GAP_MS = 2 * 3_600_000;
   const sessions: Array<{ cargoClass: string | null; durationH: number }> = [];
+  const open = new Map<number, { start: number; end: number }>();
 
-  let curMmsi: number | null = null;
-  let curCargo: string | null = null;
-  let curStart = 0;
-  let curEnd = 0;
-
-  const closeSession = () => {
-    if (curMmsi == null) return;
-    const durationH = (curEnd - curStart) / 3_600_000;
+  const closeSession = (mmsi: number, s: { start: number; end: number }) => {
+    const durationH = (s.end - s.start) / 3_600_000;
+    // Au moins 1h (bruit), au plus 30 jours (navire mort ou bug de schéma).
     if (durationH >= 1 && durationH <= 30 * 24) {
-      // Filter sessions: at least 1h (noise floor), at most 30 days
-      // (anything longer is almost certainly a dead vessel or schema bug).
-      sessions.push({ cargoClass: curCargo, durationH });
+      sessions.push({ cargoClass: cargoByMmsi.get(mmsi) ?? null, durationH });
     }
   };
 
-  for (const r of rows) {
-    if (r.mmsi !== curMmsi) {
-      closeSession();
-      curMmsi = r.mmsi;
-      curCargo = r.cargo_class;
-      curStart = r.ts;
-      curEnd = r.ts;
-    } else if (r.ts - curEnd > SESSION_GAP_MS) {
-      closeSession();
-      curStart = r.ts;
-      curEnd = r.ts;
-    } else {
-      curEnd = r.ts;
+  let lastRid = 0;
+  let rowsScanned = 0;
+  for (;;) {
+    const rows = chunk.all(lastRid, since, CHUNK_ROWS) as Array<{
+      rid: number;
+      mmsi: number;
+      ts: number;
+      state: string | null;
+    }>;
+    if (rows.length === 0) break;
+    rowsScanned += rows.length;
+    for (const r of rows) {
+      lastRid = r.rid;
+      if (r.state !== "anchored") continue;
+      const cur = open.get(r.mmsi);
+      if (!cur) {
+        open.set(r.mmsi, { start: r.ts, end: r.ts });
+      } else if (r.ts - cur.end > SESSION_GAP_MS) {
+        closeSession(r.mmsi, cur);
+        open.set(r.mmsi, { start: r.ts, end: r.ts });
+      } else if (r.ts > cur.end) {
+        cur.end = r.ts;
+      } else if (r.ts < cur.start) {
+        cur.start = r.ts; // arrivée hors ordre (sources secondaires)
+      }
     }
+    if (rows.length < CHUNK_ROWS) break;
+    await new Promise<void>((resolve) => setImmediate(resolve));
   }
-  closeSession();
+  for (const [mmsi, s] of open) closeSession(mmsi, s);
 
   // Group sessions by cargo class (global pool — see comment above).
   const byCargo = new Map<string | null, number[]>();
@@ -249,35 +268,37 @@ export function recomputeThresholds(): {
     }
   }
 
-  return { rowsWritten, durationMs: Date.now() - t0 };
+  return { rowsWritten, durationMs: Date.now() - t0, rowsScanned };
 }
 
 let _intervalId: ReturnType<typeof setInterval> | null = null;
+let _running = false;
+
+async function runRecompute(label: string, quietIfEmpty: boolean): Promise<void> {
+  if (_running) return; // le calcul précédent n'a pas fini (disque lent)
+  _running = true;
+  try {
+    const r = await recomputeThresholds();
+    if (!quietIfEmpty || r.rowsWritten > 0) {
+      console.log(
+        `[anomaly-thresholds] ${label}: ${r.rowsWritten} rows in ${r.durationMs} ms (${r.rowsScanned} positions scanned)`,
+      );
+    }
+  } catch (err) {
+    console.error(`[anomaly-thresholds] ${label} compute failed`, err);
+  } finally {
+    _running = false;
+  }
+}
 
 export function startAnomalyThresholdScheduler(): void {
   if (_intervalId) return;
-  // Initial compute deferred 2 min after boot so the AIS worker has
-  // time to populate any catch-up positions on a fresh start.
+  // Premier calcul 5 min après le démarrage : le temps que le cache disque
+  // se réchauffe et que le flux AIS ait rattrapé son retard.
   setTimeout(() => {
-    try {
-      const r = recomputeThresholds();
-      console.log(
-        `[anomaly-thresholds] initial: ${r.rowsWritten} rows in ${r.durationMs} ms`,
-      );
-    } catch (err) {
-      console.error("[anomaly-thresholds] initial compute failed", err);
-    }
-  }, 120_000);
+    void runRecompute("initial", false);
+  }, 5 * 60_000);
   _intervalId = setInterval(() => {
-    try {
-      const r = recomputeThresholds();
-      if (r.rowsWritten > 0) {
-        console.log(
-          `[anomaly-thresholds] recompute: ${r.rowsWritten} rows in ${r.durationMs} ms`,
-        );
-      }
-    } catch (err) {
-      console.error("[anomaly-thresholds] recompute failed", err);
-    }
+    void runRecompute("recompute", true);
   }, RECOMPUTE_INTERVAL_MS);
 }

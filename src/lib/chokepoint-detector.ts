@@ -193,7 +193,7 @@ export async function scanChokepointTransits(): Promise<{
   // (~50k rows / 5 min × 12 bboxes is fine).
   // Stream via iterate() to keep heap flat.
   const stmt = db().raw.prepare(
-    `SELECT mmsi, ts, lat, lon FROM positions
+    `SELECT mmsi, ts, lat, lon FROM positions INDEXED BY idx_positions_ts
      WHERE ts >= ?
      ORDER BY mmsi ASC, ts ASC`,
   );

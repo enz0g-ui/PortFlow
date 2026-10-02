@@ -79,7 +79,7 @@ export async function scanLoitering(): Promise<LoiteringScanResult> {
   const now = Date.now();
   const since = now - SCAN_WINDOW_HOURS * 3_600_000;
   const stmt = db().raw.prepare(
-    `SELECT mmsi, ts, lat, lon, sog FROM positions
+    `SELECT mmsi, ts, lat, lon, sog FROM positions INDEXED BY idx_positions_ts
      WHERE ts >= ?
      ORDER BY mmsi ASC, ts ASC`,
   );

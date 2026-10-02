@@ -143,7 +143,7 @@ export async function scanEncounters(): Promise<ScanResult> {
   // For 4h × ~10 chokepoint vessels-per-tick × 12 zones × 4 buckets/h ≈
   // few thousand rows. Tractable.
   const stmt = db().raw.prepare(
-    `SELECT mmsi, ts, lat, lon FROM positions
+    `SELECT mmsi, ts, lat, lon FROM positions INDEXED BY idx_positions_ts
      WHERE ts >= ?
      ORDER BY mmsi ASC, ts ASC`,
   );
