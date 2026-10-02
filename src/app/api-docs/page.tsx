@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n/context";
 
 interface Endpoint {
   method: "GET" | "POST" | "DELETE";
@@ -127,113 +128,97 @@ const COLOR: Record<Endpoint["method"], string> = {
 };
 
 export default function ApiDocsPage() {
+  // Textes via i18n depuis le 02/10/2026 : la page était rédigée en français
+  // (tutoiement compris) sur un site dont l'anglais est la langue primaire —
+  // un prospect anglophone arrivé de LinkedIn l'a lue ainsi.
+  const { tp } = useI18n();
   return (
     <main className="mx-auto flex w-full max-w-[1100px] flex-1 flex-col gap-8 p-6">
       <header className="flex items-center justify-between">
         <Link href="/app" className="text-xs text-slate-400 hover:text-slate-200">
-          ← retour
+          {tp("apiDocs.back")}
         </Link>
         <Link
           href="/account"
           className="text-xs text-slate-400 hover:text-slate-200"
         >
-          Gérer mes clés API →
+          {tp("apiDocs.manageKeys")}
         </Link>
       </header>
 
       <section className="space-y-3">
-        <h1 className="text-3xl font-bold tracking-tight">
-          API publique Port Flow
-        </h1>
+        <h1 className="text-3xl font-bold tracking-tight">{tp("apiDocs.title")}</h1>
         <p className="text-sm text-slate-300">
-          API REST simple, JSON, authentification Bearer. Disponible à partir
-          du plan{" "}
+          {tp("apiDocs.intro1")}{" "}
           <Link href="/pricing" className="text-sky-400 hover:underline">
             Starter
           </Link>{" "}
-          (5 k req/jour) jusqu&apos;à{" "}
+          {tp("apiDocs.intro2")}{" "}
           <Link href="/pricing" className="text-sky-400 hover:underline">
             Pro+
           </Link>{" "}
-          (600 req/min).
+          {tp("apiDocs.intro3")}
         </p>
       </section>
 
       <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-300">
-          Authentification
+          {tp("apiDocs.auth.title")}
         </h2>
         <p className="mb-3 text-xs text-slate-400">
-          Toutes les routes sous <code className="rounded bg-slate-800 px-1">/api/v1/*</code>{" "}
-          requièrent un header{" "}
-          <code className="rounded bg-slate-800 px-1">Authorization: Bearer pf_xxxxx</code>.
-          Crée ta clé sur la page{" "}
+          {tp("apiDocs.auth.p1")}{" "}
+          <code className="rounded bg-slate-800 px-1">/api/v1/*</code>{" "}
+          {tp("apiDocs.auth.p2")}{" "}
+          <code className="rounded bg-slate-800 px-1">Authorization: Bearer pf_xxxxx</code>.{" "}
+          {tp("apiDocs.auth.p3")}{" "}
           <Link href="/account" className="text-sky-400 hover:underline">
             /account
           </Link>{" "}
-          (section &quot;Clés API&quot;). Affichée une seule fois — copie-la dans ton
-          gestionnaire de secrets immédiatement.
+          {tp("apiDocs.auth.p4")}
         </p>
         <pre className="overflow-x-auto rounded bg-slate-950 p-3 text-xs text-slate-300">
-{`# Test rapide
-curl -H "Authorization: Bearer pf_xxxxxxxxxxxxxxx" \\
-  https://portflow.uk/api/v1/ports
-
-# 401 → token invalide ou révoqué
-# 429 → rate limit dépassé (header X-RateLimit-Reset indique la prochaine fenêtre)`}
+          {tp("apiDocs.auth.snippet")}
         </pre>
       </section>
 
       <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-300">
-          Rate limits
+          {tp("apiDocs.rate.title")}
         </h2>
         <table className="w-full text-xs">
           <thead className="text-slate-500">
             <tr className="text-left">
-              <th className="py-1 pr-3 font-normal">Plan</th>
-              <th className="py-1 pr-3 font-normal">Req / min</th>
-              <th className="py-1 font-normal">Req / jour estimé</th>
+              <th className="py-1 pr-3 font-normal">{tp("apiDocs.rate.plan")}</th>
+              <th className="py-1 pr-3 font-normal">{tp("apiDocs.rate.perMin")}</th>
+              <th className="py-1 font-normal">{tp("apiDocs.rate.perDay")}</th>
             </tr>
           </thead>
           <tbody className="text-slate-300">
-            <tr className="border-t border-slate-800">
-              <td className="py-1.5 pr-3">Free</td>
-              <td className="py-1.5 pr-3">—</td>
-              <td className="py-1.5">API non disponible</td>
-            </tr>
-            <tr className="border-t border-slate-800">
-              <td className="py-1.5 pr-3">Starter</td>
-              <td className="py-1.5 pr-3">120</td>
-              <td className="py-1.5">~5 000 / jour</td>
-            </tr>
-            <tr className="border-t border-slate-800">
-              <td className="py-1.5 pr-3">Professional</td>
-              <td className="py-1.5 pr-3">300</td>
-              <td className="py-1.5">~18 000 / heure</td>
-            </tr>
-            <tr className="border-t border-slate-800">
-              <td className="py-1.5 pr-3">Pro+</td>
-              <td className="py-1.5 pr-3">600</td>
-              <td className="py-1.5">~36 000 / heure</td>
-            </tr>
-            <tr className="border-t border-slate-800">
-              <td className="py-1.5 pr-3">Enterprise</td>
-              <td className="py-1.5 pr-3">6 000</td>
-              <td className="py-1.5">illimité dans la pratique</td>
-            </tr>
+            {[
+              ["Free", "—", tp("apiDocs.rate.free")],
+              ["Starter", "120", tp("apiDocs.rate.starter")],
+              ["Professional", "300", tp("apiDocs.rate.pro")],
+              ["Pro+", "600", tp("apiDocs.rate.proPlus")],
+              ["Enterprise", "6 000", tp("apiDocs.rate.enterprise")],
+            ].map(([plan, perMin, perDay]) => (
+              <tr key={plan} className="border-t border-slate-800">
+                <td className="py-1.5 pr-3">{plan}</td>
+                <td className="py-1.5 pr-3">{perMin}</td>
+                <td className="py-1.5">{perDay}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
         <p className="mt-3 text-[11px] text-slate-500">
-          Limites appliquées par token. Headers <code>X-RateLimit-Limit</code>,
+          {tp("apiDocs.rate.note1")} <code>X-RateLimit-Limit</code>,
           <code> X-RateLimit-Remaining</code>, <code>X-RateLimit-Reset</code>{" "}
-          présents sur chaque réponse.
+          {tp("apiDocs.rate.note2")}
         </p>
       </section>
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold uppercase tracking-wider text-slate-200">
-          Endpoints
+          {tp("apiDocs.endpoints")}
         </h2>
         {ENDPOINTS.map((e) => (
           <article
@@ -258,7 +243,7 @@ curl -H "Authorization: Bearer pf_xxxxxxxxxxxxxxx" \\
                     </code>{" "}
                     <span className="text-slate-500">({p.type})</span>
                     {p.req ? (
-                      <span className="text-rose-400"> required</span>
+                      <span className="text-rose-400"> {tp("apiDocs.required")}</span>
                     ) : null}
                     {p.note ? (
                       <span className="text-slate-500"> — {p.note}</span>
@@ -273,7 +258,7 @@ curl -H "Authorization: Bearer pf_xxxxxxxxxxxxxxx" \\
             {e.response ? (
               <details className="mt-2">
                 <summary className="cursor-pointer text-[10px] text-slate-500">
-                  Exemple de réponse
+                  {tp("apiDocs.exampleResponse")}
                 </summary>
                 <pre className="mt-1 overflow-x-auto rounded bg-slate-950 p-3 text-[11px] text-slate-400">
                   {e.response}
@@ -286,38 +271,35 @@ curl -H "Authorization: Bearer pf_xxxxxxxxxxxxxxx" \\
 
       <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-300">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-200">
-          Webhooks
+          {tp("apiDocs.webhooks.title")}
         </h2>
         <p className="text-xs text-slate-400">
-          Au-delà des appels REST pull, configure un webhook (Slack, Discord,
-          Telegram, email, ou endpoint custom) directement sur{" "}
+          {tp("apiDocs.webhooks.p1")}{" "}
           <Link href="/account" className="text-sky-400 hover:underline">
             /account
           </Link>{" "}
-          → section Alertes. Les événements supportés :{" "}
+          {tp("apiDocs.webhooks.p2")}{" "}
           <code>vessel.arrived</code>, <code>vessel.departed</code>,
-          <code> vessel.anomaly</code>. Filtres par watchlist + port disponibles.
+          <code> vessel.anomaly</code>. {tp("apiDocs.webhooks.p3")}
         </p>
       </section>
 
       <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-400">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-200">
-          Stabilité de l&apos;API
+          {tp("apiDocs.stability.title")}
         </h2>
         <ul className="list-disc space-y-1 pl-5 text-xs">
           <li>
-            Versionnée par préfixe <code>/api/v1/</code>. Pas de breaking change
-            sur v1 sans pré-annonce 60 jours.
+            {tp("apiDocs.stability.s1a")} <code>/api/v1/</code>.{" "}
+            {tp("apiDocs.stability.s1b")}
+          </li>
+          <li>{tp("apiDocs.stability.s2")}</li>
+          <li>
+            {tp("apiDocs.stability.s3a")} <code>/api/*</code>{" "}
+            {tp("apiDocs.stability.s3b")}
           </li>
           <li>
-            Nouveaux champs additifs sans incrément de version
-          </li>
-          <li>
-            Ancienne API <code>/api/*</code> (sans <code>v1</code>) reste pour
-            le dashboard interne — pas garantie pour usage tiers.
-          </li>
-          <li>
-            Rapport de bug ou demande de feature :{" "}
+            {tp("apiDocs.stability.s4")}{" "}
             <a
               href="mailto:contact@portflow.uk?subject=API"
               className="text-sky-400 hover:underline"

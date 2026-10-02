@@ -51,7 +51,7 @@ export default async function NewsPage() {
         </h1>
         <p className="max-w-2xl text-slate-400">
           The real numbers behind the maritime news — port congestion, chokepoint
-          transits and ETA accuracy, pulled live from AIS across 51 ports and 12
+          transits and ETA accuracy, pulled live from AIS across 51 ports and 13
           chokepoints. Observed, dated, sourced. We state the figure; we don&apos;t
           infer intent.
         </p>

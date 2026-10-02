@@ -21,14 +21,70 @@ export default async function AccountPage() {
   }
 
   if (!user) {
+    // Visiteur anonyme. Un prospect arrivé de LinkedIn (02/10/2026) a ouvert
+    // cette page et n'y a trouvé qu'un bouton « Se connecter » en français :
+    // une impasse. On dit ce qu'un compte apporte, et on offre les trois
+    // sorties utiles. Anglais : langue primaire du site (cf. /about).
     return (
-      <main className="mx-auto flex min-h-screen flex-col items-center justify-center p-6">
-        <Link
-          href="/sign-in"
-          className="rounded bg-sky-500 px-4 py-2 text-sm font-medium text-[#06121d]"
-        >
-          Se connecter
-        </Link>
+      <main className="mx-auto flex w-full max-w-[720px] flex-1 flex-col gap-8 p-6 py-14">
+        <header className="flex items-center justify-between">
+          <Link href="/" className="text-xs text-slate-400 hover:text-slate-200">
+            ← Port Flow
+          </Link>
+          <Link
+            href="/pricing"
+            className="text-xs text-slate-400 hover:text-slate-200"
+          >
+            Plans &amp; pricing →
+          </Link>
+        </header>
+
+        <section className="space-y-3">
+          <h1 className="text-3xl font-bold tracking-tight">Your account</h1>
+          <p className="text-slate-400">
+            Sign in to manage your plan and the tools below. No account yet? The
+            free tier gives read-only access to all 51 ports — no card, cancel
+            anytime.
+          </p>
+        </section>
+
+        <section className="grid gap-3 sm:grid-cols-2">
+          {[
+            ["API keys", "Create and revoke Bearer tokens for the public REST API (Starter and above)."],
+            ["Favourite ports", "Pin the ports you follow; they drive your alerts and your fleet view."],
+            ["Arrival alerts", "Slack, Telegram, email or webhook when a tracked vessel arrives, departs or goes dark."],
+            ["Billing", "Change plan, download invoices, cancel — through the Stripe portal."],
+          ].map(([title, body]) => (
+            <div
+              key={title}
+              className="rounded-lg border border-slate-800 bg-slate-900/60 p-4"
+            >
+              <div className="text-sm font-semibold text-slate-100">{title}</div>
+              <p className="mt-1 text-xs text-slate-400">{body}</p>
+            </div>
+          ))}
+        </section>
+
+        <section className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Link
+            href="/sign-in"
+            className="rounded bg-sky-500 px-6 py-3 text-center text-base font-semibold text-[#06121d] hover:bg-sky-400"
+          >
+            Sign in
+          </Link>
+          <Link
+            href="/sign-up"
+            className="rounded border border-slate-700 px-6 py-3 text-center text-base font-medium text-slate-100 hover:border-sky-500"
+          >
+            Create a free account
+          </Link>
+          <Link
+            href="/demo"
+            className="text-center text-sm text-slate-400 hover:text-slate-200 sm:ml-2"
+          >
+            or try the 10-minute demo, no signup →
+          </Link>
+        </section>
       </main>
     );
   }

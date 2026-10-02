@@ -1389,7 +1389,7 @@ export function translate(
   let value = dict[key] ?? MESSAGES.en[key] ?? key;
   if (params) {
     for (const [k, v] of Object.entries(params)) {
-      value = value.replace(`{${k}}`, String(v));
+      value = value.replaceAll(`{${k}}`, String(v));
     }
   }
   return value;

@@ -8,6 +8,81 @@ import type { Locale } from "./messages";
 type PageMessages = Record<string, string>;
 
 const fr: PageMessages = {
+  // --- /api-docs (02/10/2026) ---
+  "apiDocs.back":
+    "← retour",
+  "apiDocs.manageKeys":
+    "Gérer mes clés API →",
+  "apiDocs.title":
+    "API publique Port Flow",
+  "apiDocs.intro1":
+    "API REST simple, JSON, authentification Bearer. Disponible à partir du plan",
+  "apiDocs.intro2":
+    "(5 k req/jour) jusqu'à",
+  "apiDocs.intro3":
+    "(600 req/min).",
+  "apiDocs.auth.title":
+    "Authentification",
+  "apiDocs.auth.p1":
+    "Toutes les routes sous",
+  "apiDocs.auth.p2":
+    "requièrent un en-tête",
+  "apiDocs.auth.p3":
+    "Créez votre clé sur la page",
+  "apiDocs.auth.p4":
+    "(section « Clés API »). Affichée une seule fois — copiez-la immédiatement dans votre gestionnaire de secrets.",
+  "apiDocs.auth.snippet":
+    "# Test rapide\ncurl -H \"Authorization: Bearer pf_xxxxxxxxxxxxxxx\" \\\\\n  https://portflow.uk/api/v1/ports\n\n# 401 → token invalide ou révoqué\n# 429 → limite dépassée (l'en-tête X-RateLimit-Reset indique la prochaine fenêtre)",
+  "apiDocs.rate.title":
+    "Limites de débit",
+  "apiDocs.rate.plan":
+    "Plan",
+  "apiDocs.rate.perMin":
+    "Req / min",
+  "apiDocs.rate.perDay":
+    "Req / jour (estimé)",
+  "apiDocs.rate.free":
+    "API non disponible",
+  "apiDocs.rate.starter":
+    "~5 000 / jour",
+  "apiDocs.rate.pro":
+    "~18 000 / heure",
+  "apiDocs.rate.proPlus":
+    "~36 000 / heure",
+  "apiDocs.rate.enterprise":
+    "illimité en pratique",
+  "apiDocs.rate.note1":
+    "Limites appliquées par token. En-têtes",
+  "apiDocs.rate.note2":
+    "présents sur chaque réponse.",
+  "apiDocs.endpoints":
+    "Endpoints",
+  "apiDocs.required":
+    "requis",
+  "apiDocs.exampleResponse":
+    "Exemple de réponse",
+  "apiDocs.webhooks.title":
+    "Webhooks",
+  "apiDocs.webhooks.p1":
+    "Au-delà des appels REST, configurez un webhook (Slack, Discord, Telegram, e-mail ou endpoint sur mesure) directement sur",
+  "apiDocs.webhooks.p2":
+    "→ section Alertes. Événements pris en charge :",
+  "apiDocs.webhooks.p3":
+    "Filtres par watchlist et par port disponibles.",
+  "apiDocs.stability.title":
+    "Stabilité de l'API",
+  "apiDocs.stability.s1a":
+    "Versionnée par préfixe",
+  "apiDocs.stability.s1b":
+    "Aucune rupture de compatibilité sur v1 sans préavis de 60 jours.",
+  "apiDocs.stability.s2":
+    "Nouveaux champs additifs, sans incrément de version.",
+  "apiDocs.stability.s3a":
+    "L'ancienne API",
+  "apiDocs.stability.s3b":
+    "(sans v1) reste réservée au dashboard interne — non garantie pour un usage tiers.",
+  "apiDocs.stability.s4":
+    "Rapport de bug ou demande de fonctionnalité :",
   // Common
   "nav.back": "← retour",
 
@@ -658,6 +733,81 @@ const fr: PageMessages = {
 };
 
 const en: PageMessages = {
+  // --- /api-docs (02/10/2026) ---
+  "apiDocs.back":
+    "← back",
+  "apiDocs.manageKeys":
+    "Manage my API keys →",
+  "apiDocs.title":
+    "Port Flow public API",
+  "apiDocs.intro1":
+    "Simple REST API, JSON, Bearer authentication. Available from the",
+  "apiDocs.intro2":
+    "plan (5k req/day) up to",
+  "apiDocs.intro3":
+    "(600 req/min).",
+  "apiDocs.auth.title":
+    "Authentication",
+  "apiDocs.auth.p1":
+    "All routes under",
+  "apiDocs.auth.p2":
+    "require a header",
+  "apiDocs.auth.p3":
+    "Create your key on the",
+  "apiDocs.auth.p4":
+    "page (\"API keys\" section). Shown once — copy it to your secrets manager immediately.",
+  "apiDocs.auth.snippet":
+    "# Quick test\ncurl -H \"Authorization: Bearer pf_xxxxxxxxxxxxxxx\" \\\\\n  https://portflow.uk/api/v1/ports\n\n# 401 → invalid or revoked token\n# 429 → rate limit exceeded (the X-RateLimit-Reset header gives the next window)",
+  "apiDocs.rate.title":
+    "Rate limits",
+  "apiDocs.rate.plan":
+    "Plan",
+  "apiDocs.rate.perMin":
+    "Req / min",
+  "apiDocs.rate.perDay":
+    "Req / day (est.)",
+  "apiDocs.rate.free":
+    "API not available",
+  "apiDocs.rate.starter":
+    "~5,000 / day",
+  "apiDocs.rate.pro":
+    "~18,000 / hour",
+  "apiDocs.rate.proPlus":
+    "~36,000 / hour",
+  "apiDocs.rate.enterprise":
+    "unlimited in practice",
+  "apiDocs.rate.note1":
+    "Limits apply per token. Headers",
+  "apiDocs.rate.note2":
+    "on every response.",
+  "apiDocs.endpoints":
+    "Endpoints",
+  "apiDocs.required":
+    "required",
+  "apiDocs.exampleResponse":
+    "Example response",
+  "apiDocs.webhooks.title":
+    "Webhooks",
+  "apiDocs.webhooks.p1":
+    "Beyond REST pull calls, configure a webhook (Slack, Discord, Telegram, email or a custom endpoint) directly on",
+  "apiDocs.webhooks.p2":
+    "→ Alerts section. Supported events:",
+  "apiDocs.webhooks.p3":
+    "Watchlist and port filters available.",
+  "apiDocs.stability.title":
+    "API stability",
+  "apiDocs.stability.s1a":
+    "Versioned by prefix",
+  "apiDocs.stability.s1b":
+    "No breaking change on v1 without 60 days' notice.",
+  "apiDocs.stability.s2":
+    "New fields are additive, no version bump.",
+  "apiDocs.stability.s3a":
+    "The legacy",
+  "apiDocs.stability.s3b":
+    "API (without v1) remains for the internal dashboard — not guaranteed for third-party use.",
+  "apiDocs.stability.s4":
+    "Bug report or feature request:",
   "nav.back": "← back",
 
   "pricing.title": "Pricing",
@@ -3350,7 +3500,10 @@ export function tp(
   let value = dict[key] ?? PAGE_MESSAGES.en[key] ?? key;
   if (params) {
     for (const [k, v] of Object.entries(params)) {
-      value = value.replace(`{${k}}`, String(v));
+      // replaceAll : un même paramètre peut apparaître deux fois dans une
+      // phrase (« First {max} customers… {remaining}/{max} slots ») — un
+      // replace simple laissait le second « {max} » visible sur /pricing.
+      value = value.replaceAll(`{${k}}`, String(v));
     }
   }
   return value;
