@@ -195,6 +195,13 @@ export async function scanEncounters(): Promise<ScanResult> {
         const a = mmsis[i];
         const b = mmsis[j];
         pairsChecked++;
+        // Boucle CPU O(n²) (~300 000 paires par passage) : rendre la main
+        // à la boucle d'événements régulièrement, sinon HTTP + flux AIS
+        // gèlent ~15 s toutes les 15 min. Les positions sont déjà en
+        // mémoire (plus de curseur SQLite ouvert ici).
+        if (pairsChecked % 2_000 === 0) {
+          await new Promise<void>((resolve) => setImmediate(resolve));
+        }
         const posA = vessels.get(a)!;
         const posB = vessels.get(b)!;
         const segments = findProximitySegments(posA, posB);
