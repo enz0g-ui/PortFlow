@@ -4,6 +4,7 @@ import { computeKpiSnapshot } from "@/lib/kpi";
 import { computeActiveVoyages } from "@/lib/active-voyages";
 import { meta } from "@/lib/store";
 import { DEFAULT_PORT_ID, getPort } from "@/lib/ports";
+import { getCurrentUser } from "@/lib/auth/session";
 
 // The live dashboard — the product itself. Kept out of the index: it's an
 // interactive tool, not content. The marketing landing at `/` is the
@@ -23,6 +24,10 @@ export default async function AppPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  // Session connue cote serveur (compte Clerk OU cookie demo) : un visiteur
+  // anonyme n'appellera pas les endpoints /api/user/* qui repondent 401 —
+  // trois erreurs rouges en console pour tout acheteur technique curieux.
+  const hasSession = (await getCurrentUser()) !== null;
   const sp = await searchParams;
   const requested = typeof sp.port === "string" ? sp.port : undefined;
   const portId = requested && getPort(requested) ? requested : DEFAULT_PORT_ID;
@@ -49,6 +54,7 @@ export default async function AppPage({
       initialPort={portId}
       initialKpi={initialKpi}
       initialVoyages={initialVoyages}
+      initialAuthenticated={hasSession}
     />
   );
 }

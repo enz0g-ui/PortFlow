@@ -304,10 +304,13 @@ export default function Dashboard({
   initialPort,
   initialKpi = null,
   initialVoyages = null,
+  // false = aucune session (ni Clerk ni demo) : on saute les fetchs /api/user/*.
+  initialAuthenticated = true,
 }: {
   initialPort?: string;
   initialKpi?: KpiResponse | null;
   initialVoyages?: VoyagesResp | null;
+  initialAuthenticated?: boolean;
 } = {}) {
   const { t, locale } = useI18n();
   const [tankersOnly, setTankersOnly] = useState(false);
@@ -450,6 +453,7 @@ export default function Dashboard({
   const [byoVessels, setByoVessels] = useState<Vessel[]>([]);
 
   useEffect(() => {
+    if (!initialAuthenticated) return;
     let cancelled = false;
     fetch("/api/user/integrations", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
@@ -464,7 +468,7 @@ export default function Dashboard({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialAuthenticated]);
 
   useEffect(() => {
     if (byoSources.length === 0 || !portId) {
@@ -571,7 +575,7 @@ export default function Dashboard({
   };
 
   useEffect(() => {
-    if (!worldView) {
+    if (!worldView || !initialAuthenticated) {
       setWorldVessels([]);
       return;
     }
@@ -640,7 +644,7 @@ export default function Dashboard({
       cancelled = true;
       clearInterval(id);
     };
-  }, [worldView]);
+  }, [worldView, initialAuthenticated]);
 
   useEffect(() => {
     if (!fleetOnly || bookmarkedMmsis.size === 0) {
@@ -691,6 +695,7 @@ export default function Dashboard({
   };
 
   useEffect(() => {
+    if (!initialAuthenticated) return;
     let cancelled = false;
     fetch("/api/user/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
@@ -731,7 +736,7 @@ export default function Dashboard({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialAuthenticated]);
 
   const canAccessPort = (id: string): boolean => {
     if (!me) return true;
