@@ -32,7 +32,7 @@ const fr: PageMessages = {
   "apiDocs.auth.p4":
     "(section « Clés API »). Affichée une seule fois — copiez-la immédiatement dans votre gestionnaire de secrets.",
   "apiDocs.auth.snippet":
-    "# Test rapide\ncurl -H \"Authorization: Bearer pf_xxxxxxxxxxxxxxx\" \\\\\n  https://portflow.uk/api/v1/ports\n\n# 401 → token invalide ou révoqué\n# 429 → limite dépassée (l'en-tête X-RateLimit-Reset indique la prochaine fenêtre)",
+    "# Test rapide\ncurl -H \"Authorization: Bearer pf_xxxxxxxxxxxxxxx\" \\n  https://portflow.uk/api/v1/ports\n\n# 401 → token invalide ou révoqué\n# 429 → limite dépassée (l'en-tête X-RateLimit-Reset indique la prochaine fenêtre)",
   "apiDocs.rate.title":
     "Limites de débit",
   "apiDocs.rate.plan":
@@ -757,7 +757,7 @@ const en: PageMessages = {
   "apiDocs.auth.p4":
     "page (\"API keys\" section). Shown once — copy it to your secrets manager immediately.",
   "apiDocs.auth.snippet":
-    "# Quick test\ncurl -H \"Authorization: Bearer pf_xxxxxxxxxxxxxxx\" \\\\\n  https://portflow.uk/api/v1/ports\n\n# 401 → invalid or revoked token\n# 429 → rate limit exceeded (the X-RateLimit-Reset header gives the next window)",
+    "# Quick test\ncurl -H \"Authorization: Bearer pf_xxxxxxxxxxxxxxx\" \\n  https://portflow.uk/api/v1/ports\n\n# 401 → invalid or revoked token\n# 429 → rate limit exceeded (the X-RateLimit-Reset header gives the next window)",
   "apiDocs.rate.title":
     "Rate limits",
   "apiDocs.rate.plan":
