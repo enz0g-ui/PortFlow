@@ -74,7 +74,8 @@ function parseIdsFromText(text: string): { imo?: number; mmsi?: number } {
 async function fetchOfac(): Promise<SanctionEntry[]> {
   const r = await fetch(OFAC_CSV, {
     cache: "no-store",
-    signal: AbortSignal.timeout(30_000),
+    // 5,7 Mo via une redirection S3 : 30 s ne suffisait pas les jours lents.
+    signal: AbortSignal.timeout(120_000),
   });
   if (!r.ok) throw new Error(`OFAC HTTP ${r.status}`);
   const text = await r.text();
@@ -189,7 +190,7 @@ const OFSI_COL_REGIME = 31;
 async function fetchOfsi(): Promise<SanctionEntry[]> {
   const r = await fetch(UK_OFSI_CSV, {
     cache: "no-store",
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(120_000),
   });
   if (!r.ok) throw new Error(`OFSI HTTP ${r.status}`);
   const text = await r.text();
@@ -299,13 +300,38 @@ export function sanctionsStatus() {
   };
 }
 
+// Vérification HORAIRE, rafraîchissement quand la liste a vieilli de
+// REFRESH_MS. Avant : setInterval(REFRESH_MS) + garde « âge < REFRESH_MS »
+// → le tick tombait quelques secondes AVANT l'échéance et était sauté, d'où
+// un rafraîchissement réel toutes les 48 h (sonde /api/health en 503 au-delà
+// de 36 h). Un échec (source en panne) est aussi retenté l'heure suivante
+// au lieu d'attendre un jour.
+const CHECK_EVERY_MS = 60 * 60_000;
+const RETRY_FAILED_MS = 60 * 60_000;
+let _lastAttemptHadErrors = false;
+
+async function refreshTick(label: string): Promise<void> {
+  const cache = getCache();
+  const age = Date.now() - cache.fetchedAt;
+  const due = !cache.fetchedAt || age >= REFRESH_MS - CHECK_EVERY_MS;
+  const retry = _lastAttemptHadErrors && age >= RETRY_FAILED_MS;
+  if (!due && !retry) return;
+  try {
+    await refreshSanctions(true);
+    const after = getCache();
+    _lastAttemptHadErrors = after.errors.length > 0;
+    if (_lastAttemptHadErrors) {
+      console.error(`[sanctions] ${label}: partial/failed — ${after.errors.join(" | ")}`);
+    }
+  } catch (err) {
+    _lastAttemptHadErrors = true;
+    console.error(`[sanctions] ${label} refresh failed`, err);
+  }
+}
+
 export function startSanctionsRefresh() {
-  refreshSanctions().catch((err) =>
-    console.error("[sanctions] initial refresh failed", err),
-  );
+  void refreshTick("initial");
   setInterval(() => {
-    refreshSanctions().catch((err) =>
-      console.error("[sanctions] refresh failed", err),
-    );
-  }, REFRESH_MS);
+    void refreshTick("tick");
+  }, CHECK_EVERY_MS);
 }

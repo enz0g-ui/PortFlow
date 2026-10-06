@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { scanPositionsByTime } from "./positions-scan";
 import { PORTS } from "./ports";
 
 /**
@@ -83,28 +84,20 @@ interface PositionRow {
  * Designed to be safe to re-run frequently — UNIQUE(mmsi, start_ts) on the
  * dark_events table dedupes naturally.
  */
-export function detectDarkEvents(opts: {
+export async function detectDarkEvents(opts: {
   /** How far back to scan, in ms. Default 7 days. */
   sinceMs?: number;
-}): { opened: number; closed: number; scanned: number } {
+}): Promise<{ opened: number; closed: number; scanned: number }> {
   const sinceMs = opts.sinceMs ?? 7 * 24 * 3_600_000;
   const cutoff = Date.now() - sinceMs;
 
-  // We stream the positions row-by-row via SQLite's iterator API instead of
-  // .all() — a 24h window can be ~6 M rows for a busy port, and loading
-  // them all into JS heap pushes node:sqlite past its 1 GB limit (OOM
-  // crash, worker restart loop). With .iterate(), heap stays flat.
-  //
-  // Rows arrive ordered by (mmsi, ts), so we maintain a small per-MMSI
-  // sliding window of the last PRIOR_WINDOW_HOURS positions to evaluate
-  // each candidate gap as it appears.
-  const stmt = db().raw.prepare(
-    `SELECT mmsi, ts, lat, lon, state, zone
-     FROM positions INDEXED BY idx_positions_ts
-     WHERE ts >= ?
-     ORDER BY mmsi ASC, ts ASC`,
-  );
-
+  // Lecture par tranches de temps, non bloquante (voir positions-scan.ts).
+  // Avant : une requête synchrone ORDER BY mmsi, ts sur ~2 M de lignes →
+  // gel du serveur de 20-45 s toutes les heures. Les lignes arrivent
+  // maintenant par ts croissant : on tient, PAR NAVIRE, la dernière position
+  // et les horodatages de la fenêtre glissante de PRIOR_WINDOW_HOURS. Pour un
+  // navire donné, l'ordre est le même qu'avant (ts croissant) : résultat
+  // identique.
   const insertEvent = db().raw.prepare(
     `INSERT OR IGNORE INTO dark_events
        (mmsi, start_ts, start_lat, start_lon, n_prior_positions,
@@ -121,67 +114,65 @@ export function detectDarkEvents(opts: {
   let closed = 0;
   let scanned = 0;
   const now = Date.now();
+  const windowMs = PRIOR_WINDOW_HOURS * 3_600_000;
 
-  // Per-MMSI sliding window of recent positions. Reset whenever the MMSI
-  // changes (rows are ordered by mmsi). We only keep PRIOR_WINDOW_HOURS-h
-  // worth, so memory is bounded to the busiest vessel's recent reports
-  // (typically <100 entries).
-  let currentMmsi: number | null = null;
-  let prior: PositionRow[] = [];
-  let prev: PositionRow | null = null;
+  // priorTs = horodatages (croissants) des positions de la fenêtre, dernière
+  // position incluse ; head = début logique (évite les shift() en O(n)).
+  const state = new Map<
+    number,
+    { prev: PositionRow; priorTs: number[]; head: number }
+  >();
 
-  for (const r of stmt.iterate(cutoff) as IterableIterator<PositionRow>) {
-    scanned++;
-    if (r.mmsi !== currentMmsi) {
-      currentMmsi = r.mmsi;
-      prior = [];
-      prev = null;
-    }
-
-    if (prev) {
-      const gapH = (r.ts - prev.ts) / 3_600_000;
-      if (gapH >= MIN_GAP_HOURS && prev.state === "underway") {
-        // Count how many positions in `prior` fall within the 12h window
-        // before the gap (`prev.ts` is the last position before silence).
-        const priorCutoff = prev.ts - PRIOR_WINDOW_HOURS * 3_600_000;
-        let priorCount = 0;
-        for (let k = prior.length - 1; k >= 0; k--) {
-          if (prior[k].ts < priorCutoff) break;
-          priorCount++;
+  for await (const rows of scanPositionsByTime<PositionRow>({
+    columns: "mmsi, ts, lat, lon, state, zone",
+    since: cutoff,
+  })) {
+    for (const r of rows) {
+      scanned++;
+      let st = state.get(r.mmsi);
+      if (st) {
+        const prev = st.prev;
+        const gapH = (r.ts - prev.ts) / 3_600_000;
+        if (gapH >= MIN_GAP_HOURS && prev.state === "underway") {
+          // Positions dans les 12 h précédant la dernière avant le silence.
+          const priorCutoff = prev.ts - windowMs;
+          let priorCount = 0;
+          for (let k = st.priorTs.length - 1; k >= st.head; k--) {
+            if (st.priorTs[k] < priorCutoff) break;
+            priorCount++;
+          }
+          if (priorCount >= MIN_PRIOR_POSITIONS) {
+            const portId = nearestPort(prev.lat, prev.lon);
+            const ins = insertEvent.run(
+              r.mmsi,
+              prev.ts,
+              prev.lat,
+              prev.lon,
+              priorCount,
+              prev.state,
+              prev.zone,
+              portId,
+              now,
+            );
+            if (ins.changes > 0) opened++;
+            const cls = closeEvent.run(r.ts, r.lat, r.lon, gapH, r.mmsi, prev.ts);
+            if (cls.changes > 0) closed++;
+          }
         }
-        if (priorCount >= MIN_PRIOR_POSITIONS) {
-          const portId = nearestPort(prev.lat, prev.lon);
-          const ins = insertEvent.run(
-            r.mmsi,
-            prev.ts,
-            prev.lat,
-            prev.lon,
-            priorCount,
-            prev.state,
-            prev.zone,
-            portId,
-            now,
-          );
-          if (ins.changes > 0) opened++;
-          const cls = closeEvent.run(
-            r.ts,
-            r.lat,
-            r.lon,
-            gapH,
-            r.mmsi,
-            prev.ts,
-          );
-          if (cls.changes > 0) closed++;
-        }
+      } else {
+        st = { prev: r, priorTs: [], head: 0 };
+        state.set(r.mmsi, st);
       }
+      // Fenêtre glissante : ajout, puis retrait de la tête trop ancienne.
+      st.priorTs.push(r.ts);
+      const floor = r.ts - windowMs;
+      while (st.head < st.priorTs.length && st.priorTs[st.head] < floor) st.head++;
+      if (st.head > 64 && st.head * 2 > st.priorTs.length) {
+        st.priorTs = st.priorTs.slice(st.head);
+        st.head = 0;
+      }
+      st.prev = r;
     }
-
-    // Maintain sliding window: append, then trim from the head anything
-    // older than PRIOR_WINDOW_HOURS relative to the current row.
-    prior.push(r);
-    const windowFloor = r.ts - PRIOR_WINDOW_HOURS * 3_600_000;
-    while (prior.length > 0 && prior[0].ts < windowFloor) prior.shift();
-    prev = r;
   }
 
   return { opened, closed, scanned };
@@ -266,6 +257,7 @@ export function listDarkEvents(opts: {
  */
 let _intervalId: ReturnType<typeof setInterval> | null = null;
 let _lastRunAt = 0;
+let _running = false;
 let _lastRunResult: { opened: number; closed: number; scanned: number } | null =
   null;
 
@@ -285,13 +277,15 @@ export function startDarkEventsScanner(opts?: {
   // call `detectDarkEvents({ sinceMs: 7 * 86_400_000 })` from a one-off
   // node script.
 
-  _intervalId = setInterval(() => {
+  _intervalId = setInterval(async () => {
+    if (_running) return; // passage précédent pas fini (disque lent)
+    _running = true;
     try {
       // Tick scans only the last 24h — enough to catch newly-closed gaps
-      // without re-scanning the entire window every hour. With sub-second
-      // SQL latency on a 24h window (~50k-100k rows), this fits in one
-      // event-loop tick without HTTP starvation.
-      const r = detectDarkEvents({ sinceMs: 86_400_000 });
+      // without re-scanning the entire window every hour. ~2 M de lignes en
+      // prod (pas 50-100k comme prévu à l'origine) : lecture par tranches,
+      // non bloquante.
+      const r = await detectDarkEvents({ sinceMs: 86_400_000 });
       _lastRunAt = Date.now();
       _lastRunResult = r;
       if (r.opened > 0 || r.closed > 0) {
@@ -301,6 +295,8 @@ export function startDarkEventsScanner(opts?: {
       }
     } catch (err) {
       console.error("[dark-events] tick failed", err);
+    } finally {
+      _running = false;
     }
   }, intervalMs);
 }

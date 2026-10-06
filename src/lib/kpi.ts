@@ -71,10 +71,10 @@ let prunePositionsInterval: NodeJS.Timeout | undefined;
 const POSITIONS_PRUNE_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const POSITIONS_PRUNE_INITIAL_DELAY_MS = 10 * 60 * 1000;
 
-function runPositionsPrune() {
+async function runPositionsPrune() {
   try {
     const t0 = Date.now();
-    const removed = pruneOldPositions();
+    const removed = await pruneOldPositions();
     if (removed > 0) {
       console.log(
         `[db] pruneOldPositions removed=${removed} in ${Date.now() - t0}ms`,

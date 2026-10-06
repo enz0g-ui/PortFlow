@@ -337,17 +337,56 @@ const POSITIONS_RETENTION_DAYS = 7;
 // navires que les clients suivent.
 const WATCHLIST_RETENTION_DAYS = 180;
 
-export function pruneOldPositions(now = Date.now()): number {
+export async function pruneOldPositions(now = Date.now()): Promise<number> {
   const cutoff = now - POSITIONS_RETENTION_DAYS * 24 * 60 * 60 * 1000;
   const watchlistCutoff = now - WATCHLIST_RETENTION_DAYS * 24 * 60 * 60 * 1000;
-  const r = db()
-    .raw.prepare(
-      `DELETE FROM positions
-       WHERE ts < ?
-         AND (ts < ? OR mmsi NOT IN (SELECT DISTINCT mmsi FROM watchlist WHERE mmsi IS NOT NULL))`,
-    )
-    .run(cutoff, watchlistCutoff);
-  return Number(r.changes ?? 0);
+  // Par LOTS, en rendant la main entre deux lots. Avant : un seul DELETE de
+  // ~2 M de lignes par jour → 70 à 106 s de gel complet du serveur (les 4
+  // plus longs gels mesurés en prod, oct. 2026).
+  const dbi = db();
+  const watched = new Set(
+    (dbi.raw
+      .prepare(`SELECT DISTINCT mmsi FROM watchlist WHERE mmsi IS NOT NULL`)
+      .all() as Array<{ mmsi: number }>).map((r) => r.mmsi),
+  );
+  const pick = dbi.raw.prepare(
+    `SELECT rowid AS rid, mmsi, ts FROM positions INDEXED BY idx_positions_ts
+     WHERE ts < ? AND ts >= ?
+     ORDER BY ts
+     LIMIT ?`,
+  );
+  const del = dbi.raw.prepare(`DELETE FROM positions WHERE rowid = ?`);
+  const BATCH = 5_000;
+  let removed = 0;
+  let floor = 0;
+  for (;;) {
+    const rows = pick.all(cutoff, floor, BATCH) as Array<{
+      rid: number;
+      mmsi: number;
+      ts: number;
+    }>;
+    if (rows.length === 0) break;
+    dbi.raw.exec("BEGIN");
+    try {
+      for (const r of rows) {
+        // Watchlist : conservée jusqu'à WATCHLIST_RETENTION_DAYS.
+        if (r.ts >= watchlistCutoff && watched.has(r.mmsi)) continue;
+        removed += Number(del.run(r.rid).changes ?? 0);
+      }
+      dbi.raw.exec("COMMIT");
+    } catch (err) {
+      dbi.raw.exec("ROLLBACK");
+      throw err;
+    }
+    // Les lignes watchlist conservées restent sous `cutoff` : on avance le
+    // plancher pour ne pas les relire indéfiniment. Égalité de ts possible
+    // en bord de lot : on relit ce ts (les lignes supprimées ont disparu).
+    const lastTs = rows[rows.length - 1].ts;
+    floor = lastTs > floor ? lastTs : floor + 1;
+    if (rows.length < BATCH) break;
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  }
+  return removed;
 }
 
 export interface LastKnownPositionRow {

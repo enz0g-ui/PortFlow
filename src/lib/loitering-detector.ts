@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { scanPositionsByTime } from "./positions-scan";
 import { PORTS } from "./ports";
 import { isVesselSanctioned } from "./uk-sanctions";
 import { getStatic } from "./store";
@@ -78,11 +79,6 @@ export interface LoiteringScanResult {
 export async function scanLoitering(): Promise<LoiteringScanResult> {
   const now = Date.now();
   const since = now - SCAN_WINDOW_HOURS * 3_600_000;
-  const stmt = db().raw.prepare(
-    `SELECT mmsi, ts, lat, lon, sog FROM positions INDEXED BY idx_positions_ts
-     WHERE ts >= ?
-     ORDER BY mmsi ASC, ts ASC`,
-  );
 
   const insert = db().raw.prepare(
     `INSERT OR REPLACE INTO loitering_events
@@ -93,10 +89,9 @@ export async function scanLoitering(): Promise<LoiteringScanResult> {
   );
 
   const minDurationMs = MIN_DURATION_HOURS * 3_600_000;
+  const maxGapMs = MAX_GAP_HOURS * 3_600_000;
   let positionsScanned = 0;
   let newEvents = 0;
-  let currentMmsi: number | null = null;
-  let run: RunState | null = null;
 
   const closeRun = (mmsi: number, end: RunState) => {
     const durationMs = end.lastTs - end.startTs;
@@ -123,34 +118,39 @@ export async function scanLoitering(): Promise<LoiteringScanResult> {
     newEvents++;
   };
 
-  for (const r of stmt.iterate(since) as IterableIterator<PositionRow>) {
-    positionsScanned++;
-    if (r.mmsi !== currentMmsi) {
-      if (currentMmsi !== null && run) closeRun(currentMmsi, run);
-      currentMmsi = r.mmsi;
-      run = null;
-    }
-    const sog = typeof r.sog === "number" && r.sog >= 0 ? r.sog : 0;
-    const isSlow = sog < SLOW_SOG_KN;
-    const isFar = farFromAnyPort(r.lat, r.lon);
-    const inLoiter = isSlow && isFar;
+  const newRun = (r: PositionRow, sog: number): RunState => ({
+    startTs: r.ts,
+    startLat: r.lat,
+    startLon: r.lon,
+    lastTs: r.ts,
+    lastLat: r.lat,
+    lastLon: r.lon,
+    sogSum: sog,
+    sogCount: 1,
+  });
 
-    if (inLoiter) {
-      if (run) {
-        const gapMs = r.ts - run.lastTs;
-        if (gapMs > MAX_GAP_HOURS * 3_600_000) {
-          // gap too long → close prev run, start new
-          closeRun(currentMmsi!, run);
-          run = {
-            startTs: r.ts,
-            startLat: r.lat,
-            startLon: r.lon,
-            lastTs: r.ts,
-            lastLat: r.lat,
-            lastLon: r.lon,
-            sogSum: sog,
-            sogCount: 1,
-          };
+  // Lecture par tranches de temps, non bloquante (voir positions-scan.ts) ;
+  // les lignes arrivent par ts croissant, on tient un « run » ouvert PAR
+  // NAVIRE. Pour un navire donné l'ordre est inchangé : même résultat
+  // qu'avec l'ancien ORDER BY mmsi, ts (qui gelait le serveur 20-30 s).
+  const runs = new Map<number, RunState>();
+  for await (const rows of scanPositionsByTime<PositionRow>({
+    columns: "mmsi, ts, lat, lon, sog",
+    since,
+    until: now,
+  })) {
+    for (const r of rows) {
+      positionsScanned++;
+      const sog = typeof r.sog === "number" && r.sog >= 0 ? r.sog : 0;
+      const inLoiter = sog < SLOW_SOG_KN && farFromAnyPort(r.lat, r.lon);
+      const run = runs.get(r.mmsi);
+      if (inLoiter) {
+        if (!run) {
+          runs.set(r.mmsi, newRun(r, sog));
+        } else if (r.ts - run.lastTs > maxGapMs) {
+          // trou trop long → on clôt le run précédent, on en ouvre un neuf
+          closeRun(r.mmsi, run);
+          runs.set(r.mmsi, newRun(r, sog));
         } else {
           run.lastTs = r.ts;
           run.lastLat = r.lat;
@@ -158,26 +158,13 @@ export async function scanLoitering(): Promise<LoiteringScanResult> {
           run.sogSum += sog;
           run.sogCount++;
         }
-      } else {
-        run = {
-          startTs: r.ts,
-          startLat: r.lat,
-          startLon: r.lon,
-          lastTs: r.ts,
-          lastLat: r.lat,
-          lastLon: r.lon,
-          sogSum: sog,
-          sogCount: 1,
-        };
-      }
-    } else {
-      if (run) {
-        closeRun(currentMmsi!, run);
-        run = null;
+      } else if (run) {
+        closeRun(r.mmsi, run);
+        runs.delete(r.mmsi);
       }
     }
   }
-  if (currentMmsi !== null && run) closeRun(currentMmsi, run);
+  for (const [mmsi, run] of runs) closeRun(mmsi, run);
 
   return { positionsScanned, newEvents };
 }
@@ -252,10 +239,13 @@ export function listLoiteringEvents(opts: {
 
 let _intervalId: ReturnType<typeof setInterval> | null = null;
 let _lastResult: LoiteringScanResult | null = null;
+let _running = false;
 
 export function startLoiteringDetector(): void {
   if (_intervalId) return;
   _intervalId = setInterval(async () => {
+    if (_running) return;
+    _running = true;
     try {
       _lastResult = await scanLoitering();
       if (_lastResult.newEvents > 0) {
@@ -265,6 +255,8 @@ export function startLoiteringDetector(): void {
       }
     } catch (err) {
       console.error("[loitering-detector] tick failed", err);
+    } finally {
+      _running = false;
     }
   }, SCAN_INTERVAL_MS);
 }
