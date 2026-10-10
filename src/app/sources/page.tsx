@@ -141,6 +141,21 @@ export default function SourcesPage() {
   const [me, setMe] = useState<MeResp | null>(null);
 
   const loadUserInt = async () => {
+    // /api/user/me répond 200 même sans session : on l'interroge d'abord et
+    // on n'appelle les intégrations (401 sans session) que si quelqu'un est
+    // connecté — plus d'erreur rouge en console pour un visiteur anonyme.
+    let meResp: MeResp | null = null;
+    try {
+      const r = await fetch("/api/user/me", { cache: "no-store" });
+      if (r.ok) meResp = (await r.json()) as MeResp;
+    } catch {
+      /* ignore */
+    }
+    setMe(meResp);
+    if (meResp && !meResp.authenticated) {
+      setUserIntUnauth(true);
+      return;
+    }
     try {
       const r = await fetch("/api/user/integrations", { cache: "no-store" });
       if (r.status === 401) {
@@ -150,12 +165,6 @@ export default function SourcesPage() {
       if (!r.ok) return;
       setUserInt((await r.json()) as UserIntegrations);
       setUserIntUnauth(false);
-    } catch {
-      /* ignore */
-    }
-    try {
-      const r = await fetch("/api/user/me", { cache: "no-store" });
-      if (r.ok) setMe((await r.json()) as MeResp);
     } catch {
       /* ignore */
     }
