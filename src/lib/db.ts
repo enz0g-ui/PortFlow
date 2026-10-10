@@ -366,6 +366,12 @@ export async function pruneOldPositions(now = Date.now()): Promise<number> {
       ts: number;
     }>;
     if (rows.length === 0) break;
+    // Une autre tâche peut avoir une transaction ouverte : on attend qu'elle
+    // se termine plutôt que d'échouer (« cannot start a transaction within a
+    // transaction » — la purge a échoué ainsi 3 jours de suite, oct. 2026).
+    for (let w = 0; dbi.raw.isTransaction && w < 600; w++) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    }
     dbi.raw.exec("BEGIN");
     try {
       for (const r of rows) {

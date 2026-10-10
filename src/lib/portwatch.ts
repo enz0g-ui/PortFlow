@@ -147,6 +147,41 @@ interface IngestResult {
   error?: string;
 }
 
+
+/**
+ * Écrit un lot de lignes dans UNE transaction synchrone (aucun await
+ * dedans). Avant : BEGIN ... for await (pages HTTP ArcGIS) ... COMMIT — la
+ * transaction restait ouverte pendant le réseau, toutes les écritures du
+ * process (positions AIS comprises) la rejoignaient et étaient annulées
+ * avec elle en cas d'erreur ArcGIS, et la purge quotidienne échouait
+ * (« cannot start a transaction within a transaction »).
+ */
+function flushBatch(
+  stmt: { run: (...args: never[]) => { changes: number | bigint } },
+  batch: unknown[][],
+): number {
+  if (batch.length === 0) return 0;
+  let n = 0;
+  const raw = db().raw;
+  raw.exec("BEGIN");
+  try {
+    for (const args of batch) {
+      if (Number(stmt.run(...(args as never[])).changes) > 0) n++;
+    }
+    raw.exec("COMMIT");
+  } catch (err) {
+    try {
+      raw.exec("ROLLBACK");
+    } catch {
+      /* ignore */
+    }
+    throw err;
+  }
+  batch.length = 0;
+  return n;
+}
+const PW_BATCH = 2_000;
+
 /**
  * Ingest the most recent N days of daily port-call activity. The PortWatch
  * Daily_Ports_Data layer has ~2 065 ports × N days = up to ~125 000 rows
@@ -172,8 +207,8 @@ export async function ingestPortActivity(
   let fetched = 0;
   let inserted = 0;
   const now = Date.now();
+  const batch: unknown[][] = [];
   try {
-    db().raw.exec("BEGIN");
     for await (const f of iterFeatures(url, where)) {
       fetched++;
       const a = f.attributes;
@@ -182,7 +217,7 @@ export async function ingestPortActivity(
       );
       const dateUtc = parseDate(a.date ?? a.DATE ?? a.date_utc ?? a.year_month);
       if (!portId || !dateUtc) continue;
-      const r = insert.run(
+      batch.push([
         portId,
         (a.portname ?? a.port_name ?? a.name ?? null) as string | null,
         (a.country ?? a.country_name ?? null) as string | null,
@@ -195,17 +230,12 @@ export async function ingestPortActivity(
         asInt(a.roro_calls ?? a.ro_ro_calls),
         JSON.stringify(a),
         now,
-      );
-      if (r.changes > 0) inserted++;
+      ]);
+      if (batch.length >= PW_BATCH) inserted += flushBatch(insert, batch);
     }
-    db().raw.exec("COMMIT");
+    inserted += flushBatch(insert, batch);
     return { ok: true, feed: "port_activity", fetched, inserted, url };
   } catch (err) {
-    try {
-      db().raw.exec("ROLLBACK");
-    } catch {
-      /* ignore */
-    }
     return {
       ok: false,
       feed: "port_activity",
@@ -241,8 +271,8 @@ export async function ingestChokepointTransit(
   let fetched = 0;
   let inserted = 0;
   const now = Date.now();
+  const batch: unknown[][] = [];
   try {
-    db().raw.exec("BEGIN");
     for await (const f of iterFeatures(url, where)) {
       fetched++;
       const a = f.attributes;
@@ -251,7 +281,7 @@ export async function ingestChokepointTransit(
       );
       const dateUtc = parseDate(a.date ?? a.DATE ?? a.date_utc);
       if (!cpId || !dateUtc) continue;
-      const r = insert.run(
+      batch.push([
         cpId,
         (a.chokepointname ?? a.chokepoint_name ?? a.name ?? null) as
           | string
@@ -265,17 +295,12 @@ export async function ingestChokepointTransit(
         asFloat(a.trade_volume ?? a.trade_volume_tons ?? a.tonnage),
         JSON.stringify(a),
         now,
-      );
-      if (r.changes > 0) inserted++;
+      ]);
+      if (batch.length >= PW_BATCH) inserted += flushBatch(insert, batch);
     }
-    db().raw.exec("COMMIT");
+    inserted += flushBatch(insert, batch);
     return { ok: true, feed: "chokepoint_transit", fetched, inserted, url };
   } catch (err) {
-    try {
-      db().raw.exec("ROLLBACK");
-    } catch {
-      /* ignore */
-    }
     return {
       ok: false,
       feed: "chokepoint_transit",
