@@ -307,14 +307,16 @@ export function sanctionsStatus() {
 // de 36 h). Un échec (source en panne) est aussi retenté l'heure suivante
 // au lieu d'attendre un jour.
 const CHECK_EVERY_MS = 60 * 60_000;
-const RETRY_FAILED_MS = 60 * 60_000;
 let _lastAttemptHadErrors = false;
 
 async function refreshTick(label: string): Promise<void> {
   const cache = getCache();
   const age = Date.now() - cache.fetchedAt;
   const due = !cache.fetchedAt || age >= REFRESH_MS - CHECK_EVERY_MS;
-  const retry = _lastAttemptHadErrors && age >= RETRY_FAILED_MS;
+  // Pas de garde d'âge sur la reprise : fetchedAt est posé quelques secondes
+  // APRÈS le tick, donc « âge >= 1 h » sautait le tick suivant et une source
+  // tombée au démarrage restait absente 2 h au lieu d'1.
+  const retry = _lastAttemptHadErrors;
   if (!due && !retry) return;
   try {
     await refreshSanctions(true);
