@@ -3,6 +3,7 @@ import { scanPositionsByTime } from "./positions-scan";
 import { PORTS } from "./ports";
 import { isVesselSanctioned } from "./uk-sanctions";
 import { getStatic } from "./store";
+import { mergeIntoExistingLoitering } from "./event-merge";
 
 /**
  * In-house loitering detector. Replaces GFW's commercial-restricted
@@ -101,12 +102,35 @@ export async function scanLoitering(): Promise<LoiteringScanResult> {
       mmsi,
       imo: (stat as { imo?: number } | undefined)?.imo ?? null,
     });
+    const avgSpeed =
+      end.sogCount > 0 ? Math.round((end.sogSum / end.sogCount) * 100) / 100 : 0;
+    // La fenêtre glissante tronque le début des mouillages longs : chaque
+    // passage revoit le même événement avec un start_ts décalé. On prolonge
+    // l'événement existant qui chevauche au lieu d'en créer un nouveau.
+    if (
+      mergeIntoExistingLoitering({
+        id: -1,
+        mmsi,
+        start_ts: end.startTs,
+        end_ts: end.lastTs,
+        avg_speed_kn: avgSpeed,
+        start_lat: end.startLat,
+        start_lon: end.startLon,
+        end_lat: end.lastLat,
+        end_lon: end.lastLon,
+        was_sanctioned: sanctioned ? 1 : 0,
+        detected_at: now,
+        updated_at: now,
+      })
+    ) {
+      return;
+    }
     insert.run(
       mmsi,
       end.startTs,
       end.lastTs,
       Math.round((durationMs / 3_600_000) * 10) / 10,
-      end.sogCount > 0 ? Math.round((end.sogSum / end.sogCount) * 100) / 100 : 0,
+      avgSpeed,
       end.startLat,
       end.startLon,
       end.lastLat,

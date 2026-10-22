@@ -2,6 +2,7 @@ import { db } from "./db";
 import { findChokepoint } from "./chokepoint-detector";
 import { isVesselSanctioned } from "./uk-sanctions";
 import { getStatic } from "./store";
+import { mergeIntoExistingEncounter } from "./event-merge";
 
 /**
  * In-house ship-to-ship encounter detector. Replaces GFW's commercial-
@@ -227,6 +228,29 @@ export async function scanEncounters(): Promise<ScanResult> {
             imo: (statB as { imo?: number } | undefined)?.imo ?? null,
           });
           const startPos = posA.find((p) => p.ts >= seg.startTs) ?? posA[0];
+          // Fenêtre glissante de 4 h : une rencontre plus longue revient à
+          // chaque passage avec un début décalé. On prolonge la rencontre
+          // existante qui chevauche au lieu d'en créer une nouvelle.
+          if (
+            mergeIntoExistingEncounter({
+              id: -1,
+              mmsi_a: a,
+              mmsi_b: b,
+              start_ts: seg.startTs,
+              end_ts: seg.endTs,
+              median_distance_m: median,
+              chokepoint_id: chokepointId,
+              start_lat: startPos.lat,
+              start_lon: startPos.lon,
+              was_sanctioned_a: sanctionedA ? 1 : 0,
+              was_sanctioned_b: sanctionedB ? 1 : 0,
+              detected_at: now,
+              updated_at: now,
+            })
+          ) {
+            ongoingEncounters++;
+            continue;
+          }
           insert.run(
             a,
             b,
@@ -242,9 +266,6 @@ export async function scanEncounters(): Promise<ScanResult> {
             now,
             now,
           );
-          // We use INSERT OR REPLACE so re-detecting the same encounter
-          // (same mmsi_a, mmsi_b, start_ts) just updates the row. New
-          // unique start_ts → new encounter.
           newEncounters++;
         }
       }

@@ -226,6 +226,12 @@ export async function register() {
   const { startLoiteringDetector } = await import("./lib/loitering-detector");
   startLoiteringDetector();
 
+  // Nettoyage UNIQUE des doublons mouillage / rencontres (fenêtre glissante
+  // → une ligne par passage, ~97 % de doublons mesurés en oct. 2026). Les
+  // détecteurs fusionnent désormais eux-mêmes ; ceci traite l'historique.
+  const { scheduleEventDedupe } = await import("./lib/event-merge");
+  scheduleEventDedupe();
+
   // Dynamic anomaly thresholds — recomputes P50/P95 of anchor-dwell
   // distributions every 6 h, snapshot to anomaly_thresholds table.
   // Falls back to hardcoded warn/critical if the cache is empty.
