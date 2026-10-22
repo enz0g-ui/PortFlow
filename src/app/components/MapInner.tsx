@@ -257,11 +257,13 @@ function buildLineFC(track: Array<[number, number]> | undefined): FC {
 // « dark_all », passées sous clé API en oct. 2026 — chaque pavé renvoyait
 // une image « API KEY REQUIRED » sur tout le globe. Le style est dessiné ici
 // (palette du site) : aucune dépendance à un style tiers qui pourrait changer.
-const LAND = "#0f1828";
-const WATER = "#060b14";
+const LAND = "#16233a";
+const WATER = "#050a12";
 const LABEL = "#5f708a";
 const LABEL_HALO = "#060b14";
-const NAME = ["coalesce", ["get", "name:latin"], ["get", "name_en"], ["get", "name"]];
+// Noms anglais d'abord : homogène avec l'interface, et reste dans la plage
+// de glyphes embarquée (les noms locaux tombaient sur des 404 de police).
+const NAME = ["coalesce", ["get", "name_en"], ["get", "name:latin"], ["get", "name"]];
 
 function baseStyle(): maplibregl.StyleSpecification {
   return {
@@ -287,7 +289,7 @@ function baseStyle(): maplibregl.StyleSpecification {
         source: "basemap",
         "source-layer": "landcover",
         filter: ["in", ["get", "class"], ["literal", ["ice", "sand"]]],
-        paint: { "fill-color": "#121c2d", "fill-opacity": 0.6 },
+        paint: { "fill-color": "#1a283f", "fill-opacity": 0.6 },
       },
       {
         id: "landuse",
@@ -296,7 +298,7 @@ function baseStyle(): maplibregl.StyleSpecification {
         "source-layer": "landuse",
         minzoom: 9,
         filter: ["in", ["get", "class"], ["literal", ["industrial", "commercial", "railway"]]],
-        paint: { "fill-color": "#121d2f" },
+        paint: { "fill-color": "#1a2840" },
       },
       {
         id: "water",
@@ -323,7 +325,7 @@ function baseStyle(): maplibregl.StyleSpecification {
         "source-layer": "aeroway",
         minzoom: 11,
         filter: ["==", ["geometry-type"], "Polygon"],
-        paint: { "fill-color": "#132034" },
+        paint: { "fill-color": "#1c2b44" },
       },
       {
         id: "building",
@@ -331,7 +333,7 @@ function baseStyle(): maplibregl.StyleSpecification {
         source: "basemap",
         "source-layer": "building",
         minzoom: 13,
-        paint: { "fill-color": "#141f31" },
+        paint: { "fill-color": "#1d2c46" },
       },
       {
         id: "road-minor",
@@ -341,7 +343,7 @@ function baseStyle(): maplibregl.StyleSpecification {
         minzoom: 11,
         filter: ["in", ["get", "class"], ["literal", ["secondary", "tertiary", "minor", "service"]]],
         paint: {
-          "line-color": "#16223a",
+          "line-color": "#203150",
           "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.4, 15, 2],
         },
       },
@@ -353,7 +355,7 @@ function baseStyle(): maplibregl.StyleSpecification {
         minzoom: 5,
         filter: ["in", ["get", "class"], ["literal", ["motorway", "trunk", "primary"]]],
         paint: {
-          "line-color": "#1b2942",
+          "line-color": "#26395a",
           "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.4, 10, 1.2, 15, 3],
         },
       },
@@ -364,7 +366,7 @@ function baseStyle(): maplibregl.StyleSpecification {
         "source-layer": "boundary",
         minzoom: 4,
         filter: ["all", ["==", ["get", "admin_level"], 4], ["!=", ["get", "maritime"], 1]],
-        paint: { "line-color": "#1d2a40", "line-width": 0.6, "line-dasharray": [2, 2] },
+        paint: { "line-color": "#24344f", "line-width": 0.6, "line-dasharray": [2, 2] },
       },
       {
         id: "boundary-country",
@@ -373,7 +375,7 @@ function baseStyle(): maplibregl.StyleSpecification {
         "source-layer": "boundary",
         filter: ["all", ["==", ["get", "admin_level"], 2], ["!=", ["get", "maritime"], 1]],
         paint: {
-          "line-color": "#2a3b56",
+          "line-color": "#33476a",
           "line-width": ["interpolate", ["linear"], ["zoom"], 1, 0.5, 6, 1.2],
         },
       },
@@ -412,17 +414,18 @@ function baseStyle(): maplibregl.StyleSpecification {
         type: "symbol",
         source: "basemap",
         "source-layer": "place",
+        minzoom: 2.5,
         maxzoom: 7,
         filter: ["==", ["get", "class"], "country"],
         layout: {
           "text-field": NAME as maplibregl.ExpressionSpecification,
           "text-font": ["Noto Sans Regular"],
-          "text-size": 11,
+          "text-size": 10,
           "text-transform": "uppercase",
           "text-letter-spacing": 0.12,
           "text-max-width": 7,
         },
-        paint: { "text-color": "#46566e", "text-halo-color": LABEL_HALO, "text-halo-width": 1.2 },
+        paint: { "text-color": "#3e4f69", "text-halo-color": LAND, "text-halo-width": 1 },
       },
     ],
     // Projection globe (MapLibre v5) : la carte devient une vraie sphère
