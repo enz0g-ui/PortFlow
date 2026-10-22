@@ -17,6 +17,18 @@ import { yieldToEventLoop } from "./positions-scan";
 
 const round1 = (x: number) => Math.round(x * 10) / 10;
 
+// Requêtes préparées une seule fois (~200 k groupes au nettoyage initial).
+type Stmt = ReturnType<ReturnType<typeof db>["raw"]["prepare"]>;
+const stmts = new Map<string, Stmt>();
+function stmt(sql: string): Stmt {
+  let s = stmts.get(sql);
+  if (!s) {
+    s = db().raw.prepare(sql);
+    stmts.set(sql, s);
+  }
+  return s;
+}
+
 interface Span {
   id: number;
   start_ts: number;
@@ -46,7 +58,9 @@ export function overlapGroups<T extends Span>(rows: T[]): T[][] {
 const earliest = <T extends Span>(g: T[]) =>
   g.reduce((a, b) => (b.start_ts < a.start_ts ? b : a));
 const latest = <T extends Span>(g: T[]) =>
-  g.reduce((a, b) => ((b.end_ts ?? b.start_ts) > (a.end_ts ?? a.start_ts) ? b : a));
+  g.reduce((a, b) =>
+    (b.end_ts ?? b.start_ts) > (a.end_ts ?? a.start_ts) ? b : a,
+  );
 const spanMs = (r: Span) => (r.end_ts ?? r.start_ts) - r.start_ts;
 
 /* ---------------- mouillage ---------------- */
@@ -104,23 +118,31 @@ function applyLoiteringGroup(g: LoiteringRecord[]): number {
   if (stored.length === 0) return 0;
   const keep = earliest(stored);
   const m = mergedLoitering(g);
-  const raw = db().raw;
-  const del = raw.prepare(`DELETE FROM loitering_events WHERE id = ?`);
+  const del = stmt(`DELETE FROM loitering_events WHERE id = ?`);
   let removed = 0;
   // Supprimer AVANT de mettre à jour : le nouveau start_ts peut être celui
   // d'une ligne du groupe (contrainte UNIQUE(mmsi, start_ts)).
-  for (const r of stored) if (r.id !== keep.id) removed += Number(del.run(r.id).changes ?? 0);
-  raw
-    .prepare(
-      `UPDATE loitering_events SET start_ts = ?, end_ts = ?, duration_h = ?,
+  for (const r of stored)
+    if (r.id !== keep.id) removed += Number(del.run(r.id).changes ?? 0);
+  stmt(
+    `UPDATE loitering_events SET start_ts = ?, end_ts = ?, duration_h = ?,
          avg_speed_kn = ?, start_lat = ?, start_lon = ?, end_lat = ?, end_lon = ?,
          was_sanctioned = ?, detected_at = ?, updated_at = ?
        WHERE id = ?`,
-    )
-    .run(
-      m.start, m.end, m.durationH, m.avgSpeed, m.startLat, m.startLon,
-      m.endLat, m.endLon, m.sanctioned, m.detectedAt, m.updatedAt, keep.id,
-    );
+  ).run(
+    m.start,
+    m.end,
+    m.durationH,
+    m.avgSpeed,
+    m.startLat,
+    m.startLon,
+    m.endLat,
+    m.endLon,
+    m.sanctioned,
+    m.detectedAt,
+    m.updatedAt,
+    keep.id,
+  );
   return removed;
 }
 
@@ -129,13 +151,15 @@ function applyLoiteringGroup(g: LoiteringRecord[]): number {
  * chevauche, sinon renvoie false (l'appelant insère une nouvelle ligne).
  */
 export function mergeIntoExistingLoitering(fresh: LoiteringRecord): boolean {
-  const overlapping = db()
-    .raw.prepare(
-      `SELECT ${LOIT_COLS} FROM loitering_events
+  const overlapping = stmt(
+    `SELECT ${LOIT_COLS} FROM loitering_events
        WHERE mmsi = ? AND start_ts <= ? AND end_ts >= ?
        ORDER BY start_ts`,
-    )
-    .all(fresh.mmsi, fresh.end_ts ?? fresh.start_ts, fresh.start_ts) as unknown as LoiteringRecord[];
+  ).all(
+    fresh.mmsi,
+    fresh.end_ts ?? fresh.start_ts,
+    fresh.start_ts,
+  ) as unknown as LoiteringRecord[];
   if (overlapping.length === 0) return false;
   applyLoiteringGroup([...overlapping, fresh]);
   return true;
@@ -169,47 +193,43 @@ function applyEncounterGroup(g: EncounterRecord[]): number {
   const longest = g.reduce((a, b) => (spanMs(b) > spanMs(a) ? b : a));
   const start = first.start_ts;
   const end = last.end_ts ?? last.start_ts;
-  const raw = db().raw;
-  const del = raw.prepare(`DELETE FROM encounters WHERE id = ?`);
+  const del = stmt(`DELETE FROM encounters WHERE id = ?`);
   let removed = 0;
-  for (const r of stored) if (r.id !== keep.id) removed += Number(del.run(r.id).changes ?? 0);
-  raw
-    .prepare(
-      `UPDATE encounters SET start_ts = ?, end_ts = ?, duration_h = ?,
+  for (const r of stored)
+    if (r.id !== keep.id) removed += Number(del.run(r.id).changes ?? 0);
+  stmt(
+    `UPDATE encounters SET start_ts = ?, end_ts = ?, duration_h = ?,
          median_distance_m = ?, chokepoint_id = ?, start_lat = ?, start_lon = ?,
          was_sanctioned_a = ?, was_sanctioned_b = ?, detected_at = ?, updated_at = ?
        WHERE id = ?`,
-    )
-    .run(
-      start,
-      end,
-      round1((end - start) / 3_600_000),
-      longest.median_distance_m,
-      first.chokepoint_id,
-      first.start_lat,
-      first.start_lon,
-      g.some((r) => r.was_sanctioned_a === 1) ? 1 : 0,
-      g.some((r) => r.was_sanctioned_b === 1) ? 1 : 0,
-      Math.min(...g.map((r) => r.detected_at)),
-      Math.max(...g.map((r) => r.updated_at)),
-      keep.id,
-    );
+  ).run(
+    start,
+    end,
+    round1((end - start) / 3_600_000),
+    longest.median_distance_m,
+    first.chokepoint_id,
+    first.start_lat,
+    first.start_lon,
+    g.some((r) => r.was_sanctioned_a === 1) ? 1 : 0,
+    g.some((r) => r.was_sanctioned_b === 1) ? 1 : 0,
+    Math.min(...g.map((r) => r.detected_at)),
+    Math.max(...g.map((r) => r.updated_at)),
+    keep.id,
+  );
   return removed;
 }
 
 export function mergeIntoExistingEncounter(fresh: EncounterRecord): boolean {
-  const overlapping = db()
-    .raw.prepare(
-      `SELECT ${ENC_COLS} FROM encounters
+  const overlapping = stmt(
+    `SELECT ${ENC_COLS} FROM encounters
        WHERE mmsi_a = ? AND mmsi_b = ? AND start_ts <= ? AND end_ts >= ?
        ORDER BY start_ts`,
-    )
-    .all(
-      fresh.mmsi_a,
-      fresh.mmsi_b,
-      fresh.end_ts ?? fresh.start_ts,
-      fresh.start_ts,
-    ) as unknown as EncounterRecord[];
+  ).all(
+    fresh.mmsi_a,
+    fresh.mmsi_b,
+    fresh.end_ts ?? fresh.start_ts,
+    fresh.start_ts,
+  ) as unknown as EncounterRecord[];
   if (overlapping.length === 0) return false;
   applyEncounterGroup([...overlapping, fresh]);
   return true;
@@ -218,10 +238,10 @@ export function mergeIntoExistingEncounter(fresh: EncounterRecord): boolean {
 /* ---------------- nettoyage unique de l'historique ---------------- */
 
 const JOB_NAME = "dedupe-events-2026-10";
-const ROWS_PER_BATCH = 5_000;
+const ROWS_PER_BATCH = 1_000;
 
 /**
- * Parcourt chaque table par plages de navires (~5 000 lignes par lot) :
+ * Parcourt chaque table par plages de navires (~1 000 lignes par lot) :
  * lecture + fusion + écriture d'un lot sont SYNCHRONES (aucun détecteur ne
  * peut s'intercaler au milieu d'un navire), puis on rend la main à la
  * boucle d'événements. Même principe que la purge des positions.
@@ -306,8 +326,14 @@ export async function dedupeEventTables(): Promise<void> {
     `[event-merge] encounters: removed=${enc.removed} batches=${enc.batches} in ${Date.now() - t1}ms`,
   );
   raw
-    .prepare(`INSERT OR REPLACE INTO maintenance_jobs (name, done_at, detail) VALUES (?, ?, ?)`)
-    .run(JOB_NAME, Date.now(), JSON.stringify({ loitering: loit.removed, encounters: enc.removed }));
+    .prepare(
+      `INSERT OR REPLACE INTO maintenance_jobs (name, done_at, detail) VALUES (?, ?, ?)`,
+    )
+    .run(
+      JOB_NAME,
+      Date.now(),
+      JSON.stringify({ loitering: loit.removed, encounters: enc.removed }),
+    );
 }
 
 /** Nettoyage unique, 15 min après le démarrage (cache disque chaud, purge passée). */
