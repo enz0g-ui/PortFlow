@@ -141,29 +141,12 @@ export default function RootLayout({
           (fixed, lg+). pb-[52px] : place pour la barre d'onglets mobile
           (fixed bottom, < lg). */}
       <body className="min-h-full flex flex-col pb-[52px] lg:pb-0 lg:pl-[60px]">
-        {/* LCP on the dashboard is a Leaflet basemap tile from CARTO's
-            sharded CDN (a–d.basemaps.cartocdn.com). RUM showed the tile as
-            the largest element with a slow/variable load. Preconnecting the
-            tile hosts removes DNS+TLS+TCP setup from the critical path so the
-            first tiles paint sooner. React 19 hoists these <link>s to <head>. */}
+        {/* Fond de carte du dashboard : tuiles vectorielles OpenFreeMap.
+            Preconnect = DNS+TLS hors du chemin critique des premiers pavés.
+            React 19 hoists these <link>s to <head>. */}
         <link
           rel="preconnect"
-          href="https://a.basemaps.cartocdn.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preconnect"
-          href="https://b.basemaps.cartocdn.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preconnect"
-          href="https://c.basemaps.cartocdn.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preconnect"
-          href="https://d.basemaps.cartocdn.com"
+          href="https://tiles.openfreemap.org"
           crossOrigin="anonymous"
         />
         <script

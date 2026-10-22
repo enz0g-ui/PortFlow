@@ -27,11 +27,11 @@ export function Attributions({ compact = false }: { compact?: boolean }) {
         (CC-BY 4.0) · Imagerie Copernicus Sentinel-1 · Cartes ©{" "}
         <a
           className="hover:text-slate-300"
-          href="https://carto.com/attributions"
+          href="https://openfreemap.org"
           target="_blank"
           rel="noreferrer"
         >
-          CARTO
+          OpenFreeMap
         </a>{" "}
         +{" "}
         <a
@@ -90,13 +90,13 @@ export function Attributions({ compact = false }: { compact?: boolean }) {
           <strong>Cartographie</strong> : tuiles ©{" "}
           <a
             className="text-sky-400 hover:underline"
-            href="https://carto.com/attributions"
+            href="https://openfreemap.org"
             target="_blank"
             rel="noreferrer"
           >
-            CARTO
+            OpenFreeMap
           </a>{" "}
-          (CC BY 3.0) sur fond ©{" "}
+          (schéma OpenMapTiles) sur données ©{" "}
           <a
             className="text-sky-400 hover:underline"
             href="https://www.openstreetmap.org/copyright"

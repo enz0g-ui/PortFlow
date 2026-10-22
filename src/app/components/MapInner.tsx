@@ -12,7 +12,7 @@
  *
  * L'interface `Props` est identique à l'ancienne implémentation Leaflet — ce
  * fichier reste un drop-in pour MapView/Dashboard. Fonctions portées :
- * fond CARTO assombri, atmosphère (ciel + voiles), zones de port, zones de
+ * fond vectoriel sombre (OpenFreeMap), atmosphère (ciel + voiles), zones de port, zones de
  * guerre + chokepoints (zoom-aware), trails, trace sélectionnée, navires
  * (lueur + cœur + sélection + surbrillance filtre), halo sanctionnés, SAR,
  * clusters, recentrage sur port / navire / cible forcée — le tout en gardant
@@ -250,7 +250,18 @@ function buildLineFC(track: Array<[number, number]> | undefined): FC {
   };
 }
 
-/* ---------- style de base (fond CARTO assombri + ciel) ---------- */
+/* ---------- style de base (fond vectoriel OpenFreeMap + ciel) ---------- */
+
+// Fond de carte VECTORIEL OpenFreeMap (schéma OpenMapTiles, données OSM) :
+// gratuit, sans clé, usage commercial autorisé. Avant : tuiles raster CARTO
+// « dark_all », passées sous clé API en oct. 2026 — chaque pavé renvoyait
+// une image « API KEY REQUIRED » sur tout le globe. Le style est dessiné ici
+// (palette du site) : aucune dépendance à un style tiers qui pourrait changer.
+const LAND = "#0f1828";
+const WATER = "#060b14";
+const LABEL = "#5f708a";
+const LABEL_HALO = "#060b14";
+const NAME = ["coalesce", ["get", "name:latin"], ["get", "name_en"], ["get", "name"]];
 
 function baseStyle(): maplibregl.StyleSpecification {
   return {
@@ -261,31 +272,157 @@ function baseStyle(): maplibregl.StyleSpecification {
     // Plage 0-511 embarquée : couvre tous les noms de ports (Latin + accents).
     glyphs: "/fonts/{fontstack}/{range}.pbf",
     sources: {
-      carto: {
-        type: "raster",
-        tiles: [
-          "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-          "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-          "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-          "https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-        ],
-        tileSize: 256,
+      basemap: {
+        type: "vector",
+        url: "https://tiles.openfreemap.org/planet",
         attribution:
-          '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
+          '<a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> &copy; <a href="https://www.openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
       },
     },
     layers: [
-      { id: "bg", type: "background", paint: { "background-color": "#060c17" } },
+      { id: "bg", type: "background", paint: { "background-color": LAND } },
       {
-        id: "carto",
-        type: "raster",
-        source: "carto",
+        id: "landcover",
+        type: "fill",
+        source: "basemap",
+        "source-layer": "landcover",
+        filter: ["in", ["get", "class"], ["literal", ["ice", "sand"]]],
+        paint: { "fill-color": "#121c2d", "fill-opacity": 0.6 },
+      },
+      {
+        id: "landuse",
+        type: "fill",
+        source: "basemap",
+        "source-layer": "landuse",
+        minzoom: 9,
+        filter: ["in", ["get", "class"], ["literal", ["industrial", "commercial", "railway"]]],
+        paint: { "fill-color": "#121d2f" },
+      },
+      {
+        id: "water",
+        type: "fill",
+        source: "basemap",
+        "source-layer": "water",
+        paint: { "fill-color": WATER },
+      },
+      {
+        id: "waterway",
+        type: "line",
+        source: "basemap",
+        "source-layer": "waterway",
+        minzoom: 8,
         paint: {
-          "raster-brightness-min": 0,
-          "raster-brightness-max": 0.66,
-          "raster-saturation": -0.08,
-          "raster-contrast": 0.06,
+          "line-color": WATER,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.5, 14, 2],
         },
+      },
+      {
+        id: "aeroway",
+        type: "fill",
+        source: "basemap",
+        "source-layer": "aeroway",
+        minzoom: 11,
+        filter: ["==", ["geometry-type"], "Polygon"],
+        paint: { "fill-color": "#132034" },
+      },
+      {
+        id: "building",
+        type: "fill",
+        source: "basemap",
+        "source-layer": "building",
+        minzoom: 13,
+        paint: { "fill-color": "#141f31" },
+      },
+      {
+        id: "road-minor",
+        type: "line",
+        source: "basemap",
+        "source-layer": "transportation",
+        minzoom: 11,
+        filter: ["in", ["get", "class"], ["literal", ["secondary", "tertiary", "minor", "service"]]],
+        paint: {
+          "line-color": "#16223a",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.4, 15, 2],
+        },
+      },
+      {
+        id: "road-major",
+        type: "line",
+        source: "basemap",
+        "source-layer": "transportation",
+        minzoom: 5,
+        filter: ["in", ["get", "class"], ["literal", ["motorway", "trunk", "primary"]]],
+        paint: {
+          "line-color": "#1b2942",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.4, 10, 1.2, 15, 3],
+        },
+      },
+      {
+        id: "boundary-state",
+        type: "line",
+        source: "basemap",
+        "source-layer": "boundary",
+        minzoom: 4,
+        filter: ["all", ["==", ["get", "admin_level"], 4], ["!=", ["get", "maritime"], 1]],
+        paint: { "line-color": "#1d2a40", "line-width": 0.6, "line-dasharray": [2, 2] },
+      },
+      {
+        id: "boundary-country",
+        type: "line",
+        source: "basemap",
+        "source-layer": "boundary",
+        filter: ["all", ["==", ["get", "admin_level"], 2], ["!=", ["get", "maritime"], 1]],
+        paint: {
+          "line-color": "#2a3b56",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 1, 0.5, 6, 1.2],
+        },
+      },
+      {
+        id: "water-name",
+        type: "symbol",
+        source: "basemap",
+        "source-layer": "water_name",
+        filter: ["==", ["geometry-type"], "Point"],
+        layout: {
+          "text-field": NAME as maplibregl.ExpressionSpecification,
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 11,
+          "text-letter-spacing": 0.15,
+          "text-max-width": 6,
+        },
+        paint: { "text-color": "#2b4263", "text-halo-color": WATER, "text-halo-width": 1 },
+      },
+      {
+        id: "place-city",
+        type: "symbol",
+        source: "basemap",
+        "source-layer": "place",
+        minzoom: 5,
+        filter: ["in", ["get", "class"], ["literal", ["city", "town"]]],
+        layout: {
+          "text-field": NAME as maplibregl.ExpressionSpecification,
+          "text-font": ["Noto Sans Regular"],
+          "text-size": ["interpolate", ["linear"], ["zoom"], 5, 10, 12, 13],
+          "text-max-width": 8,
+        },
+        paint: { "text-color": LABEL, "text-halo-color": LABEL_HALO, "text-halo-width": 1.2 },
+      },
+      {
+        id: "place-country",
+        type: "symbol",
+        source: "basemap",
+        "source-layer": "place",
+        maxzoom: 7,
+        filter: ["==", ["get", "class"], "country"],
+        layout: {
+          "text-field": NAME as maplibregl.ExpressionSpecification,
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 11,
+          "text-transform": "uppercase",
+          "text-letter-spacing": 0.12,
+          "text-max-width": 7,
+        },
+        paint: { "text-color": "#46566e", "text-halo-color": LABEL_HALO, "text-halo-width": 1.2 },
       },
     ],
     // Projection globe (MapLibre v5) : la carte devient une vraie sphère
@@ -679,10 +816,10 @@ export default memo(function MapInner({
 
     // On déclenche setup dès que le SPEC de style est parsé (couche `bg`
     // présente), PAS sur `load`/`idle`/`isStyleLoaded` qui attendent tous le
-    // chargement des tuiles raster distantes : quand CARTO est lent ou limité
+    // chargement des tuiles distantes : quand le fond de carte est lent ou limité
     // en débit, ces événements ne se déclenchent jamais et les couches
     // vectorielles (navires, zones) ne seraient jamais ajoutées. Les cercles
-    // se dessinent sans dépendre du fond raster. `setup` est idempotent.
+    // se dessinent sans dépendre du fond de carte. `setup` est idempotent.
     const trySetup = () => {
       if (readyRef.current || !mapRef.current) return;
       if (!map.getLayer("bg")) return; // spec pas encore parsé
