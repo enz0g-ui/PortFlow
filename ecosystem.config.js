@@ -42,7 +42,10 @@ module.exports = {
         NODE_ENV: "production",
         PORT: 3000,
       },
-      max_memory_restart: "1G",
+      // 2G : valeur de prod depuis longtemps (modif locale du serveur, reportee ici le 24/10/2026).
+      max_memory_restart: "2G",
+      // Horodate chaque ligne des logs PM2 (diagnostic des reconnexions AIS).
+      time: true,
       autorestart: true,
       watch: false,
     },
