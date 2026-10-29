@@ -98,7 +98,7 @@ const ENDPOINTS: Endpoint[] = [
   {
     method: "GET",
     path: "/api/sanctions",
-    desc: "OFAC SDN + UK OFSI screening for a vessel by MMSI or IMO.",
+    desc: "OFAC SDN + UK Sanctions List screening for a vessel by MMSI or IMO.",
     params: [
       { name: "mmsi", type: "int", note: "9-digit MMSI" },
       { name: "imo", type: "int", note: "7-digit IMO number" },
