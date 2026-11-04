@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 interface MeResp {
@@ -85,6 +86,13 @@ export function DemoBanner() {
         expires in{" "}
         <span className="font-mono tabular-nums">{mmss}</span>
       </span>
+      <span aria-hidden="true">·</span>
+      <Link
+        href="/sign-up?from=demo"
+        className="font-semibold underline hover:opacity-80"
+      >
+        Sign up free
+      </Link>
       <span aria-hidden="true">·</span>
       <button
         type="button"

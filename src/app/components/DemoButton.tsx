@@ -43,20 +43,20 @@ function DemoButtonInner({ compact = false }: { compact?: boolean }) {
       type="button"
       onClick={onClick}
       disabled={pending}
-      title="10-minute preview, no signup required (one per network per 24 h)"
+      title="15-minute preview, no signup required (one per network per 24 h)"
       // pf-shine : reflet lumineux qui balaie le bouton toutes les ~4,5 s
       // (globals.css). Sur la landing, ce bouton est le premier appel à
       // l'action : ~400 visiteurs/jour le voient, ~1 l'ouvre. pf-shine-glow
       // ajoute un halo pulsé, réservé à la version pleine taille.
       className={`pf-shine${compact ? "" : " pf-shine-glow"} rounded border border-emerald-700/60 bg-emerald-950/40 px-2 py-1 text-xs font-medium text-emerald-200 hover:border-emerald-500 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-50`}
     >
-      {pending ? "Starting…" : compact ? "Demo" : "Try demo (10 min)"}
+      {pending ? "Starting…" : compact ? "Demo" : "Try demo (15 min)"}
     </button>
   );
 }
 
 /**
- * Anonymous 10-minute demo trigger. Shown to signed-out visitors only,
+ * Anonymous 15-minute demo trigger. Shown to signed-out visitors only,
  * so we don't confuse authenticated users (who already have their tier)
  * with a redundant "try demo" affordance. If Clerk isn't enabled (local
  * dev), the button is always shown.

@@ -51,7 +51,7 @@ export const DEMO_CODES: Record<string, DemoCodeConfig> = {
   },
 };
 
-// Anonymous ticket — homepage "Try Port Flow" button. 10 min, Professional tier.
+// Anonymous ticket — homepage "Try Port Flow" button + auto-start on /app. 15 min, Professional tier.
 // No code required; granted on POST with { anonymous: true }.
 //
 // Tier choice: "professional" (not "free") so visitors can actually test the
@@ -61,7 +61,7 @@ export const DEMO_CODES: Record<string, DemoCodeConfig> = {
 // per-prospect codes, which keeps a reason for them to redeem one.
 export const ANONYMOUS_DEMO: DemoCodeConfig = {
   tier: "professional",
-  durationMinutes: 10,
+  durationMinutes: 15,
   label: "Anonymous homepage demo",
 };
 

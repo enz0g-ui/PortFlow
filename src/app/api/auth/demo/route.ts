@@ -16,6 +16,8 @@ export const dynamic = "force-dynamic";
 interface Body {
   code?: string;
   anonymous?: boolean;
+  /** "auto" = lancée à l'arrivée sur /app, sinon bouton ou code. */
+  source?: string;
 }
 
 // Per-IP rate limit for anonymous tickets: 1 redemption per 24h. Prevents
@@ -109,8 +111,15 @@ export async function POST(request: NextRequest) {
     if (anonymousDemoIpHistory.size > 200) pruneOldIpEntries();
   }
 
+  const source = isAnonymous
+    ? body.source === "auto"
+      ? "auto"
+      : "button"
+    : "code";
+  // UA abrégée : distinguer un humain d'un navigateur robotisé dans le bilan.
+  const ua = (request.headers.get("user-agent") ?? "").slice(0, 80);
   console.log(
-    `[demo] session=${demoId} code=${resolvedCode} tier=${config.tier} duration=${config.durationMinutes}m label="${config.label}" ip=${clientIp ?? "unknown"}`,
+    `[demo] session=${demoId} code=${resolvedCode} source=${source} tier=${config.tier} duration=${config.durationMinutes}m label="${config.label}" ip=${clientIp ?? "unknown"} ua="${ua.replace(/"/g, "'")}"`,
   );
 
   return Response.json({

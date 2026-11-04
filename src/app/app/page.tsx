@@ -5,6 +5,7 @@ import { computeActiveVoyages } from "@/lib/active-voyages";
 import { meta } from "@/lib/store";
 import { DEFAULT_PORT_ID, getPort } from "@/lib/ports";
 import { getCurrentUser } from "@/lib/auth/session";
+import { AutoDemo } from "../components/AutoDemo";
 
 // The live dashboard — the product itself. Kept out of the index: it's an
 // interactive tool, not content. The marketing landing at `/` is the
@@ -50,11 +51,15 @@ export default async function AppPage({
   }
 
   return (
-    <Dashboard
-      initialPort={portId}
-      initialKpi={initialKpi}
-      initialVoyages={initialVoyages}
-      initialAuthenticated={hasSession}
-    />
+    <>
+      {/* Sans session : la démo de 15 min démarre toute seule. */}
+      {hasSession ? null : <AutoDemo />}
+      <Dashboard
+        initialPort={portId}
+        initialKpi={initialKpi}
+        initialVoyages={initialVoyages}
+        initialAuthenticated={hasSession}
+      />
+    </>
   );
 }

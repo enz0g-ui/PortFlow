@@ -321,7 +321,7 @@ export default async function Home({
               A live tanker desk, one click away
             </h2>
             <p className="mb-5 text-[13px] text-slate-400">
-              No signup, no card. A 10-minute Professional-tier session,
+              No signup, no card. A 15-minute Professional-tier session,
               instantly.
             </p>
             <div className="[&>button]:!bg-sky-500 [&>button]:!text-[#06121d] [&>button]:px-6 [&>button]:py-3 [&>button]:text-base [&>button]:font-semibold hover:[&>button]:!bg-sky-400 self-start">

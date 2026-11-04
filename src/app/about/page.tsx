@@ -117,7 +117,7 @@ export default function AboutPage() {
           </li>
           <li>
             <span className="font-medium text-slate-200">No lock-in.</span> Monthly
-            plans cancel anytime. A 10-minute demo needs no signup and no card.
+            plans cancel anytime. A 15-minute demo needs no signup and no card.
           </li>
         </ul>
       </section>

@@ -77,22 +77,30 @@ function DemoForm() {
   return (
     <>
       {expiredReason ? (
-        <div className="rounded-lg border border-amber-700/50 bg-amber-950/40 p-4 text-sm text-amber-200">
-          Your demo session has ended. Enter your code again to restart, or
-          sign up at{" "}
+        <div className="space-y-3 rounded-lg border border-emerald-700/50 bg-emerald-950/40 p-5 text-sm text-emerald-100">
+          <p className="text-base font-semibold">
+            Your preview has ended — keep going with a free account.
+          </p>
+          <p className="text-emerald-200/80">
+            No card required. Free accounts keep all 51 ports, live ETAs and
+            7 days of history; upgrade any time for sanctions screening,
+            watchlists, alerts and CSV export.
+          </p>
           <Link
-            href="/sign-up"
-            className="text-amber-300 underline hover:text-amber-100"
+            href="/sign-up?from=demo"
+            className="inline-block rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-[#04140d] hover:bg-emerald-400"
           >
-            /sign-up
-          </Link>{" "}
-          for a permanent free account.
+            Create a free account
+          </Link>
+          <p className="text-xs text-emerald-200/70">
+            Have a personal code? Enter it below to restart a session.
+          </p>
         </div>
       ) : null}
 
       {rateLimitedReason ? (
         <div className="rounded-lg border border-rose-700/50 bg-rose-950/40 p-4 text-sm text-rose-200">
-          The free 10-minute preview has already been used from this network
+          The free 15-minute preview has already been used from this network
           in the last 24 hours. You can still enter a personal code below for
           a 30-minute session, or{" "}
           <Link
@@ -139,8 +147,8 @@ function DemoForm() {
       <section className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/60 p-5">
         <h2 className="text-lg font-semibold">No code? Quick preview</h2>
         <p className="text-sm text-slate-400">
-          10 minutes on the Free tier — read-only access to all 51 ports,
-          live ETA, public RMSE benchmark, and sanctions visualization.
+          15 minutes on the Professional tier — all 51 ports, live ETA,
+          sanctions screening, demurrage risk score and CSV export.
         </p>
         <button
           type="button"
@@ -148,7 +156,7 @@ function DemoForm() {
           disabled={submitting || anonPending}
           className="rounded-md border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {anonPending ? "Starting…" : "Start 10-min anonymous preview"}
+          {anonPending ? "Starting…" : "Start 15-min anonymous preview"}
         </button>
       </section>
     </>
@@ -181,7 +189,7 @@ export default function DemoPage() {
         <p className="text-sm text-slate-300">
           Two ways to explore the live platform. Either enter the personal
           code from your email for a 30-minute Pro+ session, or start an
-          instant 10-minute anonymous preview on the Free tier.
+          instant 15-minute anonymous preview on the Professional tier.
         </p>
       </section>
 

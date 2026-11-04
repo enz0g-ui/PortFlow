@@ -82,7 +82,7 @@ export default async function AccountPage() {
             href="/demo"
             className="text-center text-sm text-slate-400 hover:text-slate-200 sm:ml-2"
           >
-            or try the 10-minute demo, no signup →
+            or try the 15-minute demo, no signup →
           </Link>
         </section>
       </main>

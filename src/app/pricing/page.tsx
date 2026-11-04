@@ -16,7 +16,7 @@ const FAQ: ReadonlyArray<{ q: string; a: string }> = [
   },
   {
     q: "Can I try before paying?",
-    a: "Yes — a 10-minute Professional-tier session, no signup and no card, from the \"Try demo\" button. The Free tier then gives read-only access across all 51 ports.",
+    a: "Yes — a 15-minute Professional-tier session, no signup and no card, from the \"Try demo\" button. The Free tier then gives read-only access across all 51 ports.",
   },
   {
     q: "What counts as a \"closed voyage\"?",
