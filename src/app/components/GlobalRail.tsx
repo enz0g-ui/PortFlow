@@ -25,6 +25,7 @@ export function GlobalRail() {
     href: string;
     match?: string; // route qui rend l'item actif (undefined = ancre, jamais actif)
   }> = [
+    { glyph: "list", label: "BRIEF", tip: "Briefing — sanctions exposure", href: "/brief", match: "/brief" },
     { glyph: "live", label: "LIVE", tip: t("ws.rail.live"), href: "/app", match: "/app" },
     { glyph: "eta", label: "ETA", tip: t("ws.rail.eta"), href: "/precision", match: "/precision" },
     { glyph: "globe", label: "GLOBE", tip: t("ws.rail.overview"), href: "/overview", match: "/overview" },
@@ -41,7 +42,7 @@ export function GlobalRail() {
   // Sous-ensemble pour la barre d'onglets mobile (l'app Android est une TWA
   // du site : sans elle, aucun moyen de naviguer sur téléphone).
   const mobileItems = items.filter((it) =>
-    ["LIVE", "GLOBE", "PORTS", "NEWS"].includes(it.label),
+    ["BRIEF", "LIVE", "GLOBE", "PORTS", "NEWS"].includes(it.label),
   );
 
   return (
