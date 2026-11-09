@@ -259,12 +259,60 @@ function cache(): Map<BriefWindow, Brief> {
   return g[KEY]!;
 }
 
+/**
+ * Toujours servi depuis le cache quand il existe : un cache périmé est
+ * rendu tel quel et rafraîchi juste après, hors du chemin de la requête.
+ * Seul le tout premier appel (avant le pré-calcul) attend le calcul.
+ */
 export function getBrief(window: BriefWindow): Brief {
   const hit = cache().get(window);
-  if (hit && Date.now() - hit.generatedAt < CACHE_MS) return hit;
+  if (hit) {
+    if (Date.now() - hit.generatedAt >= CACHE_MS) scheduleRefresh(window);
+    return hit;
+  }
+  return refresh(window);
+}
+
+const _pending = new Set<BriefWindow>();
+
+function scheduleRefresh(window: BriefWindow): void {
+  if (_pending.has(window)) return;
+  _pending.add(window);
+  setTimeout(() => {
+    try {
+      refresh(window);
+    } catch (err) {
+      console.error("[brief] refresh failed", err);
+    } finally {
+      _pending.delete(window);
+    }
+  }, 0);
+}
+
+function refresh(window: BriefWindow): Brief {
+  const t0 = Date.now();
   const brief = computeBrief(window);
   cache().set(window, brief);
+  const ms = Date.now() - t0;
+  if (ms > 2000) console.log(`[brief] ${window} computed in ${ms} ms`);
   return brief;
+}
+
+/** Pré-calcul au démarrage puis toutes les 5 min, fenêtres espacées. */
+export function startBriefWarmer(): void {
+  const windows: BriefWindow[] = ["7d", "24h", "30d"];
+  const run = () =>
+    windows.forEach((w, i) =>
+      setTimeout(() => {
+        try {
+          refresh(w);
+        } catch (err) {
+          console.error("[brief] warm failed", err);
+        }
+      }, i * 20_000),
+    );
+  setTimeout(run, 120_000);
+  setInterval(run, CACHE_MS);
 }
 
 function computeBrief(window: BriefWindow): Brief {

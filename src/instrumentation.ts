@@ -226,6 +226,11 @@ export async function register() {
   const { startLoiteringDetector } = await import("./lib/loitering-detector");
   startLoiteringDetector();
 
+  // Briefing compliance (/brief) : pré-calculé en arrière-plan pour que la
+  // page s'affiche immédiatement.
+  const { startBriefWarmer } = await import("./lib/brief");
+  startBriefWarmer();
+
   // Nettoyage UNIQUE des doublons mouillage / rencontres (fenêtre glissante
   // → une ligne par passage, ~97 % de doublons mesurés en oct. 2026). Les
   // détecteurs fusionnent désormais eux-mêmes ; ceci traite l'historique.
