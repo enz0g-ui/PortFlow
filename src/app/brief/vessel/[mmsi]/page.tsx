@@ -13,6 +13,8 @@ import {
   PlaceLink,
   VesselLink,
 } from "../../ui";
+import { getNetwork } from "@/lib/screen";
+import { Network } from "../../Network";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +38,9 @@ export default async function VesselRecordPage({
   const now = v.generatedAt;
   const listed = v.sanctions.length > 0;
   const lists = [...new Set(v.sanctions.map((s) => s.list))].sort();
+  const listedContacts = v.counterparts.filter((c) => c.sanctioned);
+  const exposed = !listed && listedContacts.length > 0;
+  const net = getNetwork(mmsi);
 
   const facts: Array<[string, string]> = [
     ["IMO", v.imo ? String(v.imo) : "—"],
@@ -66,20 +71,37 @@ export default async function VesselRecordPage({
             </p>
           </div>
           <div
-            className={`rounded-md border px-4 py-2 text-sm ${
-              listed
-                ? "border-red-500/50 bg-red-500/10 text-red-200"
-                : "border-emerald-600/40 bg-emerald-500/10 text-emerald-200"
-            }`}
+            className="flex flex-col items-end gap-2"
           >
-            {listed ? (
-              <span className="flex items-center gap-2">
-                <span className="font-semibold">Sanctioned</span>
-                <ListBadges lists={lists} />
-              </span>
-            ) : (
-              <span>Not on OFAC, UK or UN vessel lists</span>
-            )}
+            <div
+              className={`rounded-md border px-4 py-2 text-sm ${
+                listed
+                  ? "border-red-500/50 bg-red-500/10 text-red-200"
+                  : exposed
+                    ? "border-amber-400/50 bg-amber-400/10 text-amber-100"
+                    : "border-emerald-600/40 bg-emerald-500/10 text-emerald-200"
+              }`}
+            >
+              {listed ? (
+                <span className="flex items-center gap-2">
+                  <span className="font-semibold">Sanctioned</span>
+                  <ListBadges lists={lists} />
+                </span>
+              ) : exposed ? (
+                <span>
+                  <span className="font-semibold">Exposed</span> — not listed, but met{" "}
+                  {listedContacts.length} listed ship{listedContacts.length > 1 ? "s" : ""} at sea
+                </span>
+              ) : (
+                <span>No listing · no contact with listed ships ({v.windowDays} days)</span>
+              )}
+            </div>
+            <Link
+              href={`/sign-up?from=watch&mmsi=${v.mmsi}`}
+              className="rounded-md border border-sky-600/60 bg-sky-500/10 px-3 py-1.5 text-xs font-medium text-sky-200 hover:bg-sky-500/20"
+            >
+              ◉ Alert me if this ship meets a listed vessel or goes dark
+            </Link>
           </div>
         </header>
 
@@ -95,6 +117,23 @@ export default async function VesselRecordPage({
               <Stat label="Port calls" n={v.counts.port} />
             </section>
             <p className="-mt-3 text-xs text-slate-500">Last {v.windowDays} days</p>
+
+            {/* Toile de relations */}
+            <section>
+              <h2 className="text-lg font-semibold text-slate-50">Connections</h2>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Ships met side by side at sea and ports called, last {v.windowDays} days
+              </p>
+              <div className="mt-3">
+                {net.nodes.length > 1 ? (
+                  <Network net={net} />
+                ) : (
+                  <p className="rounded-md border border-slate-800 p-4 text-sm text-slate-500">
+                    No ship-to-ship contact or port call recorded in our coverage.
+                  </p>
+                )}
+              </div>
+            </section>
 
             {/* Chronologie */}
             <section>

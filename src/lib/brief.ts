@@ -161,7 +161,7 @@ const LIST_LABEL: Record<string, string> = {
   eu: "EU",
 };
 
-function listLabel(source: string): string {
+export function listLabel(source: string): string {
   return LIST_LABEL[source] ?? source.toUpperCase();
 }
 
@@ -169,7 +169,17 @@ function listLabel(source: string): string {
  * MMSI → informations de sanction. Croise la table des listes avec les
  * identités AIS (static_ships) par IMO puis par MMSI.
  */
+let _sancCache: { ts: number; idx: Map<number, SanctionInfo> } | null = null;
+
+/** Index mis en cache 5 min (lecture ~100 ms, appelée à chaque page). */
 export function sanctionedIndex(): Map<number, SanctionInfo> {
+  if (_sancCache && Date.now() - _sancCache.ts < 5 * 60_000) return _sancCache.idx;
+  const idx = computeSanctionedIndex();
+  _sancCache = { ts: Date.now(), idx };
+  return idx;
+}
+
+function computeSanctionedIndex(): Map<number, SanctionInfo> {
   const rows = db()
     .raw.prepare(
       `SELECT s.mmsi AS mmsi, v.source AS source, v.ship_name AS name,
@@ -212,7 +222,7 @@ export function sanctionedIndex(): Map<number, SanctionInfo> {
   return out;
 }
 
-interface StaticRow {
+export interface StaticRow {
   mmsi: number;
   name: string | null;
   imo: number | null;
@@ -224,7 +234,7 @@ interface StaticRow {
   callsign: string | null;
 }
 
-function staticFor(mmsis: number[]): Map<number, StaticRow> {
+export function staticFor(mmsis: number[]): Map<number, StaticRow> {
   const out = new Map<number, StaticRow>();
   const uniq = [...new Set(mmsis)];
   for (let i = 0; i < uniq.length; i += 500) {

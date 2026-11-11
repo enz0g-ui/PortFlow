@@ -16,6 +16,8 @@ import {
   PlaceLink,
   VesselLink,
 } from "./ui";
+import { ScreenBox } from "./ScreenBox";
+import { screenExamples } from "@/lib/screen";
 
 export const metadata: Metadata = {
   title: "Briefing",
@@ -68,19 +70,39 @@ export default async function BriefPage({
     .slice()
     .sort((a, b) => b.severity - a.severity || b.ts - a.ts)
     .slice(0, 60);
+  const examples = screenExamples(
+    getBrief("30d").events.filter((e) => e.kind === "sts"),
+  );
 
   return (
     <main className="min-h-screen bg-[#070b12] px-4 pb-24 pt-6 text-slate-200 sm:px-6 lg:px-10">
       <div className="mx-auto max-w-[1400px]">
-        {/* En-tête */}
-        <header className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-800 pb-4">
+        {/* Vérification : le point d'entrée */}
+        <section className="rounded-lg border border-slate-700/80 bg-gradient-to-br from-slate-900 to-[#0a1220] p-5 sm:p-6">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-sky-400">
+            Port Flow · Sanctions & contact screening
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold text-slate-50 sm:text-3xl">
+            Is your fleet exposed?
+          </h1>
+          <p className="mt-1 max-w-3xl text-sm text-slate-400">
+            Sanctions lists tell you who is listed. We also tell you who has been
+            side by side with a listed ship at sea — in seconds, without an account.
+          </p>
+          <div className="mt-4 max-w-4xl">
+            <ScreenBox examples={examples} compact />
+          </div>
+        </section>
+
+        {/* En-tête du briefing */}
+        <header className="mt-8 flex flex-wrap items-end justify-between gap-4 border-b border-slate-800 pb-4">
           <div>
             <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-slate-500">
-              Port Flow · Sanctions exposure briefing
+              Briefing
             </p>
-            <h1 className="mt-1 text-2xl font-semibold text-slate-50">
+            <h2 className="mt-1 text-xl font-semibold text-slate-50">
               What changed, which ships, where
-            </h1>
+            </h2>
             <p className="mt-1 text-sm text-slate-400">
               Vessels on OFAC, UK and UN lists, and what they did at sea.
               Updated {fmtUtc(brief.generatedAt)} UTC.
