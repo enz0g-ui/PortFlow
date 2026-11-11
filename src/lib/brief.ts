@@ -251,7 +251,34 @@ export function staticFor(mmsis: number[]): Map<number, StaticRow> {
   return out;
 }
 
-function placeholders(n: number): string {
+// ─── Rôle du navire ─────────────────────────────────────────────────────
+
+const CARGO_ROLES = new Set([
+  "crude", "product", "chemical", "lng", "lpg",
+  "container", "dry-bulk", "general-cargo", "ro-ro",
+]);
+
+/**
+ * « cargo » : navire capable d'un transbordement ; « service » :
+ * remorqueur, pilote, pêche, passagers, petite unité — ils côtoient tout le
+ * monde au quotidien, leurs rapprochements ne disent rien de la conformité.
+ */
+export function vesselRole(
+  st: Pick<StaticRow, "cargo_class" | "ship_type" | "length_m"> | null | undefined,
+): "cargo" | "service" | "unknown" {
+  if (!st) return "unknown";
+  if (st.cargo_class && CARGO_ROLES.has(st.cargo_class)) return "cargo";
+  const t = st.ship_type ?? 0;
+  if (t >= 70 && t <= 89) return "cargo";
+  if (st.cargo_class === "tug" || st.cargo_class === "fishing" || st.cargo_class === "passenger") {
+    return "service";
+  }
+  if (t >= 30 && t <= 69) return "service";
+  if (st.length_m != null && st.length_m > 0) return st.length_m >= 80 ? "cargo" : "service";
+  return "unknown";
+}
+
+export function placeholders(n: number): string {
   return Array.from({ length: n }, () => "?").join(",");
 }
 
@@ -357,11 +384,14 @@ function computeBrief(window: BriefWindow): Brief {
     was_sanctioned_a: number;
     was_sanctioned_b: number;
   }>;
+  const encStat = staticFor(enc.flatMap((r) => [r.mmsi_a, r.mmsi_b]));
   for (const r of enc) {
     // Le navire « principal » est le sanctionné.
     const aFirst = r.was_sanctioned_a === 1 || sanc.has(r.mmsi_a);
     const main = aFirst ? r.mmsi_a : r.mmsi_b;
     const other = aFirst ? r.mmsi_b : r.mmsi_a;
+    // Remorqueurs, pilotes… : contact de routine, pas un signal.
+    if (!sanc.has(other) && vesselRole(encStat.get(other)) === "service") continue;
     const cpName = chokepointName(r.chokepoint_id);
     const place = placeFor(r.start_lat, r.start_lon);
     events.push({
@@ -656,6 +686,8 @@ export interface VesselSheet {
   timeline: TimelineItem[];
   windowDays: number;
   generatedAt: number;
+  role: "cargo" | "service" | "unknown";
+  serviceContacts: number;
 }
 
 export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | null {
@@ -683,7 +715,7 @@ export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | nul
 
   const timeline: TimelineItem[] = [];
 
-  const enc = raw
+  const encAll = raw
     .prepare(
       `SELECT id, mmsi_a, mmsi_b, start_ts, end_ts, duration_h, start_lat,
               start_lon, chokepoint_id, was_sanctioned_a, was_sanctioned_b
@@ -762,14 +794,24 @@ export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | nul
   if (
     !st &&
     sancRows.length === 0 &&
-    enc.length + dark.length + loit.length + tr.length + voy.length === 0
+    encAll.length + dark.length + loit.length + tr.length + voy.length === 0
   ) {
     return null;
   }
 
   const sanc = sanctionedIndex();
-  const others = enc.map((r) => (r.mmsi_a === mmsi ? r.mmsi_b : r.mmsi_a));
-  const otherStat = staticFor(others);
+  const allOthers = encAll.map((r) => (r.mmsi_a === mmsi ? r.mmsi_b : r.mmsi_a));
+  const otherStat = staticFor(allOthers);
+  // Les contacts avec des unités de service sont écartés (voir vesselRole).
+  const enc = encAll.filter((r) => {
+    const o = r.mmsi_a === mmsi ? r.mmsi_b : r.mmsi_a;
+    return sanc.has(o) || vesselRole(otherStat.get(o)) !== "service";
+  });
+  const serviceContacts = new Set(
+    encAll
+      .filter((r) => !enc.includes(r))
+      .map((r) => (r.mmsi_a === mmsi ? r.mmsi_b : r.mmsi_a)),
+  ).size;
   const otherName = (m: number) =>
     otherStat.get(m)?.name?.trim() || sanc.get(m)?.name || null;
 
@@ -929,5 +971,7 @@ export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | nul
     timeline,
     windowDays,
     generatedAt: Date.now(),
+    role: vesselRole(st),
+    serviceContacts,
   };
 }

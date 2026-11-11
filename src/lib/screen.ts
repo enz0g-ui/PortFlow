@@ -6,6 +6,7 @@ import {
   placeFor,
   sanctionedIndex,
   staticFor,
+  vesselRole,
   type Place,
 } from "./brief";
 
@@ -47,6 +48,8 @@ export interface ScreenRow {
   contacts: Contact[];
   lastSeen: { ts: number; place: Place } | null;
   homonyms: number;
+  /** Unité de service (remorqueur, pilote…) : exposition non évaluée. */
+  service: boolean;
 }
 
 export function isValidImo(n: number): boolean {
@@ -313,10 +316,14 @@ function screenRows(inputs: string[]): ScreenRow[] {
         contacts: [],
         lastSeen: null,
         homonyms: 0,
+        service: false,
       };
     }
     const lists = listsFor(id);
-    const contacts = id.mmsi ? sanctionedContacts(id.mmsi) : [];
+    const service = id.mmsi
+      ? vesselRole(staticFor([id.mmsi]).get(id.mmsi)) === "service"
+      : false;
+    const contacts = id.mmsi && !service ? sanctionedContacts(id.mmsi) : [];
 
     let lastSeen: ScreenRow["lastSeen"] = null;
     if (id.mmsi) {
@@ -348,6 +355,7 @@ function screenRows(inputs: string[]): ScreenRow[] {
       contacts,
       lastSeen,
       homonyms: id.homonyms,
+      service,
     };
   });
 }
@@ -377,6 +385,7 @@ export interface Network {
   nodes: NetNode[];
   edges: NetEdge[];
   hiddenContacts: number;
+  serviceHidden: number;
 }
 
 /**
@@ -408,6 +417,16 @@ export function getNetwork(mmsi: number, days = EXPOSURE_DAYS): Network {
     c.lastTs = Math.max(c.lastTs, r.start_ts);
     direct.set(o, c);
   }
+  const directStat = staticFor([...direct.keys()]);
+  const keep = (m: number, st: ReturnType<typeof directStat.get>) =>
+    sanc.has(m) || vesselRole(st) !== "service";
+  let serviceHidden = 0;
+  for (const m of [...direct.keys()]) {
+    if (!keep(m, directStat.get(m))) {
+      direct.delete(m);
+      serviceHidden++;
+    }
+  }
   const ring1 = [...direct.entries()]
     .sort(
       (a, b) =>
@@ -427,6 +446,10 @@ export function getNetwork(mmsi: number, days = EXPOSURE_DAYS): Network {
       const o = r.mmsi_a === m ? r.mmsi_b : r.mmsi_a;
       if (o === mmsi || ring1Set.has(o) || ring2Seen.has(o)) continue;
       counts.set(o, (counts.get(o) ?? 0) + 1);
+    }
+    const cStat = staticFor([...counts.keys()]);
+    for (const o of [...counts.keys()]) {
+      if (!keep(o, cStat.get(o))) counts.delete(o);
     }
     const top = [...counts.entries()]
       .sort(
@@ -504,7 +527,12 @@ export function getNetwork(mmsi: number, days = EXPOSURE_DAYS): Network {
     edges.push({ from: `v${r.parent}`, to: `v${r.mmsi}`, weight: r.meetings, kind: "sts" });
   }
 
-  return { nodes, edges, hiddenContacts: Math.max(0, direct.size - ring1.length) };
+  return {
+    nodes,
+    edges,
+    hiddenContacts: Math.max(0, direct.size - ring1.length),
+    serviceHidden,
+  };
 }
 
 
@@ -547,7 +575,13 @@ function computeExamples(
   const exposed: number[] = [];
   for (const e of stsEvents) {
     if (!listed.includes(e.mmsi) && nameOf(e.mmsi)) listed.push(e.mmsi);
-    if (e.other && !e.other.sanctioned && !exposed.includes(e.other.mmsi) && nameOf(e.other.mmsi)) {
+    if (
+      e.other &&
+      !e.other.sanctioned &&
+      !exposed.includes(e.other.mmsi) &&
+      nameOf(e.other.mmsi) &&
+      vesselRole(stat(e.other.mmsi)) === "cargo"
+    ) {
       exposed.push(e.other.mmsi);
     }
   }

@@ -39,7 +39,8 @@ export default async function VesselRecordPage({
   const listed = v.sanctions.length > 0;
   const lists = [...new Set(v.sanctions.map((s) => s.list))].sort();
   const listedContacts = v.counterparts.filter((c) => c.sanctioned);
-  const exposed = !listed && listedContacts.length > 0;
+  const service = v.role === "service";
+  const exposed = !listed && !service && listedContacts.length > 0;
   const net = getNetwork(mmsi);
 
   const facts: Array<[string, string]> = [
@@ -93,7 +94,11 @@ export default async function VesselRecordPage({
                   {listedContacts.length} listed ship{listedContacts.length > 1 ? "s" : ""} at sea
                 </span>
               ) : (
-                <span>No listing · no contact with listed ships ({v.windowDays} days)</span>
+                <span>
+                  {service
+                    ? "Not listed · harbour / service craft, routine contacts not scored"
+                    : `No listing · no contact with listed ships (${v.windowDays} days)`}
+                </span>
               )}
             </div>
             <Link
@@ -123,6 +128,9 @@ export default async function VesselRecordPage({
               <h2 className="text-lg font-semibold text-slate-50">Connections</h2>
               <p className="mt-0.5 text-xs text-slate-500">
                 Ships met side by side at sea and ports called, last {v.windowDays} days
+                {v.serviceContacts > 0
+                  ? ` · ${v.serviceContacts} tug / pilot / service craft contacts left out`
+                  : ""}
               </p>
               <div className="mt-3">
                 {net.nodes.length > 1 ? (

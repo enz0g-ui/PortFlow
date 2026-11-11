@@ -173,6 +173,10 @@ export default async function ScreenPage({
                               {r.contacts.length > 3 ? ` +${r.contacts.length - 3}` : ""}
                               <span className="text-slate-500"> · last {fmtAgo(r.contacts[0].lastTs, now)}</span>
                             </span>
+                          ) : r.verdict === "clear" && r.service ? (
+                            <span className="text-xs text-slate-500">
+                              Not listed · harbour / service craft, routine contacts not scored
+                            </span>
                           ) : r.verdict === "clear" ? (
                             <span className="text-xs text-slate-500">
                               No listing · no contact with listed ships in {EXPOSURE_DAYS} days
