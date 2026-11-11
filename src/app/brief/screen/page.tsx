@@ -146,7 +146,11 @@ export default async function ScreenPage({
                           )}
                           <div className="font-mono text-[11px] text-slate-500">
                             {r.imo ? `IMO ${r.imo}` : r.mmsi ? `MMSI ${r.mmsi}` : `“${r.input}”`}
-                            {r.homonyms > 0 ? ` · ${r.homonyms} other ship(s) use this name` : ""}
+                            {r.homonyms > 0
+                              ? /^d+$/.test(r.input)
+                                ? ` · also broadcast under ${r.homonyms} other MMSI`
+                                : ` · ${r.homonyms} other ship(s) use this name`
+                              : ""}
                           </div>
                         </td>
                         <td className="px-3 py-2.5 text-slate-400">{cargoLabel(r.cargoClass)}</td>
