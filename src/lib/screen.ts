@@ -2,13 +2,17 @@ import { db } from "./db";
 import { getPort, PORTS } from "./ports";
 import { getVessels } from "./store";
 import {
+  contactTier,
   listLabel,
   placeFor,
   sanctionedIndex,
   staticFor,
+  TIER_RANK,
   vesselRole,
+  type ContactTier,
   type Place,
 } from "./brief";
+import { flagFromMmsi, type MidFlag } from "./mid";
 
 /**
  * Vérification de flotte : le visiteur tape ou colle des noms, IMO ou
@@ -17,6 +21,7 @@ import {
  *   sanctioned — sur une liste (OFAC, UK, ONU)
  *   exposed    — pas listé, mais a rencontré en mer un navire listé
  *   clear      — vu par nos récepteurs, ni listé ni contact listé
+ *   unassessed — vu, mais identité incomplète : exposition non évaluée
  *   unseen     — identifié, mais hors de notre couverture AIS récente
  *   unknown    — identifiant introuvable
  *
@@ -24,7 +29,13 @@ import {
  * pas : elle vient de nos propres détections de rencontres navire-à-navire.
  */
 
-export type Verdict = "sanctioned" | "exposed" | "clear" | "unseen" | "unknown";
+export type Verdict =
+  | "sanctioned"
+  | "exposed"
+  | "clear"
+  | "unassessed"
+  | "unseen"
+  | "unknown";
 
 export const EXPOSURE_DAYS = 90;
 const MAX_LINES = 50;
@@ -34,7 +45,10 @@ export interface Contact {
   name: string | null;
   lists: string[];
   meetings: number;
+  hours: number;
   lastTs: number;
+  best: ContactTier;
+  lastEncounterId: number;
 }
 
 export interface ScreenRow {
@@ -50,6 +64,7 @@ export interface ScreenRow {
   homonyms: number;
   /** Unité de service (remorqueur, pilote…) : exposition non évaluée. */
   service: boolean;
+  midFlag: MidFlag | null;
 }
 
 export function isValidImo(n: number): boolean {
@@ -196,20 +211,29 @@ function listsFor(id: Ident): string[] {
   return [...new Set(rows.map((r) => listLabel(r.source)))].sort();
 }
 
-/** Navires listés rencontrés en mer sur la fenêtre. */
+/**
+ * Navires listés rencontrés en mer sur la fenêtre. Les rapprochements au
+ * port ou au terminal sont écartés (amarrés au même quai).
+ */
 export function sanctionedContacts(mmsi: number, days = EXPOSURE_DAYS): Contact[] {
   const since = Date.now() - days * 86_400_000;
   const rows = db()
     .raw.prepare(
-      `SELECT mmsi_a, mmsi_b, start_ts, was_sanctioned_a, was_sanctioned_b
+      `SELECT id, mmsi_a, mmsi_b, start_ts, duration_h, start_lat, start_lon,
+              median_distance_m, was_sanctioned_a, was_sanctioned_b
        FROM encounters
        WHERE (mmsi_a = ? OR mmsi_b = ?) AND start_ts >= ?
-       ORDER BY start_ts DESC LIMIT 500`,
+       ORDER BY start_ts DESC LIMIT 1000`,
     )
     .all(mmsi, mmsi, since) as unknown as Array<{
+    id: number;
     mmsi_a: number;
     mmsi_b: number;
     start_ts: number;
+    duration_h: number | null;
+    start_lat: number;
+    start_lon: number;
+    median_distance_m: number | null;
     was_sanctioned_a: number;
     was_sanctioned_b: number;
   }>;
@@ -221,15 +245,25 @@ export function sanctionedContacts(mmsi: number, days = EXPOSURE_DAYS): Contact[
     const flagged = isA ? r.was_sanctioned_b === 1 : r.was_sanctioned_a === 1;
     const info = sanc.get(o);
     if (!info && !flagged) continue;
+    const tier = contactTier(r.start_lat, r.start_lon, r.median_distance_m, r.duration_h);
+    if (tier === "port") continue;
     const c = out.get(o) ?? {
       mmsi: o,
       name: null,
       lists: info?.lists ?? ["Listed"],
       meetings: 0,
+      hours: 0,
       lastTs: 0,
+      best: tier,
+      lastEncounterId: r.id,
     };
     c.meetings++;
-    c.lastTs = Math.max(c.lastTs, r.start_ts);
+    c.hours += r.duration_h ?? 0;
+    if (r.start_ts > c.lastTs) {
+      c.lastTs = r.start_ts;
+      c.lastEncounterId = r.id;
+    }
+    if (TIER_RANK[tier] > TIER_RANK[c.best]) c.best = tier;
     out.set(o, c);
   }
   const contacts = [...out.values()];
@@ -237,7 +271,9 @@ export function sanctionedContacts(mmsi: number, days = EXPOSURE_DAYS): Contact[
   for (const c of contacts) {
     c.name = stat.get(c.mmsi)?.name?.trim() || sanc.get(c.mmsi)?.name || null;
   }
-  return contacts.sort((a, b) => b.lastTs - a.lastTs);
+  return contacts.sort(
+    (a, b) => TIER_RANK[b.best] - TIER_RANK[a.best] || b.lastTs - a.lastTs,
+  );
 }
 
 // Positions live (ports suivis), construites une fois par vérification.
@@ -317,12 +353,12 @@ function screenRows(inputs: string[]): ScreenRow[] {
         lastSeen: null,
         homonyms: 0,
         service: false,
+        midFlag: null,
       };
     }
     const lists = listsFor(id);
-    const service = id.mmsi
-      ? vesselRole(staticFor([id.mmsi]).get(id.mmsi)) === "service"
-      : false;
+    const role = id.mmsi ? vesselRole(staticFor([id.mmsi]).get(id.mmsi)) : "unknown";
+    const service = role === "service";
     const contacts = id.mmsi && !service ? sanctionedContacts(id.mmsi) : [];
 
     let lastSeen: ScreenRow["lastSeen"] = null;
@@ -334,15 +370,20 @@ function screenRows(inputs: string[]): ScreenRow[] {
     const seen =
       (lastSeen && lastSeen.ts >= horizon) ||
       (id.updatedAt != null && id.updatedAt >= horizon);
+    const identified = Boolean(id.name || id.imo);
 
     const verdict: Verdict =
       lists.length > 0
         ? "sanctioned"
-        : contacts.length > 0
-          ? "exposed"
-          : seen
+        : !seen
+          ? "unseen"
+          : service
             ? "clear"
-            : "unseen";
+            : !identified || role === "unknown"
+              ? "unassessed"
+              : contacts.length > 0
+                ? "exposed"
+                : "clear";
 
     return {
       input,
@@ -356,6 +397,7 @@ function screenRows(inputs: string[]): ScreenRow[] {
       lastSeen,
       homonyms: id.homonyms,
       service,
+      midFlag: flagFromMmsi(id.mmsi),
     };
   });
 }
@@ -370,8 +412,15 @@ export interface NetNode {
   mmsi?: number;
   portId?: string;
   label: string;
+  identified: boolean;
   sanctioned: boolean;
+  lists: string[];
+  cargoClass: string | null;
+  flagCode: string | null;
   weight: number;
+  hours: number;
+  lastTs: number;
+  best: ContactTier | null;
 }
 
 export interface NetEdge {
@@ -379,6 +428,9 @@ export interface NetEdge {
   to: string;
   weight: number;
   kind: "sts" | "port";
+  best: ContactTier | null;
+  /** Pour ouvrir la preuve : les deux navires du lien. */
+  pair?: [number, number];
 }
 
 export interface Network {
@@ -386,43 +438,69 @@ export interface Network {
   edges: NetEdge[];
   hiddenContacts: number;
   serviceHidden: number;
+  portHidden: number;
+  /** Navires listés au second cercle (contacts de contacts). */
+  twoStepListed: number;
+}
+
+interface PairStat {
+  meetings: number;
+  hours: number;
+  lastTs: number;
+  best: ContactTier;
 }
 
 /**
- * Le navire au centre ; autour, les navires rencontrés et les ports
+ * Le navire au centre ; autour, les navires rencontrés en mer et les ports
  * touchés ; au second cercle, les navires que ces contacts ont eux-mêmes
- * rencontrés. Chaque nœud navire mène à sa propre fiche.
+ * rencontrés en mer. Rapprochements au port et unités de service écartés.
  */
 export function getNetwork(mmsi: number, days = EXPOSURE_DAYS): Network {
   const raw = db().raw;
   const since = Date.now() - days * 86_400_000;
   const sanc = sanctionedIndex();
 
-  type Enc = { mmsi_a: number; mmsi_b: number; start_ts: number };
-  const encOf = (m: number, limit: number) =>
-    raw
-      .prepare(
-        `SELECT mmsi_a, mmsi_b, start_ts FROM encounters
-         WHERE (mmsi_a = ? OR mmsi_b = ?) AND start_ts >= ?
-         ORDER BY start_ts DESC LIMIT ?`,
-      )
-      .all(m, m, since, limit) as unknown as Enc[];
+  type Enc = {
+    mmsi_a: number;
+    mmsi_b: number;
+    start_ts: number;
+    duration_h: number | null;
+    start_lat: number;
+    start_lon: number;
+    median_distance_m: number | null;
+  };
+  const stmt = raw.prepare(
+    `SELECT mmsi_a, mmsi_b, start_ts, duration_h, start_lat, start_lon, median_distance_m
+     FROM encounters
+     WHERE (mmsi_a = ? OR mmsi_b = ?) AND start_ts >= ?
+     ORDER BY start_ts DESC LIMIT ?`,
+  );
+  let portHidden = 0;
+  // Contacts en mer d'un navire, agrégés par autre navire.
+  const contactsOf = (m: number, limit: number, countPort: boolean) => {
+    const out = new Map<number, PairStat>();
+    for (const r of stmt.all(m, m, since, limit) as unknown as Enc[]) {
+      const tier = contactTier(r.start_lat, r.start_lon, r.median_distance_m, r.duration_h);
+      if (tier === "port") {
+        if (countPort) portHidden++;
+        continue;
+      }
+      const o = r.mmsi_a === m ? r.mmsi_b : r.mmsi_a;
+      const c = out.get(o) ?? { meetings: 0, hours: 0, lastTs: 0, best: tier };
+      c.meetings++;
+      c.hours += r.duration_h ?? 0;
+      c.lastTs = Math.max(c.lastTs, r.start_ts);
+      if (TIER_RANK[tier] > TIER_RANK[c.best]) c.best = tier;
+      out.set(o, c);
+    }
+    return out;
+  };
 
-  // Premier cercle : contacts directs.
-  const direct = new Map<number, { meetings: number; lastTs: number }>();
-  for (const r of encOf(mmsi, 500)) {
-    const o = r.mmsi_a === mmsi ? r.mmsi_b : r.mmsi_a;
-    const c = direct.get(o) ?? { meetings: 0, lastTs: 0 };
-    c.meetings++;
-    c.lastTs = Math.max(c.lastTs, r.start_ts);
-    direct.set(o, c);
-  }
+  const direct = contactsOf(mmsi, 1000, true);
   const directStat = staticFor([...direct.keys()]);
-  const keep = (m: number, st: ReturnType<typeof directStat.get>) =>
-    sanc.has(m) || vesselRole(st) !== "service";
   let serviceHidden = 0;
   for (const m of [...direct.keys()]) {
-    if (!keep(m, directStat.get(m))) {
+    if (!sanc.has(m) && vesselRole(directStat.get(m)) === "service") {
       direct.delete(m);
       serviceHidden++;
     }
@@ -431,75 +509,89 @@ export function getNetwork(mmsi: number, days = EXPOSURE_DAYS): Network {
     .sort(
       (a, b) =>
         Number(sanc.has(b[0])) - Number(sanc.has(a[0])) ||
+        TIER_RANK[b[1].best] - TIER_RANK[a[1].best] ||
         b[1].meetings - a[1].meetings ||
         b[1].lastTs - a[1].lastTs,
     )
     .slice(0, 10);
 
-  // Second cercle : contacts des contacts (3 au plus chacun).
+  // Second cercle : 3 contacts au plus par navire du premier cercle.
   const ring1Set = new Set(ring1.map(([m]) => m));
-  const ring2: Array<{ mmsi: number; parent: number; meetings: number }> = [];
+  const ring2: Array<{ mmsi: number; parent: number; stat: PairStat }> = [];
   const ring2Seen = new Set<number>();
   for (const [m] of ring1) {
-    const counts = new Map<number, number>();
-    for (const r of encOf(m, 200)) {
-      const o = r.mmsi_a === m ? r.mmsi_b : r.mmsi_a;
-      if (o === mmsi || ring1Set.has(o) || ring2Seen.has(o)) continue;
-      counts.set(o, (counts.get(o) ?? 0) + 1);
+    const cs = contactsOf(m, 300, false);
+    for (const o of [...cs.keys()]) {
+      if (o === mmsi || ring1Set.has(o) || ring2Seen.has(o)) cs.delete(o);
     }
-    const cStat = staticFor([...counts.keys()]);
-    for (const o of [...counts.keys()]) {
-      if (!keep(o, cStat.get(o))) counts.delete(o);
+    const cStat = staticFor([...cs.keys()]);
+    for (const o of [...cs.keys()]) {
+      if (!sanc.has(o) && vesselRole(cStat.get(o)) === "service") cs.delete(o);
     }
-    const top = [...counts.entries()]
+    const top = [...cs.entries()]
       .sort(
         (a, b) =>
-          Number(sanc.has(b[0])) - Number(sanc.has(a[0])) || b[1] - a[1],
+          Number(sanc.has(b[0])) - Number(sanc.has(a[0])) ||
+          TIER_RANK[b[1].best] - TIER_RANK[a[1].best] ||
+          b[1].meetings - a[1].meetings,
       )
       .slice(0, 3);
-    for (const [o, n] of top) {
+    for (const [o, s] of top) {
       ring2Seen.add(o);
-      ring2.push({ mmsi: o, parent: m, meetings: n });
+      ring2.push({ mmsi: o, parent: m, stat: s });
     }
   }
 
-  // Ports touchés.
   const ports = raw
     .prepare(
-      `SELECT port, COUNT(*) AS n FROM voyages
+      `SELECT port, COUNT(*) AS n, MAX(arrived_ts) AS last FROM voyages
        WHERE mmsi = ? AND arrived_ts IS NOT NULL AND arrived_ts >= ?
        GROUP BY port ORDER BY n DESC LIMIT 4`,
     )
-    .all(mmsi, since) as unknown as Array<{ port: string; n: number }>;
+    .all(mmsi, since) as unknown as Array<{ port: string; n: number; last: number }>;
 
   const allMmsi = [mmsi, ...ring1.map(([m]) => m), ...ring2.map((r) => r.mmsi)];
   const stat = staticFor(allMmsi);
-  const label = (m: number) =>
-    stat.get(m)?.name?.trim() || sanc.get(m)?.name || `MMSI ${m}`;
-
-  const nodes: NetNode[] = [
-    {
-      id: `v${mmsi}`,
-      kind: "center",
-      ring: 0,
-      mmsi,
-      label: label(mmsi),
-      sanctioned: sanc.has(mmsi),
-      weight: 1,
-    },
-  ];
-  const edges: NetEdge[] = [];
-  for (const [m, c] of ring1) {
-    nodes.push({
+  const vesselNode = (
+    m: number,
+    ring: 0 | 1 | 2,
+    s: PairStat | null,
+    parent?: number,
+  ): NetNode => {
+    const st = stat.get(m);
+    const name = st?.name?.trim() || sanc.get(m)?.name || null;
+    const flag = flagFromMmsi(m);
+    return {
       id: `v${m}`,
-      kind: "vessel",
-      ring: 1,
+      kind: ring === 0 ? "center" : "vessel",
+      ring,
+      parent: parent ? `v${parent}` : undefined,
       mmsi: m,
-      label: label(m),
+      label: name ?? `Unidentified${flag ? ` · ${flag.code}` : ""}`,
+      identified: Boolean(name || st?.imo),
       sanctioned: sanc.has(m),
-      weight: c.meetings,
+      lists: sanc.get(m)?.lists ?? [],
+      cargoClass: st?.cargo_class ?? null,
+      flagCode: flag?.code ?? null,
+      weight: s?.meetings ?? 1,
+      hours: s?.hours ?? 0,
+      lastTs: s?.lastTs ?? 0,
+      best: s?.best ?? null,
+    };
+  };
+
+  const nodes: NetNode[] = [vesselNode(mmsi, 0, null)];
+  const edges: NetEdge[] = [];
+  for (const [m, s] of ring1) {
+    nodes.push(vesselNode(m, 1, s));
+    edges.push({
+      from: `v${mmsi}`,
+      to: `v${m}`,
+      weight: s.meetings,
+      kind: "sts",
+      best: s.best,
+      pair: [mmsi, m],
     });
-    edges.push({ from: `v${mmsi}`, to: `v${m}`, weight: c.meetings, kind: "sts" });
   }
   for (const p of ports) {
     nodes.push({
@@ -508,23 +600,28 @@ export function getNetwork(mmsi: number, days = EXPOSURE_DAYS): Network {
       ring: 1,
       portId: p.port,
       label: getPort(p.port)?.name ?? p.port,
+      identified: true,
       sanctioned: false,
+      lists: [],
+      cargoClass: null,
+      flagCode: null,
       weight: p.n,
+      hours: 0,
+      lastTs: p.last,
+      best: null,
     });
-    edges.push({ from: `v${mmsi}`, to: `p${p.port}`, weight: p.n, kind: "port" });
+    edges.push({ from: `v${mmsi}`, to: `p${p.port}`, weight: p.n, kind: "port", best: null });
   }
   for (const r of ring2) {
-    nodes.push({
-      id: `v${r.mmsi}`,
-      kind: "vessel",
-      ring: 2,
-      parent: `v${r.parent}`,
-      mmsi: r.mmsi,
-      label: label(r.mmsi),
-      sanctioned: sanc.has(r.mmsi),
-      weight: r.meetings,
+    nodes.push(vesselNode(r.mmsi, 2, r.stat, r.parent));
+    edges.push({
+      from: `v${r.parent}`,
+      to: `v${r.mmsi}`,
+      weight: r.stat.meetings,
+      kind: "sts",
+      best: r.stat.best,
+      pair: [r.parent, r.mmsi],
     });
-    edges.push({ from: `v${r.parent}`, to: `v${r.mmsi}`, weight: r.meetings, kind: "sts" });
   }
 
   return {
@@ -532,9 +629,118 @@ export function getNetwork(mmsi: number, days = EXPOSURE_DAYS): Network {
     edges,
     hiddenContacts: Math.max(0, direct.size - ring1.length),
     serviceHidden,
+    portHidden,
+    twoStepListed: ring2.filter((r) => sanc.has(r.mmsi)).length,
   };
 }
 
+// ─── Preuve d'un rapprochement ──────────────────────────────────────────
+
+export interface EncounterEvidence {
+  id: number;
+  a: number;
+  b: number;
+  startTs: number;
+  endTs: number | null;
+  durationH: number | null;
+  medianDistanceM: number | null;
+  lat: number;
+  lon: number;
+  place: Place;
+  tier: ContactTier;
+}
+
+export interface PairEvidence {
+  a: { mmsi: number; name: string | null; lists: string[]; cargoClass: string | null; flag: string | null };
+  b: { mmsi: number; name: string | null; lists: string[]; cargoClass: string | null; flag: string | null };
+  encounters: EncounterEvidence[];
+  selected: EncounterEvidence | null;
+  tracks: Array<{ mmsi: number; points: Array<[number, number, number]> }>;
+}
+
+/** Tous les rapprochements entre deux navires, et les traces du choisi. */
+export function getPairEvidence(a: number, b: number, encId?: number): PairEvidence {
+  const raw = db().raw;
+  const sanc = sanctionedIndex();
+  const rows = raw
+    .prepare(
+      `SELECT id, mmsi_a, mmsi_b, start_ts, end_ts, duration_h, median_distance_m,
+              start_lat, start_lon
+       FROM encounters
+       WHERE (mmsi_a = ? AND mmsi_b = ?) OR (mmsi_a = ? AND mmsi_b = ?)
+       ORDER BY start_ts DESC LIMIT 200`,
+    )
+    .all(a, b, b, a) as unknown as Array<{
+    id: number;
+    mmsi_a: number;
+    mmsi_b: number;
+    start_ts: number;
+    end_ts: number | null;
+    duration_h: number | null;
+    median_distance_m: number | null;
+    start_lat: number;
+    start_lon: number;
+  }>;
+  const encounters: EncounterEvidence[] = rows.map((r) => ({
+    id: r.id,
+    a: r.mmsi_a,
+    b: r.mmsi_b,
+    startTs: r.start_ts,
+    endTs: r.end_ts,
+    durationH: r.duration_h,
+    medianDistanceM: r.median_distance_m,
+    lat: r.start_lat,
+    lon: r.start_lon,
+    place: placeFor(r.start_lat, r.start_lon),
+    tier: contactTier(r.start_lat, r.start_lon, r.median_distance_m, r.duration_h),
+  }));
+  const selected =
+    encounters.find((e) => e.id === encId) ??
+    encounters.find((e) => e.tier !== "port") ??
+    encounters[0] ??
+    null;
+
+  // Traces des deux navires autour du rapprochement (2 h avant, 2 h après).
+  const tracks: PairEvidence["tracks"] = [];
+  if (selected) {
+    const t0 = selected.startTs - 2 * 3_600_000;
+    const t1 = Math.min(
+      (selected.endTs ?? selected.startTs + 6 * 3_600_000) + 2 * 3_600_000,
+      t0 + 24 * 3_600_000,
+    );
+    const pts = raw
+      .prepare(
+        `SELECT mmsi, ts, lat, lon FROM positions
+         WHERE ts BETWEEN ? AND ? AND mmsi IN (?, ?)
+         ORDER BY ts ASC LIMIT 6000`,
+      )
+      .all(t0, t1, a, b) as unknown as Array<{
+      mmsi: number;
+      ts: number;
+      lat: number;
+      lon: number;
+    }>;
+    for (const m of [a, b]) {
+      tracks.push({
+        mmsi: m,
+        points: pts.filter((p) => p.mmsi === m).map((p) => [p.lon, p.lat, p.ts]),
+      });
+    }
+  }
+
+  const stat = staticFor([a, b]);
+  const who = (m: number) => {
+    const st = stat.get(m);
+    return {
+      mmsi: m,
+      name: st?.name?.trim() || sanc.get(m)?.name || null,
+      lists: sanc.get(m)?.lists ?? [],
+      cargoClass: st?.cargo_class ?? null,
+      flag: flagFromMmsi(m)?.country ?? null,
+    };
+  };
+  return { a: who(a), b: who(b), encounters, selected, tracks };
+}
 
 // ─── Exemples cliquables (tirés des données du moment) ──────────────────
 
@@ -543,14 +749,14 @@ export interface ScreenExample {
   q: string;
 }
 
-/**
- * Exemples pour le champ de vérification : un navire listé, un navire
- * « exposé » (non listé, a rencontré un listé), un navire sans alerte, et
- * une « flotte » qui mélange les trois. Calculés à partir des données du
- * moment pour ne jamais pointer vers un cas périmé.
- */
 let _exCache: { ts: number; ex: ScreenExample[] } | null = null;
 
+/**
+ * Exemples pour le champ de vérification : un navire listé, un navire
+ * « exposé » (non listé, rapproché en mer d'un listé), un navire sans
+ * alerte, et une « flotte » qui mélange les trois. Tirés des données du
+ * moment pour ne jamais pointer vers un cas périmé.
+ */
 export function screenExamples(
   stsEvents: Array<{ mmsi: number; other?: { mmsi: number; sanctioned: boolean } }>,
 ): ScreenExample[] {

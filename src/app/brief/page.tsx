@@ -30,7 +30,7 @@ const WINDOWS: BriefWindow[] = ["24h", "7d", "30d"];
 const KINDS: SignalKind[] = ["sts", "dark", "loiter", "transit"];
 
 const TILE_HINT: Record<SignalKind, string> = {
-  sts: "Side by side with another ship at sea",
+  sts: "Side by side with another ship at sea (same-port contacts left out)",
   dark: "Transponder silent while underway",
   loiter: "Stopped for hours far from any port",
   transit: "Through a monitored strait",
@@ -167,6 +167,11 @@ export default async function BriefPage({
                 {brief.totals[kind]}
               </div>
               <div className="mt-1 text-sm text-slate-200">{SIGNAL_LABEL[kind]}</div>
+              {kind === "sts" && brief.totals.transfers > 0 ? (
+                <div className="text-xs text-red-300">
+                  {brief.totals.transfers} probable transfer{brief.totals.transfers > 1 ? "s" : ""}
+                </div>
+              ) : null}
               <div className="text-xs text-slate-500">{TILE_HINT[kind]}</div>
             </Link>
           ))}
@@ -277,7 +282,7 @@ export default async function BriefPage({
                 {events.map((e) => (
                   <tr key={e.key} className="hover:bg-slate-900/70">
                     <td className="px-3 py-2">
-                      <KindBadge kind={e.kind} />
+                      <KindBadge kind={e.kind} tier={e.tier} />
                     </td>
                     <td className="px-3 py-2">
                       <VesselLink mmsi={e.mmsi} name={e.name} sanctioned />
@@ -299,8 +304,16 @@ export default async function BriefPage({
                     <td className="px-3 py-2 font-mono text-xs text-slate-400">
                       {fmtUtc(e.ts)}
                     </td>
-                    <td className="px-3 py-2 text-right font-mono text-xs text-slate-300">
+                    <td className="whitespace-nowrap px-3 py-2 text-right font-mono text-xs text-slate-300">
                       {fmtHours(e.durationH)}
+                      {e.kind === "sts" && e.other && e.encounterId ? (
+                        <Link
+                          href={`/brief/contact/${e.mmsi}/${e.other.mmsi}?e=${e.encounterId}`}
+                          className="ml-3 text-sky-400 hover:text-sky-300"
+                        >
+                          evidence →
+                        </Link>
+                      ) : null}
                     </td>
                   </tr>
                 ))}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Place, SignalKind } from "@/lib/brief";
+import type { ContactTier, Place, SignalKind } from "@/lib/brief";
 
 // Petits éléments partagés par le Briefing et la fiche navire.
 // Rendu serveur uniquement : pas de hooks, dates en UTC.
@@ -47,7 +47,41 @@ const KIND_SHORT: Record<SignalKind | "port", string> = {
   port: "Port call",
 };
 
-export function KindBadge({ kind }: { kind: SignalKind | "port" }) {
+const TIER_STYLE: Record<ContactTier, string> = {
+  transfer: "border-red-500/60 bg-red-500/15 text-red-200",
+  contact: "border-amber-500/50 bg-amber-500/10 text-amber-200",
+  port: "border-slate-700 bg-slate-800/40 text-slate-400",
+};
+
+const TIER_SHORT: Record<ContactTier, string> = {
+  transfer: "Transfer?",
+  contact: "Contact",
+  port: "Same port",
+};
+
+export function KindBadge({
+  kind,
+  tier,
+}: {
+  kind: SignalKind | "port";
+  tier?: ContactTier;
+}) {
+  if (kind === "sts" && tier) {
+    return (
+      <span
+        title={
+          tier === "transfer"
+            ? "Long, very close contact at sea — consistent with a transfer"
+            : tier === "contact"
+              ? "Close contact at sea — to check"
+              : "Both ships in the same port or terminal area — not a signal"
+        }
+        className={`inline-block min-w-[72px] rounded border px-1.5 py-0.5 text-center font-mono text-[11px] ${TIER_STYLE[tier]}`}
+      >
+        {TIER_SHORT[tier]}
+      </span>
+    );
+  }
   return (
     <span
       className={`inline-block min-w-[72px] rounded border px-1.5 py-0.5 text-center font-mono text-[11px] ${KIND_STYLE[kind]}`}

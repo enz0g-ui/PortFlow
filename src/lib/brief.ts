@@ -2,6 +2,7 @@ import { db } from "./db";
 import { findPortByPosition, getPort, PORTS } from "./ports";
 import { findChokepoint, loadChokepointsSync } from "./chokepoint-detector";
 import { getVessels } from "./store";
+import { flagFromMmsi, type MidFlag } from "./mid";
 
 /**
  * Briefing : vue « lecture rapide » orientée compliance.
@@ -50,6 +51,8 @@ const SIGNAL_WEIGHT: Record<SignalKind, number> = {
 export interface Place {
   label: string;
   portId?: string;
+  lat?: number;
+  lon?: number;
 }
 
 export interface SanctionInfo {
@@ -71,6 +74,9 @@ export interface BriefEvent {
   sanctioned: boolean;
   other?: { mmsi: number; name: string | null; sanctioned: boolean };
   place: Place;
+  /** Rapprochements uniquement. */
+  tier?: ContactTier;
+  encounterId?: number;
 }
 
 export interface ConcernVessel {
@@ -91,6 +97,9 @@ export interface Brief {
   totals: {
     activeSanctioned: number;
     sts: number;
+    transfers: number;
+    /** Rapprochements au port / terminal, écartés. */
+    portContacts: number;
     dark: number;
     loiter: number;
     transit: number;
@@ -132,19 +141,78 @@ function fmtCoord(lat: number, lon: number): string {
   return `${la} ${lo}`;
 }
 
+// Terminaux non suivis comme « ports » mais où des navires s'amarrent
+// côte à côte tous les jours (chargement, attente à quai). Un
+// rapprochement ici n'est pas un transbordement en mer.
+const TERMINAL_AREAS: Array<{ name: string; s: number; w: number; n: number; e: number }> = [
+  { name: "Vysotsk terminal", s: 60.55, w: 28.4, n: 60.68, e: 28.7 },
+  { name: "Primorsk terminal", s: 60.28, w: 28.52, n: 60.4, e: 28.8 },
+  { name: "Ust-Luga port", s: 59.62, w: 28.18, n: 59.82, e: 28.5 },
+  { name: "St Petersburg port", s: 59.83, w: 29.55, n: 60.05, e: 30.35 },
+];
+
+function inBox(
+  lat: number,
+  lon: number,
+  b: { s: number; w: number; n: number; e: number },
+): boolean {
+  return lat >= b.s && lat <= b.n && lon >= b.w && lon <= b.e;
+}
+
+/** Nom du port ou terminal qui contient le point, sinon null. */
+export function portAreaName(lat: number | null, lon: number | null): string | null {
+  if (lat == null || lon == null) return null;
+  const port = findPortByPosition(lat, lon);
+  if (port) return port.name;
+  return TERMINAL_AREAS.find((t) => inBox(lat, lon, t))?.name ?? null;
+}
+
 export function placeFor(lat: number | null, lon: number | null): Place {
   if (lat == null || lon == null) return { label: "Unknown position" };
   const port = findPortByPosition(lat, lon);
-  if (port) return { label: port.name, portId: port.id };
+  if (port) return { label: port.name, portId: port.id, lat, lon };
+  const term = TERMINAL_AREAS.find((t) => inBox(lat, lon, t));
+  if (term) return { label: term.name, lat, lon };
   const cp = findChokepoint(lat, lon);
-  if (cp) return { label: cp.name };
+  if (cp) return { label: cp.name, lat, lon };
   for (const a of SEA_AREAS) {
-    if (lat >= a.s && lat <= a.n && lon >= a.w && lon <= a.e) {
-      return { label: `${a.name} · ${fmtCoord(lat, lon)}` };
+    if (inBox(lat, lon, a)) {
+      return { label: `${a.name} · ${fmtCoord(lat, lon)}`, lat, lon };
     }
   }
-  return { label: `At sea · ${fmtCoord(lat, lon)}` };
+  return { label: `At sea · ${fmtCoord(lat, lon)}`, lat, lon };
 }
+
+// ─── Niveaux de rapprochement ───────────────────────────────────────────
+
+/**
+ * transfer : long et très proche, hors port — compatible avec un
+ *            transbordement ;
+ * contact  : rapprochement en mer plus court ou plus lâche, à vérifier ;
+ * port     : dans un port ou un terminal — navires amarrés au même quai,
+ *            pas un signal.
+ * Seuils internes, volontairement non publiés.
+ */
+export type ContactTier = "transfer" | "contact" | "port";
+
+export const TIER_LABEL: Record<ContactTier, string> = {
+  transfer: "Probable transfer",
+  contact: "Contact at sea",
+  port: "Same port area",
+};
+
+export function contactTier(
+  lat: number | null,
+  lon: number | null,
+  distM: number | null,
+  durH: number | null,
+): ContactTier {
+  if (portAreaName(lat, lon)) return "port";
+  if (distM != null && distM <= 150 && (durH ?? 0) >= 3) return "transfer";
+  return "contact";
+}
+
+export const TIER_RANK: Record<ContactTier, number> = { transfer: 2, contact: 1, port: 0 };
 
 function chokepointName(id: string | null): string | null {
   if (!id) return null;
@@ -365,7 +433,7 @@ function computeBrief(window: BriefWindow): Brief {
   const enc = raw
     .prepare(
       `SELECT id, mmsi_a, mmsi_b, start_ts, end_ts, duration_h,
-              chokepoint_id, start_lat, start_lon,
+              chokepoint_id, start_lat, start_lon, median_distance_m,
               was_sanctioned_a, was_sanctioned_b
        FROM encounters
        WHERE start_ts >= ? AND (was_sanctioned_a = 1 OR was_sanctioned_b = 1)
@@ -381,10 +449,12 @@ function computeBrief(window: BriefWindow): Brief {
     chokepoint_id: string | null;
     start_lat: number;
     start_lon: number;
+    median_distance_m: number | null;
     was_sanctioned_a: number;
     was_sanctioned_b: number;
   }>;
   const encStat = staticFor(enc.flatMap((r) => [r.mmsi_a, r.mmsi_b]));
+  let portContacts = 0;
   for (const r of enc) {
     // Le navire « principal » est le sanctionné.
     const aFirst = r.was_sanctioned_a === 1 || sanc.has(r.mmsi_a);
@@ -392,12 +462,19 @@ function computeBrief(window: BriefWindow): Brief {
     const other = aFirst ? r.mmsi_b : r.mmsi_a;
     // Remorqueurs, pilotes… : contact de routine, pas un signal.
     if (!sanc.has(other) && vesselRole(encStat.get(other)) === "service") continue;
-    const cpName = chokepointName(r.chokepoint_id);
+    const tier = contactTier(r.start_lat, r.start_lon, r.median_distance_m, r.duration_h);
+    // Amarrés au même terminal : pas un signal.
+    if (tier === "port") {
+      portContacts++;
+      continue;
+    }
     const place = placeFor(r.start_lat, r.start_lon);
     events.push({
       key: `sts-${r.id}`,
       kind: "sts",
-      severity: SIGNAL_SEVERITY.sts,
+      tier,
+      encounterId: r.id,
+      severity: tier === "transfer" ? 4 : SIGNAL_SEVERITY.sts,
       ts: r.start_ts,
       endTs: r.end_ts,
       durationH: r.duration_h,
@@ -411,7 +488,7 @@ function computeBrief(window: BriefWindow): Brief {
           sanc.has(other) ||
           (aFirst ? r.was_sanctioned_b === 1 : r.was_sanctioned_a === 1),
       },
-      place: cpName && !place.portId ? { label: cpName } : place,
+      place,
     });
   }
 
@@ -621,6 +698,8 @@ function computeBrief(window: BriefWindow): Brief {
     totals: {
       activeSanctioned: byVessel.size,
       sts: count("sts"),
+      transfers: events.filter((e) => e.tier === "transfer").length,
+      portContacts,
       dark: count("dark"),
       loiter: count("loiter"),
       transit: count("transit"),
@@ -645,10 +724,15 @@ export interface VesselSanction {
 export interface VesselCounterpart {
   mmsi: number;
   name: string | null;
+  identified: boolean;
   sanctioned: boolean;
+  lists: string[];
+  cargoClass: string | null;
   meetings: number;
   totalHours: number;
   lastTs: number;
+  best: ContactTier;
+  lastEncounterId: number;
 }
 
 export interface VesselPortCall {
@@ -666,29 +750,55 @@ export interface TimelineItem {
   durationH: number | null;
   place: Place;
   other?: { mmsi: number; name: string | null; sanctioned: boolean };
+  tier?: ContactTier;
+  encounterId?: number;
 }
+
+/**
+ * listed     : sur une liste
+ * exposed    : identifié, capable de transborder, rapproché en mer d'un listé
+ * clear      : identifié, rien de tel
+ * service    : remorqueur / pilote / petite unité — non évalué
+ * unassessed : identité incomplète (ni nom ni IMO, ou type inconnu)
+ */
+export type Exposure = "listed" | "exposed" | "clear" | "service" | "unassessed";
 
 export interface VesselSheet {
   mmsi: number;
   name: string | null;
   imo: number | null;
+  identified: boolean;
   callsign: string | null;
   flag: string | null;
+  midFlag: MidFlag | null;
   cargoClass: string | null;
   lengthM: number | null;
   draught: number | null;
   destination: string | null;
   sanctions: VesselSanction[];
   lastSeen: { ts: number; place: Place; sog: number | null } | null;
-  counts: Record<SignalKind, number> & { port: number };
+  counts: {
+    contacts: number;
+    transfers: number;
+    contactShips: number;
+    dark: number;
+    loiter: number;
+    transit: number;
+    port: number;
+  };
   counterparts: VesselCounterpart[];
+  listedContacts: VesselCounterpart[];
+  portContacts: number;
+  serviceContacts: number;
   ports: VesselPortCall[];
   timeline: TimelineItem[];
   windowDays: number;
   generatedAt: number;
   role: "cargo" | "service" | "unknown";
-  serviceContacts: number;
+  exposure: Exposure;
 }
+
+export const WINDOW_DAYS = [30, 90, 180] as const;
 
 export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | null {
   const raw = db().raw;
@@ -713,15 +823,13 @@ export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | nul
     reason: string | null;
   }>;
 
-  const timeline: TimelineItem[] = [];
-
   const encAll = raw
     .prepare(
       `SELECT id, mmsi_a, mmsi_b, start_ts, end_ts, duration_h, start_lat,
-              start_lon, chokepoint_id, was_sanctioned_a, was_sanctioned_b
+              start_lon, median_distance_m, was_sanctioned_a, was_sanctioned_b
        FROM encounters
        WHERE (mmsi_a = ? OR mmsi_b = ?) AND start_ts >= ?
-       ORDER BY start_ts DESC LIMIT 500`,
+       ORDER BY start_ts DESC LIMIT 1000`,
     )
     .all(mmsi, mmsi, since) as unknown as Array<{
     id: number;
@@ -732,7 +840,7 @@ export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | nul
     duration_h: number | null;
     start_lat: number;
     start_lon: number;
-    chokepoint_id: string | null;
+    median_distance_m: number | null;
     was_sanctioned_a: number;
     was_sanctioned_b: number;
   }>;
@@ -754,7 +862,7 @@ export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | nul
     .prepare(
       `SELECT id, start_ts, end_ts, duration_h, start_lat, start_lon
        FROM loitering_events WHERE mmsi = ? AND start_ts >= ?
-       ORDER BY start_ts DESC LIMIT 500`,
+       ORDER BY start_ts DESC LIMIT 1000`,
     )
     .all(mmsi, since) as unknown as Array<{
     id: number;
@@ -766,21 +874,23 @@ export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | nul
   }>;
   const tr = raw
     .prepare(
-      `SELECT id, chokepoint_id, entered_at, exited_at
+      `SELECT id, chokepoint_id, entered_at, exited_at, entry_lat, entry_lon
        FROM chokepoint_transits WHERE mmsi = ? AND entered_at >= ?
-       ORDER BY entered_at DESC LIMIT 500`,
+       ORDER BY entered_at DESC LIMIT 1000`,
     )
     .all(mmsi, since) as unknown as Array<{
     id: number;
     chokepoint_id: string;
     entered_at: number;
     exited_at: number | null;
+    entry_lat: number;
+    entry_lon: number;
   }>;
   const voy = raw
     .prepare(
       `SELECT voyage_id, port, start_ts, arrived_ts, departed_ts
        FROM voyages WHERE mmsi = ? AND start_ts >= ?
-       ORDER BY start_ts DESC LIMIT 200`,
+       ORDER BY start_ts DESC LIMIT 300`,
     )
     .all(mmsi, since) as unknown as Array<{
     voyage_id: string;
@@ -790,7 +900,7 @@ export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | nul
     departed_ts: number | null;
   }>;
 
-  // Rien du tout : MMSI inconnu.
+  // MMSI inconnu de partout.
   if (
     !st &&
     sancRows.length === 0 &&
@@ -800,49 +910,72 @@ export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | nul
   }
 
   const sanc = sanctionedIndex();
-  const allOthers = encAll.map((r) => (r.mmsi_a === mmsi ? r.mmsi_b : r.mmsi_a));
-  const otherStat = staticFor(allOthers);
-  // Les contacts avec des unités de service sont écartés (voir vesselRole).
-  const enc = encAll.filter((r) => {
-    const o = r.mmsi_a === mmsi ? r.mmsi_b : r.mmsi_a;
-    return sanc.has(o) || vesselRole(otherStat.get(o)) !== "service";
-  });
-  const serviceContacts = new Set(
-    encAll
-      .filter((r) => !enc.includes(r))
-      .map((r) => (r.mmsi_a === mmsi ? r.mmsi_b : r.mmsi_a)),
-  ).size;
+  const otherOf = (r: { mmsi_a: number; mmsi_b: number }) =>
+    r.mmsi_a === mmsi ? r.mmsi_b : r.mmsi_a;
+  const otherStat = staticFor(encAll.map(otherOf));
   const otherName = (m: number) =>
     otherStat.get(m)?.name?.trim() || sanc.get(m)?.name || null;
 
+  const timeline: TimelineItem[] = [];
   const counterparts = new Map<number, VesselCounterpart>();
-  for (const r of enc) {
+  let serviceContacts = 0;
+  let portContacts = 0;
+  let contacts = 0;
+  let transfers = 0;
+  const serviceSeen = new Set<number>();
+
+  for (const r of encAll) {
+    const o = otherOf(r);
     const isA = r.mmsi_a === mmsi;
-    const o = isA ? r.mmsi_b : r.mmsi_a;
     const oSanc =
       sanc.has(o) || (isA ? r.was_sanctioned_b === 1 : r.was_sanctioned_a === 1);
-    const cp = chokepointName(r.chokepoint_id);
-    const place = placeFor(r.start_lat, r.start_lon);
+    const oSt = otherStat.get(o);
+    // Remorqueurs, pilotes… : routine, écartés.
+    if (!oSanc && vesselRole(oSt) === "service") {
+      if (!serviceSeen.has(o)) {
+        serviceSeen.add(o);
+        serviceContacts++;
+      }
+      continue;
+    }
+    const tier = contactTier(r.start_lat, r.start_lon, r.median_distance_m, r.duration_h);
     timeline.push({
       key: `sts-${r.id}`,
       kind: "sts",
       ts: r.start_ts,
       endTs: r.end_ts,
       durationH: r.duration_h,
-      place: cp && !place.portId ? { label: cp } : place,
+      place: placeFor(r.start_lat, r.start_lon),
       other: { mmsi: o, name: otherName(o), sanctioned: oSanc },
+      tier,
+      encounterId: r.id,
     });
+    if (tier === "port") {
+      portContacts++;
+      continue;
+    }
+    contacts++;
+    if (tier === "transfer") transfers++;
     const c = counterparts.get(o) ?? {
       mmsi: o,
       name: otherName(o),
+      identified: Boolean(oSt?.name?.trim() || oSt?.imo || sanc.get(o)?.name),
       sanctioned: oSanc,
+      lists: sanc.get(o)?.lists ?? (oSanc ? ["Listed"] : []),
+      cargoClass: oSt?.cargo_class ?? null,
       meetings: 0,
       totalHours: 0,
       lastTs: 0,
+      best: tier,
+      lastEncounterId: r.id,
     };
     c.meetings++;
     c.totalHours += r.duration_h ?? 0;
-    c.lastTs = Math.max(c.lastTs, r.start_ts);
+    if (r.start_ts > c.lastTs) {
+      c.lastTs = r.start_ts;
+      c.lastEncounterId = r.id;
+    }
+    if (TIER_RANK[tier] > TIER_RANK[c.best]) c.best = tier;
     counterparts.set(o, c);
   }
   for (const r of dark) {
@@ -866,13 +999,14 @@ export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | nul
     });
   }
   for (const r of tr) {
+    const name = chokepointName(r.chokepoint_id) ?? "Chokepoint";
     timeline.push({
       key: `transit-${r.id}`,
       kind: "transit",
       ts: r.entered_at,
       endTs: r.exited_at,
       durationH: r.exited_at ? (r.exited_at - r.entered_at) / 3_600_000 : null,
-      place: { label: chokepointName(r.chokepoint_id) ?? "Chokepoint" },
+      place: { label: name, lat: r.entry_lat, lon: r.entry_lon },
     });
   }
   const portCalls = new Map<string, VesselPortCall>();
@@ -884,9 +1018,7 @@ export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | nul
         kind: "port",
         ts: r.arrived_ts,
         endTs: r.departed_ts,
-        durationH: r.departed_ts
-          ? (r.departed_ts - r.arrived_ts) / 3_600_000
-          : null,
+        durationH: r.departed_ts ? (r.departed_ts - r.arrived_ts) / 3_600_000 : null,
         place: { label: p?.name ?? r.port, portId: r.port },
       });
     }
@@ -904,17 +1036,13 @@ export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | nul
   }
   timeline.sort((a, b) => b.ts - a.ts);
 
-  // Dernière position : mémoire live (ports suivis) puis 6 h de positions,
-  // puis le dernier événement connu.
+  // Dernière position : mémoire live, puis 6 h de positions, puis dernier
+  // événement daté.
   let lastSeen: VesselSheet["lastSeen"] = null;
   for (const p of PORTS) {
     const v = getVessels(p.id).find((x) => x.mmsi === mmsi);
     if (v && (!lastSeen || v.lastUpdate > lastSeen.ts)) {
-      lastSeen = {
-        ts: v.lastUpdate,
-        place: placeFor(v.latitude, v.longitude),
-        sog: v.sog,
-      };
+      lastSeen = { ts: v.lastUpdate, place: placeFor(v.latitude, v.longitude), sog: v.sog };
     }
   }
   if (!lastSeen) {
@@ -926,9 +1054,7 @@ export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | nul
       .get(mmsi, Date.now() - 6 * 3_600_000) as unknown as
       | { ts: number; lat: number; lon: number; sog: number | null }
       | undefined;
-    if (pos) {
-      lastSeen = { ts: pos.ts, place: placeFor(pos.lat, pos.lon), sog: pos.sog };
-    }
+    if (pos) lastSeen = { ts: pos.ts, place: placeFor(pos.lat, pos.lon), sog: pos.sog };
   }
   if (!lastSeen && timeline.length > 0) {
     const t = timeline[0];
@@ -936,12 +1062,37 @@ export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | nul
   }
 
   const first = sancRows[0];
+  const name = st?.name?.trim() || first?.ship_name || null;
+  const imo = st?.imo ?? first?.imo ?? null;
+  const identified = Boolean(name || imo);
+  const role = vesselRole(st);
+  const cps = [...counterparts.values()].sort(
+    (a, b) =>
+      Number(b.sanctioned) - Number(a.sanctioned) ||
+      TIER_RANK[b.best] - TIER_RANK[a.best] ||
+      b.lastTs - a.lastTs,
+  );
+  const listedContacts = cps.filter((c) => c.sanctioned);
+
+  const exposure: Exposure =
+    sancRows.length > 0
+      ? "listed"
+      : role === "service"
+        ? "service"
+        : !identified || role === "unknown"
+          ? "unassessed"
+          : listedContacts.length > 0
+            ? "exposed"
+            : "clear";
+
   return {
     mmsi,
-    name: st?.name?.trim() || first?.ship_name || null,
-    imo: st?.imo ?? first?.imo ?? null,
+    name,
+    imo,
+    identified,
     callsign: st?.callsign ?? null,
     flag: sancRows.find((r) => r.flag)?.flag ?? null,
+    midFlag: flagFromMmsi(mmsi),
     cargoClass: st?.cargo_class ?? null,
     lengthM: st?.length_m ?? null,
     draught: st?.draught ?? null,
@@ -955,23 +1106,106 @@ export function getVesselSheet(mmsi: number, windowDays = 90): VesselSheet | nul
     })),
     lastSeen,
     counts: {
-      sts: enc.length,
+      contacts,
+      transfers,
+      contactShips: counterparts.size,
       dark: dark.length,
       loiter: loit.length,
       transit: tr.length,
       port: [...portCalls.values()].reduce((s, c) => s + c.calls, 0),
     },
-    counterparts: [...counterparts.values()].sort(
-      (a, b) =>
-        Number(b.sanctioned) - Number(a.sanctioned) || b.lastTs - a.lastTs,
-    ),
+    counterparts: cps,
+    listedContacts,
+    portContacts,
+    serviceContacts,
     ports: [...portCalls.values()]
       .filter((c) => c.calls > 0)
       .sort((a, b) => (b.lastArrived ?? 0) - (a.lastArrived ?? 0)),
     timeline,
     windowDays,
     generatedAt: Date.now(),
-    role: vesselRole(st),
-    serviceContacts,
+    role,
+    exposure,
   };
+}
+
+// ─── Phrase de conclusion ───────────────────────────────────────────────
+
+function d2(ts: number): string {
+  const d = new Date(ts);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getUTCDate())}/${p(d.getUTCMonth() + 1)}`;
+}
+
+function hrs(h: number): string {
+  return h < 10 ? `${h.toFixed(1)} h` : `${Math.round(h)} h`;
+}
+
+function listedWith(c: VesselCounterpart): string {
+  return `${c.name ?? `MMSI ${c.mmsi}`} (${c.lists.join("/")} list)`;
+}
+
+/**
+ * Une phrase qui dit l'essentiel, à copier dans un dossier. N'affirme que
+ * ce que les données montrent.
+ */
+export function summarize(v: VesselSheet, twoStepListed = 0): string {
+  const parts: string[] = [];
+
+  if (v.exposure === "listed") {
+    const lists = [...new Set(v.sanctions.map((s) => s.list))].join(", ");
+    const since = v.sanctions
+      .map((s) => s.listedOn)
+      .filter((x): x is number => x != null)
+      .sort((a, b) => a - b)[0];
+    parts.push(
+      `On the ${lists} sanctions list${v.sanctions.length > 1 ? "s" : ""}${since ? ` since ${new Date(since).getUTCFullYear()}` : ""}.`,
+    );
+  } else if (v.exposure === "unassessed") {
+    parts.push(
+      `Unidentified vessel: no name or IMO broadcast${v.midFlag ? `; transponder registered to ${v.midFlag.country}` : ""}. Exposure not assessed.`,
+    );
+  } else if (v.exposure === "service") {
+    parts.push(
+      "Not listed. Harbour or service craft: routine contacts with other ships are not scored.",
+    );
+  } else {
+    parts.push("Not listed.");
+  }
+
+  const lc = v.listedContacts;
+  if (lc.length > 0) {
+    const top = lc[0];
+    const kind = top.best === "transfer" ? "Probable transfer" : "Contact at sea";
+    parts.push(
+      `${kind} with ${listedWith(top)}: ${hrs(top.totalHours)} side by side, last on ${d2(top.lastTs)}.`,
+    );
+    if (lc.length > 1) {
+      parts.push(
+        `Also met ${lc.length - 1} other listed ship${lc.length > 2 ? "s" : ""} at sea (${lc
+          .slice(1, 3)
+          .map((c) => c.name ?? `MMSI ${c.mmsi}`)
+          .join(", ")}${lc.length > 3 ? "…" : ""}).`,
+      );
+    }
+  } else if (v.exposure === "clear") {
+    parts.push(`No contact at sea with a listed ship in the last ${v.windowDays} days.`);
+  }
+  if (v.exposure === "listed" && v.counts.contacts > 0 && lc.length === 0) {
+    parts.push(
+      `${v.counts.contacts} contact${v.counts.contacts > 1 ? "s" : ""} at sea with ${v.counts.contactShips} ship${v.counts.contactShips > 1 ? "s" : ""}${v.counts.transfers > 0 ? `, incl. ${v.counts.transfers} probable transfer${v.counts.transfers > 1 ? "s" : ""}` : ""}.`,
+    );
+  }
+  if (twoStepListed > 0 && v.exposure !== "listed") {
+    parts.push(
+      `${twoStepListed} more listed ship${twoStepListed > 1 ? "s" : ""} two steps away.`,
+    );
+  }
+  if (v.counts.dark > 0) {
+    parts.push(`${v.counts.dark} AIS gap${v.counts.dark > 1 ? "s" : ""} while underway.`);
+  }
+  if (v.lastSeen) {
+    parts.push(`Last seen ${v.lastSeen.place.label.split(" · ")[0]} on ${d2(v.lastSeen.ts)}.`);
+  }
+  return parts.join(" ");
 }

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { parseQuery, screenVessels, EXPOSURE_DAYS, type Verdict } from "@/lib/screen";
+import { BriefBar } from "../BriefBar";
 import { ScreenBox } from "../ScreenBox";
-import { cargoLabel, fmtAgo, ListBadges, PlaceLink, VesselLink } from "../ui";
+import { cargoLabel, fmtAgo, fmtHours, KindBadge, ListBadges, PlaceLink, VesselLink } from "../ui";
 
 export const metadata: Metadata = {
   title: "Fleet screening",
@@ -36,6 +37,13 @@ const VERDICT: Record<
     text: "text-emerald-300",
     help: "Not listed, no contact with a listed ship",
   },
+  unassessed: {
+    label: "Not assessed",
+    dot: "bg-slate-400",
+    row: "",
+    text: "text-slate-300",
+    help: "Not listed; identity or ship type incomplete, exposure not scored",
+  },
   unseen: {
     label: "Out of coverage",
     dot: "bg-slate-500",
@@ -52,7 +60,7 @@ const VERDICT: Record<
   },
 };
 
-const ORDER: Verdict[] = ["sanctioned", "exposed", "clear", "unseen", "unknown"];
+const ORDER: Verdict[] = ["sanctioned", "exposed", "clear", "unassessed", "unseen", "unknown"];
 
 export default async function ScreenPage({
   searchParams,
@@ -73,10 +81,8 @@ export default async function ScreenPage({
   return (
     <main className="min-h-screen bg-[#070b12] px-4 pb-24 pt-6 text-slate-200 sm:px-6 lg:px-10">
       <div className="mx-auto max-w-[1400px]">
-        <Link href="/brief" className="text-sm text-sky-400 hover:text-sky-300">
-          ← Briefing
-        </Link>
-        <h1 className="mt-3 text-2xl font-semibold text-slate-50">Fleet screening</h1>
+        <BriefBar crumbs={[{ label: "Fleet screening", href: "#" }]} />
+        <h1 className="mt-4 text-2xl font-semibold text-slate-50">Fleet screening</h1>
         <p className="mt-1 text-sm text-slate-400">
           Sanctions lists (OFAC, UK, UN) plus what the lists don&apos;t tell you:
           ship-to-ship contact with listed vessels, from our own AIS detections.
@@ -91,8 +97,8 @@ export default async function ScreenPage({
         ) : (
           <>
             {/* Bilan */}
-            <section className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
-              {ORDER.map((v) => (
+            <section className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              {ORDER.filter((v) => counts[v] > 0 || v === "sanctioned" || v === "exposed").map((v) => (
                 <div
                   key={v}
                   className={`rounded-md border p-3 ${
@@ -140,7 +146,7 @@ export default async function ScreenPage({
                         </td>
                         <td className="px-3 py-2.5">
                           {r.mmsi ? (
-                            <VesselLink mmsi={r.mmsi} name={r.name} />
+                            <VesselLink mmsi={r.mmsi} name={r.name ?? "Unidentified vessel"} />
                           ) : (
                             <span className="text-slate-300">{r.name ?? r.input}</span>
                           )}
@@ -165,17 +171,30 @@ export default async function ScreenPage({
                               ) : null}
                             </span>
                           ) : r.verdict === "exposed" ? (
-                            <span className="text-xs text-amber-200">
-                              Met{" "}
-                              {r.contacts.slice(0, 3).map((c, j) => (
-                                <span key={c.mmsi}>
-                                  {j > 0 ? ", " : ""}
-                                  <VesselLink mmsi={c.mmsi} name={c.name} sanctioned />
-                                  <span className="text-slate-500"> ({c.lists.join("/")})</span>
+                            <span className="flex flex-col gap-1 text-xs text-amber-200">
+                              {r.contacts.slice(0, 3).map((c) => (
+                                <span key={c.mmsi} className="flex flex-wrap items-center gap-2">
+                                  <KindBadge kind="sts" tier={c.best} />
+                                  <span>
+                                    with <VesselLink mmsi={c.mmsi} name={c.name} sanctioned />
+                                    <span className="text-slate-500"> ({c.lists.join("/")})</span>
+                                  </span>
+                                  <span className="font-mono text-[11px] text-slate-500">
+                                    {c.meetings}× · {fmtHours(c.hours)} · last {fmtAgo(c.lastTs, now)}
+                                  </span>
+                                  {r.mmsi ? (
+                                    <Link
+                                      href={`/brief/contact/${r.mmsi}/${c.mmsi}?e=${c.lastEncounterId}`}
+                                      className="text-sky-400 hover:text-sky-300"
+                                    >
+                                      evidence →
+                                    </Link>
+                                  ) : null}
                                 </span>
                               ))}
-                              {r.contacts.length > 3 ? ` +${r.contacts.length - 3}` : ""}
-                              <span className="text-slate-500"> · last {fmtAgo(r.contacts[0].lastTs, now)}</span>
+                              {r.contacts.length > 3 ? (
+                                <span className="text-slate-500">+{r.contacts.length - 3} more on the record</span>
+                              ) : null}
                             </span>
                           ) : r.verdict === "clear" && r.service ? (
                             <span className="text-xs text-slate-500">
@@ -184,6 +203,11 @@ export default async function ScreenPage({
                           ) : r.verdict === "clear" ? (
                             <span className="text-xs text-slate-500">
                               No listing · no contact with listed ships in {EXPOSURE_DAYS} days
+                            </span>
+                          ) : r.verdict === "unassessed" ? (
+                            <span className="text-xs text-slate-400">
+                              Not listed · {r.name ? "ship type unknown" : "no name or IMO broadcast"}
+                              {r.midFlag ? ` · ${r.midFlag.country} flag (from MMSI)` : ""} — check manually
                             </span>
                           ) : r.verdict === "unseen" ? (
                             <span className="text-xs text-slate-500">
