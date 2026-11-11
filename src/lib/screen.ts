@@ -187,6 +187,23 @@ function resolve(input: string): Ident | null {
       homonyms: 0,
     };
   }
+
+  // MMSI sans identité diffusée mais présent dans nos détections : on le
+  // garde (navire non identifié) plutôt que de répondre « introuvable ».
+  if (digits !== null && input.length === 9 && digits >= 100_000_000) {
+    const seen = raw
+      .prepare(
+        `SELECT 1 FROM encounters WHERE mmsi_a = ?1 OR mmsi_b = ?1
+         UNION ALL SELECT 1 FROM voyages WHERE mmsi = ?1
+         UNION ALL SELECT 1 FROM loitering_events WHERE mmsi = ?1
+         UNION ALL SELECT 1 FROM chokepoint_transits WHERE mmsi = ?1
+         LIMIT 1`,
+      )
+      .get(digits);
+    if (seen) {
+      return { mmsi: digits, imo: null, name: null, cargoClass: null, updatedAt: null, homonyms: 0 };
+    }
+  }
   return null;
 }
 

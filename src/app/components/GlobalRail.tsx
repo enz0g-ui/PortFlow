@@ -48,7 +48,7 @@ export function GlobalRail() {
   return (
     <>
       <nav
-        className="pf-deck pf-rail fixed left-0 top-0 z-[1200] hidden h-screen w-[60px] flex-col items-center gap-0.5 py-3.5 lg:flex"
+        className="pf-deck pf-rail print:hidden fixed left-0 top-0 z-[1200] hidden h-screen w-[60px] flex-col items-center gap-0.5 py-3.5 lg:flex"
         aria-label={t("ws.rail.nav")}
       >
         <Link href="/" className="pf-rail__logo" title={t("ws.rail.home")} aria-label={t("ws.rail.home")} />
@@ -65,7 +65,7 @@ export function GlobalRail() {
         ))}
       </nav>
       <nav
-        className="pf-deck pf-tabbar fixed inset-x-0 bottom-0 z-[1200] flex lg:hidden"
+        className="pf-deck pf-tabbar print:hidden fixed inset-x-0 bottom-0 z-[1200] flex lg:hidden"
         aria-label={t("ws.rail.nav")}
       >
         {mobileItems.map((it) => (

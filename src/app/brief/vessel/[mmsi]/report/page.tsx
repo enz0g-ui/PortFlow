@@ -47,7 +47,21 @@ export default async function VesselReportPage({
   if (!v) notFound();
   const net = getNetwork(mmsi, days);
   const summary = summarize(v, net.twoStepListed);
-  const timeline = v.timeline.filter((t) => t.tier !== "port").slice(0, 60);
+  const isRoutine = (t: (typeof v.timeline)[number]) =>
+    t.kind === "loiter" || t.kind === "transit" || t.kind === "port" || t.tier === "port";
+  const timeline = v.timeline.filter((t) => !isRoutine(t)).slice(0, 60);
+  const routine = v.timeline.filter(isRoutine);
+  const routineCount = (k: string) => routine.filter((t) => t.kind === k).length;
+  const routineLine = [
+    ["loiter", "loitering events"],
+    ["transit", "strait transits"],
+    ["port", "port calls"],
+    ["sts", "same-port contacts"],
+  ]
+    .map(([k, l]) => [routineCount(k), l] as const)
+    .filter(([n]) => n > 0)
+    .map(([n, l]) => `${n} ${l}`)
+    .join(", ");
 
   const facts: Array<[string, string]> = [
     ["Name", v.name ?? "Unidentified vessel"],
@@ -153,9 +167,12 @@ export default async function VesselReportPage({
         ) : null}
 
         <section className="mt-5">
-          <h2 className="text-sm font-bold uppercase tracking-wider">Timeline</h2>
+          <h2 className="text-sm font-bold uppercase tracking-wider">Notable events</h2>
+          {routineLine ? (
+            <p className="mt-1 text-xs text-slate-500">Routine activity in the period, not listed: {routineLine}.</p>
+          ) : null}
           {timeline.length === 0 ? (
-            <p className="mt-2 text-sm text-slate-500">No recorded activity in the period.</p>
+            <p className="mt-2 text-sm text-slate-500">No contact at sea or AIS gap recorded in the period.</p>
           ) : (
             <table className="mt-2 w-full text-sm">
               <tbody className="divide-y divide-slate-200">

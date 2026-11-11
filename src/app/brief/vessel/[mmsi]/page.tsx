@@ -82,27 +82,47 @@ interface Group {
   items: TimelineItem[];
 }
 
-// Regroupe les répétitions consécutives (même type, même lieu). Les contacts
-// en mer et les coupures AIS restent toujours visibles un par un.
+const isRoutine = (t: TimelineItem) =>
+  t.kind === "loiter" || t.kind === "transit" || t.kind === "port" || (t.kind === "sts" && t.tier === "port");
+
+function groupLabel(items: TimelineItem[]): string {
+  const n = new Map<string, number>();
+  for (const t of items) {
+    const k = t.kind === "sts" ? "same-port contact" : { loiter: "loitering", transit: "transit", port: "port call", dark: "AIS gap" }[t.kind];
+    n.set(k, (n.get(k) ?? 0) + 1);
+  }
+  return [...n.entries()].map(([k, c]) => `${c} ${k}${c > 1 && !k.endsWith("ing") ? "s" : ""}`).join(" · ");
+}
+
+function groupPlaces(items: TimelineItem[]): string {
+  const n = new Map<string, number>();
+  for (const t of items) {
+    const p = t.place.label.split(" · ")[0];
+    n.set(p, (n.get(p) ?? 0) + 1);
+  }
+  const top = [...n.entries()].sort((a, b) => b[1] - a[1]).map(([p]) => p);
+  return top.slice(0, 2).join(", ") + (top.length > 2 ? ` +${top.length - 2}` : "");
+}
+
+// Les suites d'événements de routine (attente, transit, escale, contact au
+// port) sont repliées en un bloc. Les contacts en mer et les coupures AIS
+// restent toujours visibles un par un.
 function groupTimeline(items: TimelineItem[]): Group[] {
   const out: Group[] = [];
+  let run: TimelineItem[] = [];
+  const flush = () => {
+    if (run.length >= 3) out.push({ key: `g-${run[0].key}`, items: run });
+    else for (const t of run) out.push({ key: t.key, items: [t] });
+    run = [];
+  };
   for (const it of items) {
-    const last = out[out.length - 1];
-    const groupable =
-      it.kind === "loiter" || it.kind === "transit" || it.kind === "port" || it.tier === "port";
-    const placeKey = it.place.label.split(" · ")[0];
-    if (
-      groupable &&
-      last &&
-      last.items[0].kind === it.kind &&
-      last.items[0].tier === it.tier &&
-      last.items[0].place.label.split(" · ")[0] === placeKey
-    ) {
-      last.items.push(it);
-    } else {
+    if (isRoutine(it)) run.push(it);
+    else {
+      flush();
       out.push({ key: it.key, items: [it] });
     }
   }
+  flush();
   return out;
 }
 
@@ -360,9 +380,11 @@ export default async function VesselRecordPage({
                         <span className="w-[92px] font-mono text-xs text-slate-400">
                           {fmtUtc(g.items[g.items.length - 1].ts).slice(0, 5)}–{fmtUtc(g.items[0].ts).slice(0, 5)}
                         </span>
-                        <KindBadge kind={g.items[0].kind} tier={g.items[0].tier} />
-                        <span className="font-mono text-xs text-slate-300">×{g.items.length}</span>
-                        <PlaceLink place={g.items[0].place} />
+                        <span className="inline-block min-w-[72px] rounded border border-slate-700 px-1.5 py-0.5 text-center font-mono text-[11px] text-slate-400">
+                          Routine
+                        </span>
+                        <span className="text-slate-300">{groupLabel(g.items)}</span>
+                        <span className="text-slate-500">{groupPlaces(g.items)}</span>
                         <span className="ml-auto font-mono text-xs text-slate-500">
                           total {fmtHours(g.items.reduce((s, x) => s + (x.durationH ?? 0), 0))}
                           <span className="ml-2 text-sky-400 group-open:hidden">show ▾</span>

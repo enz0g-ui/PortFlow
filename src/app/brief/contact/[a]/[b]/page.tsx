@@ -66,9 +66,9 @@ export default async function ContactEvidencePage({
   const lines: TrackLine[] = [
     trackA ? { label: nameA, color: COLOR_A, points: trackA.points.map(([lon, lat]) => [lon, lat] as [number, number]) } : null,
     trackB ? { label: nameB, color: COLOR_B, points: trackB.points.map(([lon, lat]) => [lon, lat] as [number, number]) } : null,
-  ].filter((x): x is TrackLine => x !== null);
+  ].filter((x): x is TrackLine => x !== null && x.points.length >= 2);
   const markers: TrackMarker[] = [{ lon: sel.lon, lat: sel.lat, color: "#ef6a75", label: "Meeting point" }];
-  const noTracks = lines.every((l) => l.points.length < 2);
+  const noTracks = lines.length === 0;
 
   const facts: Array<[string, string]> = [
     ["Start (UTC)", fmtUtc(sel.startTs) + " " + new Date(sel.startTs).getUTCFullYear()],
@@ -94,7 +94,7 @@ export default async function ContactEvidencePage({
           <KindBadge kind="sts" tier={sel.tier} />
         </h1>
         <p className="mt-1 text-sm text-slate-400">
-          {TIER_LABEL[sel.tier]} · {ev.encounters.length} recorded meeting{ev.encounters.length > 1 ? "s" : ""} between
+          {sel.tier === "transfer" ? "Long, very close contact — consistent with a transfer" : sel.tier === "contact" ? "Close contact — to check" : TIER_LABEL[sel.tier]} · {ev.encounters.length} recorded meeting{ev.encounters.length > 1 ? "s" : ""} between
           these two ships
         </p>
 
