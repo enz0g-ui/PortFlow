@@ -492,7 +492,7 @@ export default async function VesselRecordPage({
                         {s.listedOn ? (
                           <span className="text-xs text-slate-500">listed {fmtDate(s.listedOn)}</span>
                         ) : null}
-                        {s.name && s.name !== v.name ? (
+                        {s.name && s.name.toUpperCase() !== (v.name ?? "").toUpperCase() ? (
                           <span className="text-xs text-slate-500">as “{s.name}”</span>
                         ) : null}
                       </div>

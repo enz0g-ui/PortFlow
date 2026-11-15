@@ -232,7 +232,15 @@ export function identityChecks(input: {
   if (sanc.length > 0) {
     const names = [...new Set(sanc.flatMap((s) => listedNames(s.ship_name, s.alt_names)))];
     // Noms principaux (un par liste) et vrais alias (alt_names) séparés.
-    const primary = [...new Set(sanc.flatMap((s) => listedNames(s.ship_name, null)))];
+    const seenP = new Set<string>();
+    const primary = sanc
+      .flatMap((s) => listedNames(s.ship_name, null))
+      .filter((x) => {
+        const k = normName(x);
+        if (seenP.has(k)) return false;
+        seenP.add(k);
+        return true;
+      });
     const primaryN = new Set(primary.map(normName));
     if (aisName && names.length > 0) {
       const n = normName(aisName);
