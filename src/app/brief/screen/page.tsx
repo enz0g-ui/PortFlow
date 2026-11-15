@@ -3,6 +3,7 @@ import Link from "next/link";
 import { parseQuery, screenVessels, EXPOSURE_DAYS, type Verdict } from "@/lib/screen";
 import { BriefBar } from "../BriefBar";
 import { ScreenBox } from "../ScreenBox";
+import { WatchButton } from "../WatchButton";
 import { cargoLabel, fmtAgo, fmtHours, KindBadge, ListBadges, PlaceLink, VesselLink } from "../ui";
 
 export const metadata: Metadata = {
@@ -240,12 +241,18 @@ export default async function ScreenPage({
               <span className="text-slate-200">
                 Want to know the moment one of these ships meets a listed vessel or goes dark?
               </span>
-              <Link
-                href="/sign-up?from=screen"
+              <WatchButton
+                mmsis={rows.map((r) => r.mmsi).filter((m): m is number => m != null)}
+                label="Watch this fleet"
+                back={`/brief/screen?q=${encodeURIComponent(q)}`}
                 className="rounded-md bg-sky-500 px-4 py-1.5 font-semibold text-slate-950 hover:bg-sky-400"
+              />
+              <a
+                href={`/brief/screen/csv?q=${encodeURIComponent(q)}`}
+                className="rounded-md border border-slate-600 px-4 py-1.5 font-semibold text-slate-200 hover:border-slate-400"
               >
-                Watch this fleet — free
-              </Link>
+                Download CSV
+              </a>
             </div>
 
             <p className="mt-6 max-w-3xl text-xs leading-relaxed text-slate-500">

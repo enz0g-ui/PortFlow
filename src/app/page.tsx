@@ -8,31 +8,34 @@ import { GlobeBackdrop } from "./components/GlobeBackdrop";
 import { DashboardCarousel } from "./components/DashboardCarousel";
 import { NewsletterForm } from "./components/NewsletterForm";
 import { TickerBar } from "./components/TickerBar";
+import { ScreenBox } from "./brief/ScreenBox";
+import { peekBrief } from "@/lib/brief";
+import { screenExamples } from "@/lib/screen";
 
 // Problem-oriented title — captures intent searches ("tanker ETA prediction",
 // "port congestion"), not just the brand name. Layout appends "· Port Flow".
 export const metadata: Metadata = {
-  title: "Tanker ETA prediction & live port congestion",
+  title: "Vessel sanctions screening, ship-to-ship contacts & tanker ETA",
   description:
-    "Predicted vessel ETAs with a published accuracy benchmark, live congestion across 51 ports, multi-regime sanctions screening and chokepoint alerts. Built for commodity traders, charterers and P&I underwriters.",
+    "Screen any vessel or your whole fleet against OFAC, UK and UN lists — and see which ships met a listed vessel at sea, from our own AIS receivers. Plus predicted ETAs with a published benchmark and live congestion across 51 ports.",
   alternates: { canonical: "https://portflow.uk" },
 };
 
 const PERSONAS = [
   {
+    tag: "P&I & compliance",
+    pain: "A clean list check says nothing about who the ship met last week.",
+    gain: "List screening (UKSL · OFAC · UN-SC) plus contacts at sea, AIS gaps and identity mismatches — with the evidence, printable.",
+  },
+  {
+    tag: "Charterers & brokers",
+    pain: "You fix a ship in minutes; the due diligence shouldn't take a day or a five-figure seat.",
+    gain: "Paste or import the fleet, get a verdict per ship, download the CSV, watch it for new contacts.",
+  },
+  {
     tag: "Commodity traders",
     pain: "Cargo timing drives your P&L, but crew-declared ETAs drift by hours.",
-    gain: "Predicted ETAs and live congestion indices feed your pricing and positioning before the market moves.",
-  },
-  {
-    tag: "Charterers & forwarders",
-    pain: "Demurrage eats margin when a berth is congested and you didn't see it coming.",
-    gain: "Live waiting times and congestion across 51 ports — spot the bottleneck days ahead, route around it.",
-  },
-  {
-    tag: "P&I & compliance",
-    pain: "Sanctions and dark-fleet exposure are a daily liability, priced manually.",
-    gain: "Multi-regime screening (UKSL · OFAC · UN-SC), war-risk zones and AIS-gap detection in one screen.",
+    gain: "Predicted ETAs and live congestion across 51 ports, with a published accuracy benchmark.",
   },
 ];
 
@@ -60,6 +63,8 @@ export default async function Home({
   if (user && user.id !== "dev" && !wantsHome) {
     redirect("/app");
   }
+  const cached = peekBrief("30d");
+  const examples = cached ? screenExamples(cached.events.filter((e) => e.kind === "sts")) : [];
 
   return (
     <main className="flex-1 bg-slate-950 text-slate-100">
@@ -124,18 +129,72 @@ export default async function Home({
         <div>
           <div className="mb-5 inline-flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-sky-500">
             <span className="h-1.5 w-1.5 animate-[pf-pulse_2s_infinite] rounded-full bg-emerald-300" />
-            Real-time AIS · 51 ports · 13 chokepoints
+            OFAC · UK · UN lists, refreshed daily · our own AIS receivers
           </div>
           <h1 className="max-w-2xl text-4xl font-semibold leading-[1.08] tracking-[-0.03em] sm:text-[52px]">
+            Is your fleet <span className="text-rose-300">exposed</span>?
+          </h1>
+          <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-400">
+            Sanctions lists tell you who is listed. We also show{" "}
+            <span className="text-slate-200">who met a listed ship at sea</span>, who went dark, and who
+            broadcasts a different name than the one on the list — with the evidence.
+          </p>
+          <div className="mt-7 max-w-2xl rounded-lg border border-slate-700/80 bg-slate-950/80 p-4 backdrop-blur">
+            <ScreenBox examples={examples} />
+          </div>
+          <p className="mt-4 font-mono text-[11.5px] text-slate-600">
+            <Link href="/brief" className="text-sky-500 hover:text-sky-300">
+              today&apos;s compliance briefing →
+            </Link>{" "}
+            ·{" "}
+            <Link href="/methodology" className="hover:text-slate-400">
+              open methodology
+            </Link>{" "}
+            ·{" "}
+            <Link href="/about" className="hover:text-slate-400">
+              documented limits
+            </Link>{" "}
+            · no account needed
+          </p>
+        </div>
+        <aside className="rounded-lg border border-slate-800 bg-slate-950/80 p-5 text-sm backdrop-blur">
+          <div className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.12em] text-sky-500">
+            What each check returns
+          </div>
+          <ul className="mt-3 space-y-2.5 text-slate-300">
+            <li><span className="text-rose-300">●</span> Listing on OFAC, UK or UN lists, by IMO then MMSI</li>
+            <li><span className="text-amber-300">●</span> Contacts at sea with listed ships — probable transfers apart from routine</li>
+            <li><span className="text-amber-300">●</span> AIS gaps underway, loitering, strait transits</li>
+            <li><span className="text-amber-300">●</span> Identity checks: name, flag and transponder mismatches</li>
+            <li><span className="text-sky-400">●</span> Evidence page, printable report, CSV export</li>
+          </ul>
+          <div className="mt-5 border-t border-slate-800 pt-4 font-mono text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+            Where we see best
+          </div>
+          <p className="mt-2 text-[13px] leading-relaxed text-slate-400">
+            Baltic &amp; Gulf of Finland (Russian oil terminals), North Sea &amp; ARA, and 13 chokepoints from
+            Hormuz to Malacca. Outside these areas we say so — the absence of a signal is not a clean bill.
+          </p>
+        </aside>
+        </section>
+      </div>
+
+      {/* ETA : la deuxième promesse, avec sa preuve mesurée */}
+      <section className="border-t border-slate-800">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-16 lg:grid-cols-[1fr_420px]">
+        <div>
+          <div className="mb-5 inline-flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-sky-500">
+            Real-time AIS · 51 ports · 13 chokepoints
+          </div>
+          <h2 className="max-w-2xl text-3xl font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[40px]">
             Crew-declared ETAs drift by{" "}
             <span className="text-rose-300">hours</span>.
             <span className="block">
               Ours are <span className="text-emerald-300">measured</span>.
             </span>
-          </h1>
+          </h2>
           <p className="mt-5 max-w-lg text-base leading-relaxed text-slate-400">
-            Predicted ETAs, live congestion, sanctions screening and chokepoint
-            alerts — with a{" "}
+            Predicted ETAs, live congestion and chokepoint alerts — with a{" "}
             <span className="text-slate-200">published accuracy benchmark</span>
             , not a marketing claim.
           </p>
@@ -150,24 +209,10 @@ export default async function Home({
               Demurrage calculator — free
             </Link>
           </div>
-          {/* Le lien « limits » pointe vers /about : la page de responsabilite
-              existait mais n'etait atteignable que depuis le pied de page, donc
-              invisible — un audit externe (09/2026) a conclu a tort a une
-              « absence totale de credibilite institutionnelle ». */}
-          <p className="mt-4 font-mono text-[11.5px] text-slate-600">
-            <Link href="/methodology" className="hover:text-slate-400">
-              open methodology
-            </Link>{" "}
-            ·{" "}
-            <Link href="/about" className="hover:text-slate-400">
-              documented limits
-            </Link>{" "}
-            · no card for the demo
-          </p>
         </div>
         <LiveBenchmark />
-        </section>
-      </div>
+        </div>
+      </section>
 
       {/* Audiences */}
       <section className="border-t border-slate-800">

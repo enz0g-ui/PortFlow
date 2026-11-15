@@ -369,6 +369,13 @@ function cache(): Map<BriefWindow, Brief> {
  * rendu tel quel et rafraîchi juste après, hors du chemin de la requête.
  * Seul le tout premier appel (avant le pré-calcul) attend le calcul.
  */
+/** Briefing en cache seulement (jamais de calcul) : pour l'accueil. */
+export function peekBrief(window: BriefWindow): Brief | null {
+  const hit = cache().get(window) ?? null;
+  if (hit && Date.now() - hit.generatedAt >= CACHE_MS) scheduleRefresh(window);
+  return hit;
+}
+
 export function getBrief(window: BriefWindow): Brief {
   const hit = cache().get(window);
   if (hit) {

@@ -28,6 +28,8 @@ const VALID_EVENTS = new Set<AlertEvent>([
   "vessel.anomaly",
   "vessel.eta_approaching",
   "vessel.sanctioned_chokepoint_transit",
+  "vessel.sea_contact",
+  "vessel.ais_gap",
 ]);
 
 function isHttpsUrl(url: string): boolean {

@@ -14,7 +14,9 @@ export type AlertEvent =
   | "vessel.departed"
   | "vessel.anomaly"
   | "vessel.eta_approaching"
-  | "vessel.sanctioned_chokepoint_transit";
+  | "vessel.sanctioned_chokepoint_transit"
+  | "vessel.sea_contact"
+  | "vessel.ais_gap";
 
 export interface UserAlert {
   id: number;
@@ -147,6 +149,10 @@ interface VesselEventPayload {
   sanctionsSources?: string[];
   sanctionsRegimes?: string[];
   imo?: number | null;
+  /** Identifiant d'événement pour la déduplication (contact / coupure AIS). */
+  ref?: string;
+  /** Lien vers la preuve ou la fiche navire. */
+  link?: string;
 }
 
 function formatHumanLine(
@@ -176,6 +182,10 @@ function formatHumanLine(
       const imoStr = payload.imo ? ` IMO ${payload.imo}` : "";
       return `🚫  SANCTIONED vessel ${payload.vesselName}${cargo}${imoStr} entering ${cp} at ${t} — listed by ${srcs || "—"}${reg ? ` (${reg})` : ""} (MMSI ${payload.mmsi})`;
     }
+    case "vessel.sea_contact":
+      return `🔗  ${payload.vesselName}${cargo} — ${payload.detail ?? "contact at sea"} · ${payload.portName} · ${t} (MMSI ${payload.mmsi})${payload.link ? ` ${payload.link}` : ""}`;
+    case "vessel.ais_gap":
+      return `📡  ${payload.vesselName}${cargo} went silent (AIS gap) near ${payload.portName} at ${t}${payload.detail ? ` — ${payload.detail}` : ""} (MMSI ${payload.mmsi})${payload.link ? ` ${payload.link}` : ""}`;
   }
 }
 
@@ -196,7 +206,11 @@ function formatEmailHtml(
             ? `arriving in ~${payload.minutesUntilEta ?? "?"} min at`
             : event === "vessel.sanctioned_chokepoint_transit"
               ? "🚫 SANCTIONED vessel entering"
-              : "event at";
+              : event === "vessel.sea_contact"
+                ? `${payload.detail ?? "contact at sea"} ·`
+                : event === "vessel.ais_gap"
+                  ? "AIS gap (transponder silent) near"
+                  : "event at";
   return `
 <!doctype html>
 <html><body style="font-family: system-ui, sans-serif; background: #0b0f17; color: #e6edf3; padding: 24px;">
@@ -208,7 +222,7 @@ function formatEmailHtml(
     <p style="margin: 0 0 16px; font-size: 12px; color: #64748b;">${t} · MMSI ${payload.mmsi}</p>
     <hr style="border: none; border-top: 1px solid #1f2937; margin: 16px 0;" />
     <p style="margin: 0; font-size: 11px; color: #64748b;">
-      <a href="https://portflow.uk/fleet" style="color: #38bdf8; text-decoration: none;">Open my fleet →</a>
+      <a href="${payload.link ?? "https://portflow.uk/fleet"}" style="color: #38bdf8; text-decoration: none;">${payload.link ? "Open the evidence →" : "Open my fleet →"}</a>
     </p>
   </div>
 </body></html>`.trim();
@@ -330,7 +344,16 @@ async function deliver(alert: UserAlert, payload: VesselEventPayload) {
 export async function fireVesselEvent(
   event: AlertEvent,
   payload: VesselEventPayload,
+  opts: {
+    /**
+     * Pour contact en mer / coupure AIS : l'événement vaut aussi pour les
+     * alertes « tous navires » (watchlist_only = 0) — seulement quand un
+     * navire listé est en jeu, sinon ce serait du bruit.
+     */
+    broad?: boolean;
+  } = {},
 ): Promise<number> {
+  const scoped = event === "vessel.sea_contact" || event === "vessel.ais_gap";
   const candidates = db()
     .raw.prepare(
       `SELECT * FROM user_alerts WHERE event = ? AND active = 1`,
@@ -346,6 +369,15 @@ export async function fireVesselEvent(
         !isVesselWatchlisted(alert.user_id, payload.mmsi)
       ) {
         return;
+      }
+      if (scoped && !alert.watchlist_only && !opts.broad) return;
+      if (scoped && payload.ref) {
+        const ins = db()
+          .raw.prepare(
+            `INSERT OR IGNORE INTO alert_event_fired (alert_id, ref, fired_at) VALUES (?, ?, ?)`,
+          )
+          .run(alert.id, payload.ref, Date.now());
+        if (ins.changes === 0) return;
       }
       // For eta_approaching: respect the per-alert lead_time_minutes —
       // alerts with a small lead (e.g. 30 min) shouldn't fire when the

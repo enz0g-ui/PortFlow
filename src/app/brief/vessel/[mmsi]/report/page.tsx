@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getVesselSheet, summarize, TIER_LABEL, WINDOW_DAYS, type Exposure } from "@/lib/brief";
+import { identityChecks, linkedCompanies } from "@/lib/identity";
 import { getNetwork } from "@/lib/screen";
 import { PrintButton } from "../../../PrintButton";
 import { cargoLabel, fmtDate, fmtHours, fmtUtc } from "../../../ui";
@@ -47,6 +48,8 @@ export default async function VesselReportPage({
   if (!v) notFound();
   const net = getNetwork(mmsi, days);
   const summary = summarize(v, net.twoStepListed);
+  const idChecks = identityChecks({ mmsi, imo: v.imo, aisName: v.name });
+  const companies = linkedCompanies(mmsi, v.imo);
   const isRoutine = (t: (typeof v.timeline)[number]) =>
     t.kind === "loiter" || t.kind === "transit" || t.kind === "port" || t.tier === "port";
   const timeline = v.timeline.filter((t) => !isRoutine(t)).slice(0, 60);
@@ -125,6 +128,29 @@ export default async function VesselReportPage({
                   <b>{s.list}</b>
                   {s.regime ? ` · ${s.regime}` : ""}
                   {s.listedOn ? ` · listed ${fmtDate(s.listedOn)}` : ""}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {idChecks.length > 0 || companies.length > 0 ? (
+          <section className="mt-5 break-inside-avoid">
+            <h2 className="text-sm font-bold uppercase tracking-wider">Identity &amp; links</h2>
+            <ul className="mt-2 space-y-1.5 text-sm">
+              {idChecks.map((c, i) => (
+                <li key={i}>
+                  <b className={c.warn ? "text-amber-700" : "text-slate-500"}>{c.warn ? "Check" : "Info"}</b> · {c.text}
+                  {c.mmsis ? ` (${c.mmsis.map((o) => `${o.name ?? "—"} / MMSI ${o.mmsi}`).join(", ")})` : ""}
+                </li>
+              ))}
+              {companies.map((co) => (
+                <li key={co.name}>
+                  <b>Company</b> · {co.name}{" "}
+                  <span className="text-slate-500">
+                    ({co.via === "owner" ? "owner" : co.via === "operator" ? "operator" : `linked by ${co.via}`}
+                    {co.siblingCount > 0 ? `; ${co.siblingCount} other listed ship${co.siblingCount > 1 ? "s" : ""}` : ""})
+                  </span>
                 </li>
               ))}
             </ul>

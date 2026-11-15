@@ -11,11 +11,13 @@ import {
   type TimelineItem,
   type VesselSheet,
 } from "@/lib/brief";
+import { identityChecks, linkedCompanies } from "@/lib/identity";
 import { getNetwork } from "@/lib/screen";
 import { CopyButton } from "../../../components/CopyButton";
 import { BriefBar } from "../../BriefBar";
 import { Network } from "../../Network";
 import { TrackMap } from "../../TrackMap";
+import { WatchButton } from "../../WatchButton";
 import {
   cargoLabel,
   fmtAgo,
@@ -149,6 +151,8 @@ export default async function VesselRecordPage({
   if (!v) notFound();
   const net = getNetwork(mmsi, days);
   const summary = summarize(v, net.twoStepListed);
+  const idChecks = identityChecks({ mmsi, imo: v.imo, aisName: v.name });
+  const companies = linkedCompanies(mmsi, v.imo);
   const now = v.generatedAt;
 
   const h = await headers();
@@ -250,12 +254,7 @@ export default async function VesselRecordPage({
               </span>
             </div>
             <div className="flex flex-wrap gap-2 print:hidden">
-              <Link
-                href={`/sign-up?from=watch&mmsi=${v.mmsi}`}
-                className="rounded-md border border-sky-600/60 bg-sky-500/10 px-3 py-1.5 text-xs font-medium text-sky-200 hover:bg-sky-500/20"
-              >
-                ◉ Alert me on new contacts or AIS gaps
-              </Link>
+              <WatchButton mmsi={v.mmsi} />
               <Link
                 href={`/brief/vessel/${v.mmsi}/report${days !== 90 ? `?d=${days}` : ""}`}
                 className="rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-slate-500"
@@ -345,6 +344,73 @@ export default async function VesselRecordPage({
                 <div className="mt-3 divide-y divide-slate-800/80 rounded-md border border-red-500/30 bg-red-500/[0.03]">
                   {keyEvents.map((t) => (
                     <TimelineRow key={t.key} t={t} self={mmsi} />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {/* Identité et sociétés liées */}
+            {idChecks.length > 0 || companies.length > 0 ? (
+              <section>
+                <h2 className="text-lg font-semibold text-slate-50">Identity &amp; links</h2>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  What the transponder broadcasts compared with the sanctions lists, and companies the lists link
+                  to this ship
+                </p>
+                <div className="mt-3 divide-y divide-slate-800/80 rounded-md border border-slate-800">
+                  {idChecks.map((c, i) => (
+                    <div key={`id-${i}`} className="flex flex-wrap items-start gap-x-3 gap-y-1 px-3 py-2 text-sm">
+                      <span
+                        className={`mt-0.5 inline-block min-w-[72px] rounded border px-1.5 py-0.5 text-center font-mono text-[11px] ${
+                          c.warn
+                            ? "border-amber-500/50 bg-amber-500/10 text-amber-200"
+                            : "border-slate-700 bg-slate-800/40 text-slate-400"
+                        }`}
+                      >
+                        {c.warn ? "Check" : "Info"}
+                      </span>
+                      <span className="min-w-0 flex-1 text-slate-200">
+                        {c.text}
+                        {c.mmsis ? (
+                          <span className="ml-1 text-slate-400">
+                            ({c.mmsis.map((o, j) => (
+                              <span key={o.mmsi}>
+                                {j > 0 ? ", " : ""}
+                                <VesselLink mmsi={o.mmsi} name={o.name ?? `MMSI ${o.mmsi}`} />
+                              </span>
+                            ))})
+                          </span>
+                        ) : null}
+                      </span>
+                    </div>
+                  ))}
+                  {companies.map((co) => (
+                    <div key={co.name} className="px-3 py-2 text-sm">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className="inline-block min-w-[72px] rounded border border-slate-600 bg-slate-800/60 px-1.5 py-0.5 text-center font-mono text-[11px] text-slate-300">
+                          Company
+                        </span>
+                        <span className="font-medium text-slate-100">{co.name}</span>
+                        <span className="text-xs text-slate-500">
+                          {co.via === "owner" ? "owner, per the list" : co.via === "operator" ? "operator, per the list" : `linked by ${co.via}`}
+                          {co.siblingCount > 0
+                            ? ` · ${co.siblingCount} other listed ship${co.siblingCount > 1 ? "s" : ""}`
+                            : ""}
+                        </span>
+                      </div>
+                      {co.siblings.length > 0 ? (
+                        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 pl-[84px] text-xs text-slate-400">
+                          {co.siblings.map((s, j) =>
+                            s.mmsi ? (
+                              <VesselLink key={j} mmsi={s.mmsi} name={s.name ?? (s.imo ? `IMO ${s.imo}` : null)} sanctioned />
+                            ) : (
+                              <span key={j}>{s.name ?? `IMO ${s.imo}`}</span>
+                            ),
+                          )}
+                          {co.siblingCount > co.siblings.length ? <span>+{co.siblingCount - co.siblings.length} more</span> : null}
+                        </div>
+                      ) : null}
+                    </div>
                   ))}
                 </div>
               </section>

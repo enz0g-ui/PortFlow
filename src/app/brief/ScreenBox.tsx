@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CsvPick } from "./CsvPick";
 
 // Champ de vérification : simple formulaire GET (pas de JS requis), le
 // résultat a une URL partageable.
@@ -36,6 +37,8 @@ export function ScreenBox({
       </div>
       {examples && examples.length > 0 ? (
         <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          <CsvPick />
+          <span className="text-slate-700">·</span>
           Try:
           {examples.map((e) => (
             <Link
@@ -48,7 +51,11 @@ export function ScreenBox({
           ))}
           <span className="text-slate-600">· up to 50 vessels · no account needed</span>
         </p>
-      ) : null}
+      ) : (
+        <p className="mt-2 text-xs text-slate-500">
+          <CsvPick />
+        </p>
+      )}
     </form>
   );
 }

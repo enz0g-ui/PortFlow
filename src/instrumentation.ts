@@ -231,6 +231,10 @@ export async function register() {
   const { startBriefWarmer } = await import("./lib/brief");
   startBriefWarmer();
 
+  // Alertes « contact en mer » et « coupure AIS » (watchlist + navires listés).
+  const { startSeaAlerts } = await import("./lib/sea-alerts");
+  startSeaAlerts();
+
   // Nettoyage UNIQUE des doublons mouillage / rencontres (fenêtre glissante
   // → une ligne par passage, ~97 % de doublons mesurés en oct. 2026). Les
   // détecteurs fusionnent désormais eux-mêmes ; ceci traite l'historique.

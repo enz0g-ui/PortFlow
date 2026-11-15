@@ -150,7 +150,9 @@ export default async function AccountPage() {
 
       <BillingPortalButton tier={user.tier} />
       <ApiKeysSection />
-      <AlertsSection />
+      <div id="alerts" className="scroll-mt-6">
+        <AlertsSection />
+      </div>
     </main>
   );
 }

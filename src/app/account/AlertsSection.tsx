@@ -8,7 +8,9 @@ type EventName =
   | "vessel.departed"
   | "vessel.anomaly"
   | "vessel.eta_approaching"
-  | "vessel.sanctioned_chokepoint_transit";
+  | "vessel.sanctioned_chokepoint_transit"
+  | "vessel.sea_contact"
+  | "vessel.ais_gap";
 
 interface Alert {
   id: number;
@@ -238,6 +240,10 @@ export function AlertsSection() {
               <option value="vessel.sanctioned_chokepoint_transit">
                 vessel.sanctioned_chokepoint_transit (compliance)
               </option>
+              <option value="vessel.sea_contact">
+                vessel.sea_contact (contact at sea · compliance)
+              </option>
+              <option value="vessel.ais_gap">vessel.ais_gap (AIS gap · compliance)</option>
             </select>
           </div>
           {form.event === "vessel.eta_approaching" ? (
