@@ -1485,7 +1485,7 @@ export default function Dashboard({
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              ★ Favoris
+              ★ {locale === "fr" ? "Favoris" : "Favourites"}
               <span className="ml-1 text-[10px]">
                 ({bookmarkedMmsis.size})
               </span>
