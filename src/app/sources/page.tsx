@@ -411,10 +411,13 @@ export default function SourcesPage() {
                   Sanctions multi-régime
                 </strong>{" "}
                 — UK Sanctions List (FCDO, OGL v3), OFAC SDN (US Treasury,
-                public domain), UN Security Council Consolidated List. Trois
-                listes officielles, réconciliées quotidiennement sur IMO/MMSI
-                dans une table unifiée. Liste consolidée UE : en cours
-                d&apos;intégration.
+                public domain), UN Security Council Consolidated List, liste UE
+                des navires désignés (Conseil de l&apos;UE : art. 3s du
+                règlement 833/2014 et règlement 2017/1509, via le fichier
+                d&apos;import de l&apos;autorité maritime danoise). Quatre listes
+                officielles, réconciliées quotidiennement sur IMO/MMSI dans une
+                table unifiée ; sociétés maritimes du fichier consolidé FSF de
+                la Commission croisées avec les sociétés liées aux navires.
               </li>
               <li>
                 <strong className="text-slate-200">JWC JWLA-033</strong> —

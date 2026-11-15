@@ -207,6 +207,16 @@ export async function register() {
   const { startEuScanner } = await import("./lib/eu-sanctions");
   startEuScanner();
 
+  // Liste UE des navires (accès aux ports interdit, art. 3s 833/2014 ;
+  // RPDC 2017/1509) — fichier d'import de l'autorité maritime danoise.
+  const { startEuVesselsScanner } = await import("./lib/eu-vessels");
+  startEuVesselsScanner();
+
+  // Sociétés sanctionnées UE (fichier FSF) : croisées avec les sociétés
+  // liées aux navires sur la fiche.
+  const { startEuCompanies } = await import("./lib/eu-companies");
+  startEuCompanies();
+
   // Chokepoint transit detector — scans the last 10 min of positions every
   // 5 min, matches against 12 chokepoint bboxes, persists transit events
   // with sanctioned snapshot flag from UKSL. The killer query for compliance:

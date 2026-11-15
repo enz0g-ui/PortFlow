@@ -25,7 +25,7 @@ const PERSONAS = [
   {
     tag: "P&I & compliance",
     pain: "A clean list check says nothing about who the ship met last week.",
-    gain: "List screening (UKSL · OFAC · UN-SC) plus contacts at sea, AIS gaps and identity mismatches — with the evidence, printable.",
+    gain: "List screening (UKSL · OFAC · UN-SC · EU) plus contacts at sea, AIS gaps and identity mismatches — with the evidence, printable.",
   },
   {
     tag: "Charterers & brokers",
@@ -42,7 +42,7 @@ const PERSONAS = [
 const FEATURES: Array<[stat: string, tone: string, title: string, body: string]> = [
   ["MAE", "text-emerald-300", "Predicted ETA + published benchmark", "Our ETA vs the broadcast ETA, with an open RMSE/MAE benchmark — measured, not claimed."],
   ["51 · 12", "text-sky-500", "Ports & chokepoints, live", "Real-time AIS coverage across the world's tanker hubs and the straits that matter."],
-  ["×3", "text-sky-500", "Multi-regime sanctions screening", "UKSL, OFAC, UN-SC in one pass, with an audit trail."],
+  ["×4", "text-sky-500", "Multi-regime sanctions screening", "UKSL, OFAC, UN-SC and EU in one pass, with an audit trail."],
   ["⌖", "text-amber-300", "Chokepoint transit alerts", "Hormuz, Suez, Bosphorus, Malacca — transit counts, dwell time and deviations."],
   ["⬤", "text-rose-300", "Dark-event / AIS-gap detection", "In-house detection of vessels going dark in contested waters — behavioural, not speculative."],
   ["{ }", "text-sky-500", "Watchlist, alerts & API", "Slack · Telegram · Email · Webhook alerts, plus a JSON API and CSV export."],
@@ -129,7 +129,7 @@ export default async function Home({
         <div>
           <div className="mb-5 inline-flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-sky-500">
             <span className="h-1.5 w-1.5 animate-[pf-pulse_2s_infinite] rounded-full bg-emerald-300" />
-            OFAC · UK · UN lists, refreshed daily · our own AIS receivers
+            OFAC · UK · UN · EU lists, refreshed daily · our own AIS receivers
           </div>
           <h1 className="max-w-2xl text-4xl font-semibold leading-[1.08] tracking-[-0.03em] sm:text-[52px]">
             Is your fleet <span className="text-rose-300">exposed</span>?
@@ -162,7 +162,7 @@ export default async function Home({
             What each check returns
           </div>
           <ul className="mt-3 space-y-2.5 text-slate-300">
-            <li><span className="text-rose-300">●</span> Listing on OFAC, UK or UN lists, by IMO then MMSI</li>
+            <li><span className="text-rose-300">●</span> Listing on OFAC, UK, UN or EU lists, by IMO then MMSI</li>
             <li><span className="text-amber-300">●</span> Contacts at sea with listed ships — probable transfers apart from routine</li>
             <li><span className="text-amber-300">●</span> AIS gaps underway, loitering, strait transits</li>
             <li><span className="text-amber-300">●</span> Identity checks: name, flag and transponder mismatches</li>

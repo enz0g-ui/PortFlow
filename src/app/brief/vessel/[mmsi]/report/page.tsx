@@ -146,7 +146,8 @@ export default async function VesselReportPage({
               ))}
               {companies.map((co) => (
                 <li key={co.name}>
-                  <b>Company</b> · {co.name}{" "}
+                  <b>Company</b> · {co.name}
+                  {co.eu ? <b className="text-red-700"> · EU-sanctioned company{co.eu.euRef ? ` (${co.eu.euRef})` : ""}</b> : null}{" "}
                   <span className="text-slate-500">
                     ({co.via === "owner" ? "owner" : co.via === "operator" ? "operator" : `linked by ${co.via}`}
                     {co.siblingCount > 0 ? `; ${co.siblingCount} other listed ship${co.siblingCount > 1 ? "s" : ""}` : ""})

@@ -18,7 +18,7 @@ import { db } from "./db";
 
 // NB : la valeur EU réellement écrite en base est "eu_consolidated"
 // (cf. eu-sanctions.ts), pas le "eu_fsf" du commentaire de la migration 0012.
-export type SanctionsSource = "uksl" | "ofac" | "un_sc" | "eu_consolidated";
+export type SanctionsSource = "uksl" | "ofac" | "un_sc" | "eu_consolidated" | "eu_vessels";
 
 export function sha256Hex(data: string | Uint8Array): string {
   return createHash("sha256").update(data).digest("hex");

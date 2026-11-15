@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { listLabel } from "./brief";
+import { euCompanyFor, type EuCompanyHit } from "./eu-companies";
 import { flagFromMmsi } from "./mid";
 
 /**
@@ -28,6 +29,8 @@ export interface LinkedCompany {
   via: string;
   siblings: LinkedVessel[];
   siblingCount: number;
+  /** La société figure aussi sur la liste UE des sociétés sanctionnées. */
+  eu: EuCompanyHit | null;
 }
 
 export type IdentityCheckKind =
@@ -154,7 +157,13 @@ export function linkedCompanies(mmsi: number, imo: number | null): LinkedCompany
         if (r) s.mmsi = r.mmsi;
       }
     }
-    out.push({ name, via, siblings: siblings.slice(0, 12), siblingCount: siblings.length });
+    out.push({
+      name,
+      via,
+      siblings: siblings.slice(0, 12),
+      siblingCount: siblings.length,
+      eu: euCompanyFor(name),
+    });
   }
   return out.sort((a, b) => b.siblingCount - a.siblingCount);
 }

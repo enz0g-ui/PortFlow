@@ -391,6 +391,14 @@ export default async function VesselRecordPage({
                           Company
                         </span>
                         <span className="font-medium text-slate-100">{co.name}</span>
+                        {co.eu ? (
+                          <span
+                            title={`EU consolidated list${co.eu.euRef ? ` · ${co.eu.euRef}` : ""}${co.eu.programme ? ` · programme ${co.eu.programme}` : ""}`}
+                            className="rounded bg-red-500/15 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-red-300"
+                          >
+                            EU-sanctioned company
+                          </span>
+                        ) : null}
                         <span className="text-xs text-slate-500">
                           {co.via === "owner" ? "owner, per the list" : co.via === "operator" ? "operator, per the list" : `linked by ${co.via}`}
                           {co.siblingCount > 0

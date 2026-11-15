@@ -177,7 +177,9 @@ function formatHumanLine(
     }
     case "vessel.sanctioned_chokepoint_transit": {
       const cp = payload.chokepointName ?? payload.portName;
-      const srcs = (payload.sanctionsSources ?? []).join("/").toUpperCase();
+      const srcs = (payload.sanctionsSources ?? [])
+        .map((s) => (s.startsWith("eu") ? "EU" : s === "un_sc" ? "UN" : s === "uksl" ? "UK" : s.toUpperCase()))
+        .join("/");
       const reg = (payload.sanctionsRegimes ?? []).filter(Boolean).join(", ");
       const imoStr = payload.imo ? ` IMO ${payload.imo}` : "";
       return `🚫  SANCTIONED vessel ${payload.vesselName}${cargo}${imoStr} entering ${cp} at ${t} — listed by ${srcs || "—"}${reg ? ` (${reg})` : ""} (MMSI ${payload.mmsi})`;

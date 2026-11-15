@@ -126,7 +126,7 @@ const fr: PageMessages = {
   "pricing.tier.professional.priceYearlyTotal": "Facturé 1 791 €/an",
   "pricing.tier.professional.yearlySavings": "Économisez 597 €",
   "pricing.tier.professional.features":
-    "Tout Starter +|Watchlist 100 navires|Screening sanctions multi-régime (UKSL · OFAC · UN-SC)|Demurrage risk score live|API 18 k req/h|60 j d'historique",
+    "Tout Starter +|Watchlist 100 navires|Screening sanctions multi-régime (UKSL · OFAC · UN-SC · EU)|Demurrage risk score live|API 18 k req/h|60 j d'historique",
   "pricing.tier.professional.cta": "Choisir Professional",
   "pricing.tier.pro.name": "Pro+",
   "pricing.tier.pro.price": "499 €",
@@ -372,12 +372,12 @@ const fr: PageMessages = {
   "methodology.compliance.gdpr":
     "RGPD : aucun traitement de données personnelles. Les MMSI sont des identifiants de navire, pas de personne.",
   "methodology.compliance.sanctions":
-    "Sanctions : la plateforme rapproche automatiquement les navires de trois listes officielles (UKSL, OFAC, UN-SC) — voir la section dédiée plus haut. Le client peut superposer ses propres listes propriétaires via webhooks ou export.",
+    "Sanctions : la plateforme rapproche automatiquement les navires de quatre listes officielles (UKSL, OFAC, UN-SC, EU) — voir la section dédiée plus haut. Le client peut superposer ses propres listes propriétaires via webhooks ou export.",
   // ─── New sections (sanctions screening / chokepoints / emissions) ───
   "methodology.sanctionsScreening.title":
     "Sanctions screening — couverture multi-régime",
   "methodology.sanctionsScreening.intro":
-    "Les navires sont rapprochés de trois listes officielles, mises à jour quotidiennement et réconciliées sur IMO/MMSI :",
+    "Les navires sont rapprochés de quatre listes officielles, mises à jour quotidiennement et réconciliées sur IMO/MMSI :",
   "methodology.sanctionsScreening.uksl":
     "UK Sanctions List (UKSL) — FCDO, Open Government Licence v3.0. ~600 navires (Russie, Iran). Source autoritative depuis le retrait de l'OFSI Consolidated List le 28 janvier 2026.",
   "methodology.sanctionsScreening.ofac":
@@ -385,7 +385,7 @@ const fr: PageMessages = {
   "methodology.sanctionsScreening.un":
     "UN Security Council Consolidated List — information publique ONU, libre réutilisation. Coverage RPDC, Libye, Iran historique.",
   "methodology.sanctionsScreening.eu":
-    "EU Consolidated FSF — Commission européenne, EC Reuse Decision 2011/833/EU. Russie post-2022 shadow fleet, Belarus, Syrie. Activé sur configuration (jeton EU webgate requis).",
+    "Liste UE des navires désignés — Conseil de l’UE : interdiction d’accès aux ports (art. 3s, règlement 833/2014, « flotte fantôme » russe) et mesures RPDC (règlement 2017/1509). ~730 navires, mise à jour à chaque paquet de sanctions. Les sociétés maritimes du fichier consolidé FSF de la Commission sont croisées avec les sociétés liées aux navires.",
   "methodology.sanctionsScreening.note":
     "Match sur IMO 7 chiffres en priorité (autoritatif), MMSI en fallback. Indicateur visuel rouge sur la carte et badge 🚫 dans les listes voyages.",
   "methodology.chokepoints.title":
@@ -519,7 +519,7 @@ const fr: PageMessages = {
   "guide.limits.eta":
     "Modèle ETA v2 (distance/SOG + correction saisonnière + congestion + météo). Bat l'ETA broadcast quand les voyages sont > 6 h ; moins d'avance sur les voyages courts.",
   "guide.limits.sanctions":
-    "Filtrage sanctions multi-régime intégré (UKSL + OFAC + UN-SC) — voir page méthodologie. Le client peut aussi superposer ses propres listes via l'API.",
+    "Filtrage sanctions multi-régime intégré (UKSL + OFAC + UN-SC + EU) — voir page méthodologie. Le client peut aussi superposer ses propres listes via l'API.",
   "guide.checklist.title": "Checklist de déploiement",
   "guide.checklist.s1": "Créer une clé",
   "guide.checklist.s2":
@@ -659,7 +659,7 @@ const fr: PageMessages = {
   "legal.dpa.outroSuffix": " — délai indicatif 48 h ouvrées.",
   "legal.sanctions.title": "Sanctions & conformité",
   "legal.sanctions.b1":
-    "La plateforme rapproche automatiquement les navires de trois listes officielles publiques (UK Sanctions List, OFAC SDN, UN Security Council Consolidated List) — voir la page méthodologie pour la couverture détaillée et les fréquences de mise à jour.",
+    "La plateforme rapproche automatiquement les navires de quatre listes officielles publiques (UK Sanctions List, OFAC SDN, UN Security Council Consolidated List, EU designated-vessels list) — voir la page méthodologie pour la couverture détaillée et les fréquences de mise à jour.",
   "legal.sanctions.b2":
     "Le client utilisateur (trader, assureur, freight forwarder) reste responsable de l'application de ses propres listes et procédures de screening complémentaires (KYC, EDD, listes propriétaires).",
   "legal.sanctions.b3":
@@ -849,7 +849,7 @@ const en: PageMessages = {
   "pricing.tier.professional.priceYearlyTotal": "Billed €1,791/year",
   "pricing.tier.professional.yearlySavings": "Save €597",
   "pricing.tier.professional.features":
-    "Everything in Starter, plus|100-vessel watchlist|Multi-regime sanctions screening (UKSL · OFAC · UN-SC)|Live demurrage risk score|API 18k req/hour|60-day history",
+    "Everything in Starter, plus|100-vessel watchlist|Multi-regime sanctions screening (UKSL · OFAC · UN-SC · EU)|Live demurrage risk score|API 18k req/hour|60-day history",
   "pricing.tier.professional.cta": "Choose Professional",
   "pricing.tier.pro.name": "Pro+",
   "pricing.tier.pro.price": "€499",
@@ -1095,14 +1095,14 @@ const en: PageMessages = {
   "methodology.compliance.gdpr":
     "GDPR: no personal data processing. MMSIs are vessel identifiers, not personal identifiers.",
   "methodology.compliance.sanctions":
-    "Sanctions: the platform automatically reconciles vessels against three official lists (UKSL, OFAC, UN-SC) — see dedicated section above. Clients can layer their own proprietary lists via webhooks or export.",
+    "Sanctions: the platform automatically reconciles vessels against four official lists (UKSL, OFAC, UN-SC, EU) — see dedicated section above. Clients can layer their own proprietary lists via webhooks or export.",
   "methodology.compliance.legalIntro": "Full details on the",
   "methodology.compliance.legalLabel": "Legal page",
   // ─── New sections (sanctions screening / chokepoints / emissions) ───
   "methodology.sanctionsScreening.title":
     "Sanctions screening — multi-regime coverage",
   "methodology.sanctionsScreening.intro":
-    "Vessels are reconciled against three official lists, refreshed daily and matched on IMO/MMSI:",
+    "Vessels are reconciled against four official lists, refreshed daily and matched on IMO/MMSI:",
   "methodology.sanctionsScreening.uksl":
     "UK Sanctions List (UKSL) — FCDO, Open Government Licence v3.0. ~600 vessels (Russia, Iran). Authoritative source since the OFSI Consolidated List was retired on 28 January 2026.",
   "methodology.sanctionsScreening.ofac":
@@ -1110,7 +1110,7 @@ const en: PageMessages = {
   "methodology.sanctionsScreening.un":
     "UN Security Council Consolidated List — UN public information, free reuse. Coverage of DPRK, Libya, historical Iran.",
   "methodology.sanctionsScreening.eu":
-    "EU Consolidated FSF — European Commission, EC Reuse Decision 2011/833/EU. Russian post-2022 shadow fleet, Belarus, Syria. Activated on configuration (EU webgate token required).",
+    "EU designated-vessels list — Council of the EU: port-access ban (Art. 3s, Regulation 833/2014, Russian shadow fleet) and DPRK measures (Regulation 2017/1509). ~730 vessels, updated with each sanctions package. Maritime companies from the Commission’s consolidated FSF file are matched against companies linked to vessels.",
   "methodology.sanctionsScreening.note":
     "Match on 7-digit IMO first (authoritative), MMSI as fallback. Red halo on the map and 🚫 badge in voyage tables.",
   "methodology.chokepoints.title":
@@ -1242,7 +1242,7 @@ const en: PageMessages = {
   "guide.limits.eta":
     "ETA model v2 (distance/SOG + seasonal correction + congestion + weather). Beats the broadcast ETA on voyages > 6h; less of an edge on short voyages.",
   "guide.limits.sanctions":
-    "Multi-regime sanctions screening built in (UKSL + OFAC + UN-SC) — see methodology page. Customers can also layer their own lists via the API.",
+    "Multi-regime sanctions screening built in (UKSL + OFAC + UN-SC + EU) — see methodology page. Customers can also layer their own lists via the API.",
   "guide.checklist.title": "Deployment checklist",
   "guide.checklist.s1": "Create an",
   "guide.checklist.s2":
@@ -1382,7 +1382,7 @@ const en: PageMessages = {
   "legal.dpa.outroSuffix": " — typical lead time 48 business hours.",
   "legal.sanctions.title": "Sanctions & compliance",
   "legal.sanctions.b1":
-    "The platform automatically reconciles vessels against three public official lists (UK Sanctions List, OFAC SDN, UN Security Council Consolidated List) — see the methodology page for detailed coverage and refresh cadence.",
+    "The platform automatically reconciles vessels against four public official lists (UK Sanctions List, OFAC SDN, UN Security Council Consolidated List, EU designated-vessels list) — see the methodology page for detailed coverage and refresh cadence.",
   "legal.sanctions.b2":
     "The customer (trader, insurer, freight forwarder) remains responsible for applying its own complementary lists and screening procedures (KYC, EDD, proprietary watchlists).",
   "legal.sanctions.b3":
@@ -1643,11 +1643,11 @@ const nl: PageMessages = {
   "methodology.compliance.gdpr":
     "AVG: geen verwerking van persoonsgegevens. MMSI's zijn scheepsidentificatoren, geen persoonsidentificatoren.",
   "methodology.compliance.sanctions":
-    "Sancties: het platform reconciliëert automatisch schepen tegen drie officiële lijsten (UKSL, OFAC, UN-SC) — zie aparte sectie hierboven. Klanten kunnen eigen proprietary lijsten erop leggen via webhooks of export.",
+    "Sancties: het platform reconciliëert automatisch schepen tegen vier officiële lijsten (UKSL, OFAC, UN-SC, EU) — zie aparte sectie hierboven. Klanten kunnen eigen proprietary lijsten erop leggen via webhooks of export.",
   "methodology.sanctionsScreening.title":
     "Sanctie-screening — multi-regime dekking",
   "methodology.sanctionsScreening.intro":
-    "Schepen worden gereconcilieerd tegen drie officiële lijsten, dagelijks ververst en gematcht op IMO/MMSI:",
+    "Schepen worden gereconcilieerd tegen vier officiële lijsten, dagelijks ververst en gematcht op IMO/MMSI:",
   "methodology.sanctionsScreening.uksl":
     "UK Sanctions List (UKSL) — FCDO, Open Government Licence v3.0. ~600 schepen (Rusland, Iran). Autoritatieve bron sinds de OFSI Consolidated List op 28 januari 2026 werd ingetrokken.",
   "methodology.sanctionsScreening.ofac":
@@ -1655,7 +1655,7 @@ const nl: PageMessages = {
   "methodology.sanctionsScreening.un":
     "UN Security Council Consolidated List — VN publieke informatie, vrij hergebruik. Dekking DPRK, Libië, historisch Iran.",
   "methodology.sanctionsScreening.eu":
-    "EU Consolidated FSF — Europese Commissie, EC Reuse Decision 2011/833/EU. Russische post-2022 shadow fleet, Belarus, Syrië. Geactiveerd op configuratie (EU webgate token vereist).",
+    "EU-lijst van aangewezen schepen — Raad van de EU: toegangsverbod tot havens (art. 3s, Verordening 833/2014, Russische schaduwvloot) en DVK-maatregelen (Verordening 2017/1509). ~730 schepen, bijgewerkt bij elk sanctiepakket. Maritieme bedrijven uit het geconsolideerde FSF-bestand van de Commissie worden gekoppeld aan bedrijven die aan schepen zijn gelinkt.",
   "methodology.sanctionsScreening.note":
     "Match op 7-cijferige IMO eerst (autoritatief), MMSI als fallback. Rode halo op de kaart en 🚫-badge in reizen-tabellen.",
   "methodology.chokepoints.title":
@@ -1816,7 +1816,7 @@ const nl: PageMessages = {
   "legal.dpa.outroSuffix": " — indicatieve doorlooptijd 48 werkuren.",
   "legal.sanctions.title": "Sancties & compliance",
   "legal.sanctions.b1":
-    "Het platform reconciliëert automatisch schepen tegen drie publieke officiële lijsten (UK Sanctions List, OFAC SDN, UN Security Council Consolidated List) — zie methodologiepagina voor gedetailleerde dekking en refresh-cadens.",
+    "Het platform reconciliëert automatisch schepen tegen vier publieke officiële lijsten (UK Sanctions List, OFAC SDN, UN Security Council Consolidated List, EU designated-vessels list) — zie methodologiepagina voor gedetailleerde dekking en refresh-cadens.",
   "legal.sanctions.b2":
     "De klant (trader, verzekeraar, expediteur) blijft verantwoordelijk voor toepassing van zijn eigen aanvullende lijsten en screeningsprocedures (KYC, EDD, eigen watchlists).",
   "legal.sanctions.b3":
@@ -1883,7 +1883,7 @@ const nl: PageMessages = {
   "guide.limits.eta":
     "ETA-model v2 (afstand/SOG + seizoenscorrectie + congestie + weer). Verslaat de broadcast-ETA op reizen > 6 u; minder voorsprong op korte reizen.",
   "guide.limits.sanctions":
-    "Multi-regime sanctie-screening ingebouwd (UKSL + OFAC + UN-SC) — zie methodologiepagina. Klanten kunnen ook eigen lijsten via de API leggen.",
+    "Multi-regime sanctie-screening ingebouwd (UKSL + OFAC + UN-SC + EU) — zie methodologiepagina. Klanten kunnen ook eigen lijsten via de API leggen.",
   "guide.checklist.title": "Deployment-checklist",
   "guide.checklist.s1": "Maak een",
   "guide.checklist.s2":
@@ -2084,11 +2084,11 @@ const de: PageMessages = {
   "methodology.compliance.gdpr":
     "DSGVO: keine Verarbeitung personenbezogener Daten. MMSIs sind Schiffsidentifikatoren, keine Personenidentifikatoren.",
   "methodology.compliance.sanctions":
-    "Sanktionen: die Plattform gleicht automatisch Schiffe gegen drei offizielle Listen ab (UKSL, OFAC, UN-SC) — siehe gewidmeter Abschnitt oben. Kunden können eigene proprietäre Listen via Webhooks oder Export überlagern.",
+    "Sanktionen: die Plattform gleicht automatisch Schiffe gegen vier offizielle Listen ab (UKSL, OFAC, UN-SC, EU) — siehe gewidmeter Abschnitt oben. Kunden können eigene proprietäre Listen via Webhooks oder Export überlagern.",
   "methodology.sanctionsScreening.title":
     "Sanktions-Screening — Multi-Regime-Abdeckung",
   "methodology.sanctionsScreening.intro":
-    "Schiffe werden gegen drei offizielle Listen abgeglichen, täglich aktualisiert und auf IMO/MMSI gematcht:",
+    "Schiffe werden gegen vier offizielle Listen abgeglichen, täglich aktualisiert und auf IMO/MMSI gematcht:",
   "methodology.sanctionsScreening.uksl":
     "UK Sanctions List (UKSL) — FCDO, Open Government Licence v3.0. ~600 Schiffe (Russland, Iran). Autoritative Quelle seit Rückzug der OFSI Consolidated List am 28. Januar 2026.",
   "methodology.sanctionsScreening.ofac":
@@ -2096,7 +2096,7 @@ const de: PageMessages = {
   "methodology.sanctionsScreening.un":
     "UN Security Council Consolidated List — UN-Öffentlichkeitsinformation, freie Wiederverwendung. Abdeckung Nordkorea, Libyen, historisch Iran.",
   "methodology.sanctionsScreening.eu":
-    "EU Consolidated FSF — Europäische Kommission, EC Reuse Decision 2011/833/EU. Russische Post-2022 Shadow Fleet, Belarus, Syrien. Aktiviert auf Konfiguration (EU-Webgate-Token erforderlich).",
+    "EU-Liste benannter Schiffe — Rat der EU: Hafenzugangsverbot (Art. 3s, Verordnung 833/2014, russische Schattenflotte) und DVRK-Maßnahmen (Verordnung 2017/1509). ~730 Schiffe, aktualisiert mit jedem Sanktionspaket. Maritime Unternehmen aus der konsolidierten FSF-Datei der Kommission werden mit schiffsbezogenen Unternehmen abgeglichen.",
   "methodology.sanctionsScreening.note":
     "Match auf 7-stelliger IMO zuerst (autoritativ), MMSI als Fallback. Roter Halo auf der Karte und 🚫-Badge in Reisen-Tabellen.",
   "methodology.chokepoints.title":
@@ -2257,7 +2257,7 @@ const de: PageMessages = {
   "legal.dpa.outroSuffix": " — indikative Bearbeitungszeit 48 Geschäftsstunden.",
   "legal.sanctions.title": "Sanktionen & Compliance",
   "legal.sanctions.b1":
-    "Die Plattform gleicht automatisch Schiffe gegen drei öffentliche offizielle Listen ab (UK Sanctions List, OFAC SDN, UN Security Council Consolidated List) — siehe Methodik-Seite für detaillierte Abdeckung und Aktualisierungsfrequenz.",
+    "Die Plattform gleicht automatisch Schiffe gegen vier öffentliche offizielle Listen ab (UK Sanctions List, OFAC SDN, UN Security Council Consolidated List, EU designated-vessels list) — siehe Methodik-Seite für detaillierte Abdeckung und Aktualisierungsfrequenz.",
   "legal.sanctions.b2":
     "Der Kunde (Trader, Versicherer, Spediteur) bleibt verantwortlich für die Anwendung seiner eigenen ergänzenden Listen und Screening-Verfahren (KYC, EDD, eigene Watchlists).",
   "legal.sanctions.b3":
@@ -2324,7 +2324,7 @@ const de: PageMessages = {
   "guide.limits.eta":
     "ETA-Modell v2 (Distanz/SOG + Saisonkorrektur + Stau + Wetter). Schlägt die Broadcast-ETA bei Reisen > 6h; weniger Vorsprung bei kurzen Reisen.",
   "guide.limits.sanctions":
-    "Multi-Regime Sanktions-Screening eingebaut (UKSL + OFAC + UN-SC) — siehe Methodik-Seite. Kunden können auch eigene Listen via API überlagern.",
+    "Multi-Regime Sanktions-Screening eingebaut (UKSL + OFAC + UN-SC + EU) — siehe Methodik-Seite. Kunden können auch eigene Listen via API überlagern.",
   "guide.checklist.title": "Deployment-Checklist",
   "guide.checklist.s1": "Erstellen Sie einen",
   "guide.checklist.s2":
@@ -2525,11 +2525,11 @@ const es: PageMessages = {
   "methodology.compliance.gdpr":
     "RGPD: sin tratamiento de datos personales. Los MMSI son identificadores de buque, no de persona.",
   "methodology.compliance.sanctions":
-    "Sanciones: la plataforma reconcilia automáticamente buques contra tres listas oficiales (UKSL, OFAC, UN-SC) — ver sección dedicada arriba. El cliente puede superponer sus propias listas propietarias vía webhooks o export.",
+    "Sanciones: la plataforma reconcilia automáticamente buques contra cuatro listas oficiales (UKSL, OFAC, UN-SC, EU) — ver sección dedicada arriba. El cliente puede superponer sus propias listas propietarias vía webhooks o export.",
   "methodology.sanctionsScreening.title":
     "Screening de sanciones — cobertura multi-régimen",
   "methodology.sanctionsScreening.intro":
-    "Los buques son reconciliados contra tres listas oficiales, actualizadas diariamente y matched sobre IMO/MMSI:",
+    "Los buques son reconciliados contra cuatro listas oficiales, actualizadas diariamente y matched sobre IMO/MMSI:",
   "methodology.sanctionsScreening.uksl":
     "UK Sanctions List (UKSL) — FCDO, Open Government Licence v3.0. ~600 buques (Rusia, Irán). Fuente autoritaria desde la retirada de la OFSI Consolidated List el 28 de enero de 2026.",
   "methodology.sanctionsScreening.ofac":
@@ -2537,7 +2537,7 @@ const es: PageMessages = {
   "methodology.sanctionsScreening.un":
     "UN Security Council Consolidated List — información pública ONU, libre reutilización. Cobertura RPDC, Libia, Irán histórico.",
   "methodology.sanctionsScreening.eu":
-    "EU Consolidated FSF — Comisión Europea, EC Reuse Decision 2011/833/EU. Shadow fleet rusa post-2022, Bielorrusia, Siria. Activado en configuración (token EU webgate requerido).",
+    "Lista UE de buques designados — Consejo de la UE: prohibición de acceso a puertos (art. 3s, Reglamento 833/2014, flota en la sombra rusa) y medidas RPDC (Reglamento 2017/1509). ~730 buques, actualizada con cada paquete de sanciones. Las empresas marítimas del archivo consolidado FSF de la Comisión se cruzan con las empresas vinculadas a los buques.",
   "methodology.sanctionsScreening.note":
     "Match sobre IMO 7 dígitos prioritario (autoritario), MMSI como fallback. Halo rojo en el mapa y badge 🚫 en las tablas de viajes.",
   "methodology.chokepoints.title":
@@ -2698,7 +2698,7 @@ const es: PageMessages = {
   "legal.dpa.outroSuffix": " — plazo indicativo 48 h laborables.",
   "legal.sanctions.title": "Sanciones y cumplimiento",
   "legal.sanctions.b1":
-    "La plataforma reconcilia automáticamente buques contra tres listas oficiales públicas (UK Sanctions List, OFAC SDN, UN Security Council Consolidated List) — ver página metodología para cobertura detallada y frecuencia de actualización.",
+    "La plataforma reconcilia automáticamente buques contra cuatro listas oficiales públicas (UK Sanctions List, OFAC SDN, UN Security Council Consolidated List, EU designated-vessels list) — ver página metodología para cobertura detallada y frecuencia de actualización.",
   "legal.sanctions.b2":
     "El cliente (trader, asegurador, transitario) sigue siendo responsable de aplicar sus propias listas complementarias y procedimientos de screening (KYC, EDD, watchlists propias).",
   "legal.sanctions.b3":
@@ -2765,7 +2765,7 @@ const es: PageMessages = {
   "guide.limits.eta":
     "Modelo ETA v2 (distancia/SOG + corrección estacional + congestión + meteorología). Bate la ETA broadcast en viajes > 6 h; menos ventaja en viajes cortos.",
   "guide.limits.sanctions":
-    "Filtrado de sanciones multi-régimen integrado (UKSL + OFAC + UN-SC) — ver página metodología. El cliente puede también superponer sus propias listas vía API.",
+    "Filtrado de sanciones multi-régimen integrado (UKSL + OFAC + UN-SC + EU) — ver página metodología. El cliente puede también superponer sus propias listas vía API.",
   "guide.checklist.title": "Checklist de despliegue",
   "guide.checklist.s1": "Crear una clave",
   "guide.checklist.s2":
@@ -2966,11 +2966,11 @@ const ar: PageMessages = {
   "methodology.compliance.gdpr":
     "GDPR: لا توجد معالجة لبيانات شخصية. MMSIs هي معرّفات سفينة، وليست شخصية.",
   "methodology.compliance.sanctions":
-    "العقوبات: تطابق المنصة تلقائياً السفن مع ثلاث قوائم رسمية (UKSL, OFAC, UN-SC) — انظر القسم المخصص أعلاه. يمكن للعميل إضافة قوائمه الحصرية الخاصة عبر webhooks أو export.",
+    "العقوبات: تطابق المنصة تلقائياً السفن مع أربع قوائم رسمية (UKSL, OFAC, UN-SC, EU) — انظر القسم المخصص أعلاه. يمكن للعميل إضافة قوائمه الحصرية الخاصة عبر webhooks أو export.",
   "methodology.sanctionsScreening.title":
     "فحص العقوبات — تغطية متعددة الأنظمة",
   "methodology.sanctionsScreening.intro":
-    "تتم مطابقة السفن مع ثلاث قوائم رسمية، تُحدَّث يومياً وتُطابَق على IMO/MMSI:",
+    "تتم مطابقة السفن مع أربع قوائم رسمية، تُحدَّث يومياً وتُطابَق على IMO/MMSI:",
   "methodology.sanctionsScreening.uksl":
     "UK Sanctions List (UKSL) — FCDO، Open Government Licence v3.0. ~600 سفينة (روسيا، إيران). مصدر معتمَد منذ سحب OFSI Consolidated List في 28 يناير 2026.",
   "methodology.sanctionsScreening.ofac":
@@ -2978,7 +2978,7 @@ const ar: PageMessages = {
   "methodology.sanctionsScreening.un":
     "UN Security Council Consolidated List — معلومات الأمم المتحدة العامة، إعادة استخدام حرة. تغطية كوريا الشمالية، ليبيا، إيران تاريخياً.",
   "methodology.sanctionsScreening.eu":
-    "EU Consolidated FSF — المفوضية الأوروبية، EC Reuse Decision 2011/833/EU. أسطول الظل الروسي ما بعد 2022، بيلاروسيا، سوريا. مفعّل عند التهيئة (يتطلب رمز EU webgate).",
+    "قائمة الاتحاد الأوروبي للسفن المحددة — مجلس الاتحاد الأوروبي: حظر الوصول إلى الموانئ (المادة 3s، اللائحة 833/2014، أسطول الظل الروسي) وتدابير كوريا الشمالية (اللائحة 2017/1509). نحو 730 سفينة، تُحدَّث مع كل حزمة عقوبات.",
   "methodology.sanctionsScreening.note":
     "المطابقة على IMO من 7 أرقام كأولوية (معتمَد)، MMSI كfallback. هالة حمراء على الخريطة وشارة 🚫 في جداول الرحلات.",
   "methodology.chokepoints.title":
@@ -3199,11 +3199,11 @@ const zh: PageMessages = {
   "methodology.compliance.gdpr":
     "GDPR：无个人数据处理。MMSIs 是船舶标识符，非个人标识符。",
   "methodology.compliance.sanctions":
-    "制裁：平台自动将船舶与三个官方名单（UKSL、OFAC、UN-SC）核对 — 见上方专门部分。客户可通过 webhooks 或导出叠加自己的专有名单。",
+    "制裁：平台自动将船舶与四个官方名单（UKSL、OFAC、UN-SC、EU）核对 — 见上方专门部分。客户可通过 webhooks 或导出叠加自己的专有名单。",
   "methodology.sanctionsScreening.title":
     "制裁筛查 — 多机制覆盖",
   "methodology.sanctionsScreening.intro":
-    "船舶与三个官方名单核对，每日刷新并按 IMO/MMSI 匹配：",
+    "船舶与四个官方名单核对，每日刷新并按 IMO/MMSI 匹配：",
   "methodology.sanctionsScreening.uksl":
     "UK Sanctions List (UKSL) — FCDO，Open Government Licence v3.0。约 600 艘船（俄罗斯、伊朗）。自 2026 年 1 月 28 日 OFSI Consolidated List 退出以来的权威来源。",
   "methodology.sanctionsScreening.ofac":
@@ -3211,7 +3211,7 @@ const zh: PageMessages = {
   "methodology.sanctionsScreening.un":
     "UN Security Council Consolidated List — 联合国公开信息，免费再利用。覆盖朝鲜、利比亚、历史上的伊朗。",
   "methodology.sanctionsScreening.eu":
-    "EU Consolidated FSF — 欧盟委员会，EC Reuse Decision 2011/833/EU。2022 年后俄罗斯影子舰队、白俄罗斯、叙利亚。需配置激活（需要 EU webgate token）。",
+    "欧盟指定船舶名单 — 欧盟理事会：禁止进入港口（第 833/2014 号条例第 3s 条，俄罗斯影子船队）及朝鲜措施（第 2017/1509 号条例）。约 730 艘船舶，随每轮制裁更新。",
   "methodology.sanctionsScreening.note":
     "优先匹配 7 位 IMO（权威），MMSI 作为后备。地图上红色光环和航次表中的 🚫 徽章。",
   "methodology.chokepoints.title":
@@ -3433,11 +3433,11 @@ const ja: PageMessages = {
   "methodology.compliance.gdpr":
     "GDPR：個人データの処理なし。MMSIs は船舶識別子であり、個人識別子ではありません。",
   "methodology.compliance.sanctions":
-    "制裁：プラットフォームは自動的に船舶を 3 つの公式リスト（UKSL、OFAC、UN-SC）と照合 — 上記の専用セクションを参照。クライアントは webhooks またはエクスポート経由で独自の独自リストを重ねることができます。",
+    "制裁：プラットフォームは自動的に船舶を 4 つの公式リスト（UKSL、OFAC、UN-SC、EU）と照合 — 上記の専用セクションを参照。クライアントは webhooks またはエクスポート経由で独自の独自リストを重ねることができます。",
   "methodology.sanctionsScreening.title":
     "制裁スクリーニング — マルチレジームカバレッジ",
   "methodology.sanctionsScreening.intro":
-    "船舶は 3 つの公式リストと照合され、毎日リフレッシュされ、IMO/MMSI でマッチングされます：",
+    "船舶は 4 つの公式リストと照合され、毎日リフレッシュされ、IMO/MMSI でマッチングされます：",
   "methodology.sanctionsScreening.uksl":
     "UK Sanctions List (UKSL) — FCDO、Open Government Licence v3.0。約 600 隻（ロシア、イラン）。2026 年 1 月 28 日の OFSI Consolidated List 廃止以来の権威ある情報源。",
   "methodology.sanctionsScreening.ofac":
@@ -3445,7 +3445,7 @@ const ja: PageMessages = {
   "methodology.sanctionsScreening.un":
     "UN Security Council Consolidated List — 国連公開情報、自由再利用。北朝鮮、リビア、歴史的にイランをカバー。",
   "methodology.sanctionsScreening.eu":
-    "EU Consolidated FSF — 欧州委員会、EC Reuse Decision 2011/833/EU。2022 年以降のロシアシャドウフリート、ベラルーシ、シリア。設定で有効化（EU webgate トークン必要）。",
+    "EU 指定船舶リスト — EU 理事会：入港禁止（規則 833/2014 第 3s 条、ロシアのシャドーフリート）および北朝鮮措置（規則 2017/1509）。約 730 隻、制裁パッケージごとに更新。",
   "methodology.sanctionsScreening.note":
     "7 桁 IMO の優先マッチ（権威）、MMSI をフォールバック。マップ上の赤いハロとボイヤージュテーブルの 🚫 バッジ。",
   "methodology.chokepoints.title":

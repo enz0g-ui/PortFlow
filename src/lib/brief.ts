@@ -227,6 +227,8 @@ const LIST_LABEL: Record<string, string> = {
   uksl: "UK",
   un_sc: "UN",
   eu: "EU",
+  eu_vessels: "EU",
+  eu_consolidated: "EU",
 };
 
 export function listLabel(source: string): string {
