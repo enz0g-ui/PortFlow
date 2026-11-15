@@ -85,7 +85,7 @@ export default async function ScreenPage({
         <BriefBar crumbs={[{ label: "Fleet screening", href: "#" }]} />
         <h1 className="mt-4 text-2xl font-semibold text-slate-50">Fleet screening</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Sanctions lists (OFAC, UK, UN) plus what the lists don&apos;t tell you:
+          Sanctions lists (OFAC, UK, UN, EU) plus what the lists don&apos;t tell you:
           ship-to-ship contact with listed vessels, from our own AIS detections.
         </p>
 

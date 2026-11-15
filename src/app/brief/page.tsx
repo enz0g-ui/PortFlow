@@ -104,7 +104,7 @@ export default async function BriefPage({
               What changed, which ships, where
             </h2>
             <p className="mt-1 text-sm text-slate-400">
-              Vessels on OFAC, UK and UN lists, and what they did at sea.
+              Vessels on OFAC, UK, UN and EU lists, and what they did at sea.
               Updated {fmtUtc(brief.generatedAt)} UTC.
             </p>
           </div>
@@ -331,7 +331,7 @@ export default async function BriefPage({
 
         <p className="mt-8 max-w-3xl text-xs leading-relaxed text-slate-500">
           Signals are derived from AIS reception and public sanctions lists
-          (OFAC SDN, UK Sanctions List, UN Security Council). Coverage depends
+          (OFAC SDN, UK Sanctions List, UN Security Council, EU designated vessels). Coverage depends
           on receiver density; the absence of a signal is not evidence of
           compliance. Click any vessel for its full record and connections.
         </p>

@@ -220,7 +220,7 @@ export default async function VesselReportPage({
         </section>
 
         <footer className="mt-8 border-t border-slate-300 pt-3 text-[11px] leading-relaxed text-slate-500">
-          Sources: OFAC SDN, UK Sanctions List, UN Security Council list; contacts, AIS gaps and port calls from AIS
+          Sources: OFAC SDN, UK Sanctions List, UN Security Council list, EU designated-vessels list; contacts, AIS gaps and port calls from AIS
           positions received by the Port Flow network. Detection depends on AIS reception in monitored areas; the
           absence of a signal is not evidence of compliance. This report supports, and does not replace, your own
           due diligence. portflow.uk

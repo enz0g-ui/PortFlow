@@ -17,7 +17,7 @@ import { screenExamples } from "@/lib/screen";
 export const metadata: Metadata = {
   title: "Vessel sanctions screening, ship-to-ship contacts & tanker ETA",
   description:
-    "Screen any vessel or your whole fleet against OFAC, UK and UN lists — and see which ships met a listed vessel at sea, from our own AIS receivers. Plus predicted ETAs with a published benchmark and live congestion across 51 ports.",
+    "Screen any vessel or your whole fleet against OFAC, UK, UN and EU lists — and see which ships met a listed vessel at sea, from our own AIS receivers. Plus predicted ETAs with a published benchmark and live congestion across 51 ports.",
   alternates: { canonical: "https://portflow.uk" },
 };
 

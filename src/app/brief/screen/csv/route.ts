@@ -73,7 +73,7 @@ export function GET(request: NextRequest) {
   lines.push("");
   lines.push(
     cell(
-      "Sources: OFAC SDN, UK Sanctions List, UN Security Council list; contacts from AIS received by Port Flow in monitored areas. Absence of a signal is not evidence of compliance.",
+      "Sources: OFAC SDN, UK Sanctions List, UN Security Council list, EU designated-vessels list; contacts from AIS received by Port Flow in monitored areas. Absence of a signal is not evidence of compliance.",
     ),
   );
 
