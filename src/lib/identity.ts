@@ -222,6 +222,9 @@ export function identityChecks(input: {
 
   if (sanc.length > 0) {
     const names = [...new Set(sanc.flatMap((s) => listedNames(s.ship_name, s.alt_names)))];
+    // Noms principaux (un par liste) et vrais alias (alt_names) séparés.
+    const primary = [...new Set(sanc.flatMap((s) => listedNames(s.ship_name, null)))];
+    const primaryN = new Set(primary.map(normName));
     if (aisName && names.length > 0) {
       const n = normName(aisName);
       const match = names.some((l) => {
@@ -232,11 +235,14 @@ export function identityChecks(input: {
         out.push({
           kind: "name_mismatch",
           warn: true,
-          text: `Broadcasting as “${aisName.trim()}”, listed as “${names[0]}”`,
+          text: `Broadcasting as “${aisName.trim()}”, listed as ${(primary.length ? primary : names)
+            .slice(0, 3)
+            .map((x) => `“${x}”`)
+            .join(" / ")}`,
         });
       }
     }
-    const aliases = names.slice(1);
+    const aliases = names.filter((x) => !primaryN.has(normName(x)));
     if (aliases.length > 0) {
       out.push({
         kind: "aliases",
