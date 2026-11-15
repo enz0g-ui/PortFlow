@@ -63,7 +63,8 @@ export function FavoritesPanel({
   onToggleBookmark,
   searchQuery,
 }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const vesselsWord = locale === "fr" ? "navires" : "vessels";
   const [data, setData] = useState<FleetResp | null>(null);
 
   const filteredVessels = (() => {
@@ -100,13 +101,13 @@ export function FavoritesPanel({
     <div className="flex h-full min-h-[440px] flex-col rounded-lg border border-slate-800 bg-slate-900/60 p-3">
       <div className="mb-2 flex items-baseline justify-between text-xs">
         <span className="uppercase tracking-wider text-slate-400">
-          ★ {t("port.section.mine") || "Favoris"} · navires
+          ★ {t("port.section.mine") || "Favoris"} · {vesselsWord}
         </span>
         <span className="text-slate-500">
           {data
             ? searchQuery
               ? `${filteredVessels.length}/${data.count}`
-              : `${data.count} navires`
+              : `${data.count} ${vesselsWord}`
             : "…"}
         </span>
       </div>

@@ -242,13 +242,16 @@ export function identityChecks(input: {
         return true;
       });
     const primaryN = new Set(primary.map(normName));
+    const aisN = aisName ? normName(aisName) : "";
+    const sameAsAis = (l: string) => {
+      const m = normName(l);
+      return !!aisN && (m === aisN || (m.length >= 4 && (aisN.includes(m) || m.includes(aisN))));
+    };
+    let mismatch = false;
     if (aisName && names.length > 0) {
-      const n = normName(aisName);
-      const match = names.some((l) => {
-        const m = normName(l);
-        return m === n || (m.length >= 4 && (n.includes(m) || m.includes(n)));
-      });
-      if (!match && n.length >= 2) {
+      const match = names.some(sameAsAis);
+      if (!match && aisN.length >= 2) {
+        mismatch = true;
         out.push({
           kind: "name_mismatch",
           warn: true,
@@ -259,7 +262,16 @@ export function identityChecks(input: {
         });
       }
     }
-    const aliases = names.filter((x) => !primaryN.has(normName(x)));
+    // Autres noms sous lesquels le navire est listé. Si le nom AIS correspond
+    // à une liste, les noms principaux des autres listes (ancien nom, ex.
+    // VALERA listé « VELIKIY NOVGOROD » au R-U et à l'OFAC) comptent aussi.
+    const seenA = new Set<string>();
+    const aliases = names.filter((x) => {
+      const k = normName(x);
+      if (seenA.has(k)) return false;
+      seenA.add(k);
+      return mismatch || !aisN ? !primaryN.has(k) : !sameAsAis(x);
+    });
     if (aliases.length > 0) {
       out.push({
         kind: "aliases",

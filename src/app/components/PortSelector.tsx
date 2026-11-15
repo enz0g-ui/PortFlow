@@ -419,7 +419,7 @@ function PortRow({
             {l.blurb}
           </div>
           <div className="mt-1 text-[10px] tabular-nums text-slate-500">
-            {port.vesselCount} navires
+            {port.vesselCount} {locale === "fr" ? "navires" : "vessels"}
           </div>
         </div>
       </button>

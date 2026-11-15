@@ -723,7 +723,7 @@ export default memo(function MapInner({
             {},
             "\n",
             {},
-            ["concat", ["to-string", ["get", "count"]], " navires"],
+            ["concat", ["to-string", ["get", "count"]], " vessels"],
             { "font-scale": 0.82 },
           ],
           "text-font": ["Noto Sans Regular"],

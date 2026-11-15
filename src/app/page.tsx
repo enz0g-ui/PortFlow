@@ -41,7 +41,7 @@ const PERSONAS = [
 
 const FEATURES: Array<[stat: string, tone: string, title: string, body: string]> = [
   ["MAE", "text-emerald-300", "Predicted ETA + published benchmark", "Our ETA vs the broadcast ETA, with an open RMSE/MAE benchmark — measured, not claimed."],
-  ["51 · 12", "text-sky-500", "Ports & chokepoints, live", "Real-time AIS coverage across the world's tanker hubs and the straits that matter."],
+  ["51 · 13","text-sky-500", "Ports & chokepoints, live", "Real-time AIS coverage across the world's tanker hubs and the straits that matter."],
   ["×4", "text-sky-500", "Multi-regime sanctions screening", "UKSL, OFAC, UN-SC and EU in one pass, with an audit trail."],
   ["⌖", "text-amber-300", "Chokepoint transit alerts", "Hormuz, Suez, Bosphorus, Malacca — transit counts, dwell time and deviations."],
   ["⬤", "text-rose-300", "Dark-event / AIS-gap detection", "In-house detection of vessels going dark in contested waters — behavioural, not speculative."],
