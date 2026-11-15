@@ -411,9 +411,10 @@ export default function SourcesPage() {
                   Sanctions multi-régime
                 </strong>{" "}
                 — UK Sanctions List (FCDO, OGL v3), OFAC SDN (US Treasury,
-                public domain), UN Security Council Consolidated List, EU
-                Consolidated FSF. Quatre listes officielles, réconciliées
-                quotidiennement sur IMO/MMSI dans une table unifiée.
+                public domain), UN Security Council Consolidated List. Trois
+                listes officielles, réconciliées quotidiennement sur IMO/MMSI
+                dans une table unifiée. Liste consolidée UE : en cours
+                d&apos;intégration.
               </li>
               <li>
                 <strong className="text-slate-200">JWC JWLA-033</strong> —

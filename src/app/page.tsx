@@ -32,14 +32,14 @@ const PERSONAS = [
   {
     tag: "P&I & compliance",
     pain: "Sanctions and dark-fleet exposure are a daily liability, priced manually.",
-    gain: "Multi-regime screening (UKSL · OFAC · UN-SC · EU FSF), war-risk zones and AIS-gap detection in one screen.",
+    gain: "Multi-regime screening (UKSL · OFAC · UN-SC), war-risk zones and AIS-gap detection in one screen.",
   },
 ];
 
 const FEATURES: Array<[stat: string, tone: string, title: string, body: string]> = [
   ["MAE", "text-emerald-300", "Predicted ETA + published benchmark", "Our ETA vs the broadcast ETA, with an open RMSE/MAE benchmark — measured, not claimed."],
   ["51 · 12", "text-sky-500", "Ports & chokepoints, live", "Real-time AIS coverage across the world's tanker hubs and the straits that matter."],
-  ["×4", "text-sky-500", "Multi-regime sanctions screening", "UKSL, OFAC, UN-SC and EU FSF in one pass, with an audit trail."],
+  ["×3", "text-sky-500", "Multi-regime sanctions screening", "UKSL, OFAC, UN-SC in one pass, with an audit trail."],
   ["⌖", "text-amber-300", "Chokepoint transit alerts", "Hormuz, Suez, Bosphorus, Malacca — transit counts, dwell time and deviations."],
   ["⬤", "text-rose-300", "Dark-event / AIS-gap detection", "In-house detection of vessels going dark in contested waters — behavioural, not speculative."],
   ["{ }", "text-sky-500", "Watchlist, alerts & API", "Slack · Telegram · Email · Webhook alerts, plus a JSON API and CSV export."],
