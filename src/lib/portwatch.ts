@@ -47,7 +47,7 @@ const FEEDS: Record<string, FeatureServerService> = {
     // is not publicly documented; if the default below 404s, override via
     // PORTWATCH_CHOKEPOINT_SERVICE env var (find the URL by visiting the
     // dataset page, click "View API Resources", copy the FeatureServer URL).
-    path: "Daily_Chokepoint_Transits",
+    path: "Daily_Chokepoints_Data",
     layer: 0,
     dateField: "date",
   },
@@ -70,7 +70,7 @@ function feedUrl(feed: FeatureServerService): string {
     const override = process.env.PORTWATCH_PORT_ACTIVITY_URL;
     if (override) return override;
   }
-  if (feed.path === "Daily_Chokepoint_Transits") {
+  if (feed.path === "Daily_Chokepoints_Data") {
     const override = process.env.PORTWATCH_CHOKEPOINT_SERVICE;
     if (override) return override;
   }
@@ -117,6 +117,13 @@ async function* iterFeatures(
     offset += page.features.length;
     if (page.features.length === 0) return; // safety
   }
+}
+
+/** Filtre de date ArcGIS : le champ « date » est de type DateOnly depuis
+ * fin 2026 ; une valeur epoch y est rejetée (erreur 400). */
+function sinceWhere(field: string, daysBack: number): string {
+  const d = new Date(Date.now() - daysBack * 86_400_000).toISOString().slice(0, 10);
+  return `${field} >= DATE '${d}'`;
 }
 
 function parseDate(v: string | number | null | undefined): number | null {
@@ -192,10 +199,7 @@ export async function ingestPortActivity(
 ): Promise<IngestResult> {
   const feed = FEEDS.port_activity;
   const url = feedUrl(feed);
-  const sinceMs = Date.now() - daysBack * 86_400_000;
-  // ArcGIS DATE filters use either epoch ms or 'YYYY-MM-DD' strings depending
-  // on layer config — we try the epoch form first, which is the most reliable.
-  const where = `${feed.dateField} >= ${sinceMs}`;
+  const where = sinceWhere(feed.dateField, daysBack);
   const insert = db().raw.prepare(
     `INSERT OR REPLACE INTO portwatch_port_activity
        (port_id, port_name, country, date_utc,
@@ -223,11 +227,11 @@ export async function ingestPortActivity(
         (a.country ?? a.country_name ?? null) as string | null,
         dateUtc,
         asInt(a.portcalls ?? a.total_calls ?? a.calls),
-        asInt(a.container_calls ?? a.containers),
-        asInt(a.tanker_calls ?? a.tankers),
-        asInt(a.bulk_calls ?? a.dry_bulk_calls),
-        asInt(a.general_cargo_calls ?? a.general_cargo),
-        asInt(a.roro_calls ?? a.ro_ro_calls),
+        asInt(a.portcalls_container ?? a.container_calls ?? a.containers),
+        asInt(a.portcalls_tanker ?? a.tanker_calls ?? a.tankers),
+        asInt(a.portcalls_dry_bulk ?? a.bulk_calls ?? a.dry_bulk_calls),
+        asInt(a.portcalls_general_cargo ?? a.general_cargo_calls ?? a.general_cargo),
+        asInt(a.portcalls_roro ?? a.roro_calls ?? a.ro_ro_calls),
         JSON.stringify(a),
         now,
       ]);
@@ -257,8 +261,7 @@ export async function ingestChokepointTransit(
 ): Promise<IngestResult> {
   const feed = FEEDS.chokepoint_transit;
   const url = feedUrl(feed);
-  const sinceMs = Date.now() - daysBack * 86_400_000;
-  const where = `${feed.dateField} >= ${sinceMs}`;
+  const where = sinceWhere(feed.dateField, daysBack);
   const insert = db().raw.prepare(
     `INSERT OR REPLACE INTO portwatch_chokepoint_transit
        (chokepoint_id, chokepoint_name, date_utc,
@@ -277,21 +280,21 @@ export async function ingestChokepointTransit(
       fetched++;
       const a = f.attributes;
       const cpId = String(
-        a.chokepointid ?? a.chokepoint_id ?? a.id ?? a.OBJECTID ?? "",
+        a.portid ?? a.chokepointid ?? a.chokepoint_id ?? a.id ?? a.OBJECTID ?? "",
       );
       const dateUtc = parseDate(a.date ?? a.DATE ?? a.date_utc);
       if (!cpId || !dateUtc) continue;
       batch.push([
         cpId,
-        (a.chokepointname ?? a.chokepoint_name ?? a.name ?? null) as
+        (a.portname ?? a.chokepointname ?? a.chokepoint_name ?? a.name ?? null) as
           | string
           | null,
         dateUtc,
-        asInt(a.transits ?? a.total_transits),
-        asInt(a.tanker_transits ?? a.tankers),
-        asInt(a.container_transits ?? a.containers),
-        asInt(a.bulk_transits ?? a.dry_bulk_transits),
-        asInt(a.general_cargo_transits),
+        asInt(a.n_total ?? a.transits ?? a.total_transits),
+        asInt(a.n_tanker ?? a.tanker_transits ?? a.tankers),
+        asInt(a.n_container ?? a.container_transits ?? a.containers),
+        asInt(a.n_dry_bulk ?? a.bulk_transits ?? a.dry_bulk_transits),
+        asInt(a.n_general_cargo ?? a.general_cargo_transits),
         asFloat(a.trade_volume ?? a.trade_volume_tons ?? a.tonnage),
         JSON.stringify(a),
         now,
