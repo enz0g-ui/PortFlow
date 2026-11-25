@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import type { Tier } from "./tier";
+import { TIERS, type Tier } from "./tier";
 import { DEMO_COOKIE_NAME, verifyDemoSession } from "./demo-session";
 
 export interface AppUser {
@@ -77,10 +77,13 @@ export async function getCurrentUser(): Promise<AppUser | null> {
   // Clerk disabled — demo cookie wins if present, otherwise permissive dev user
   const demoUser = await getDemoUser();
   if (demoUser) return demoUser;
+  // DEV_USER_TIER (dev/staging sans Clerk uniquement) : simuler une formule,
+  // ex. « free » pour tester les limites des fiches navire.
+  const devTier = process.env.DEV_USER_TIER as Tier | undefined;
   return {
     id: "dev",
     email: "dev@local",
     displayName: "Local dev",
-    tier: "enterprise",
+    tier: devTier && (TIERS as readonly string[]).includes(devTier) ? devTier : "enterprise",
   };
 }
