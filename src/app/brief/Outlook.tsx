@@ -93,11 +93,11 @@ export function Outlook({
               <div>
                 <dt className="text-[11px] uppercase tracking-wider text-slate-500">Typical error here</dt>
                 <dd className="font-mono text-lg text-slate-300">
-                  {o.maeHours != null && o.maeCount >= 20 ? `± ${fmtHours(o.maeHours)}` : "—"}
+                  {o.errHours != null && o.errCount >= 20 ? `± ${fmtHours(o.errHours)}` : "—"}
                 </dd>
-                {o.maeHours != null && o.maeCount >= 20 ? (
+                {o.errHours != null && o.errCount >= 20 ? (
                   <dd className="text-[11px] text-slate-500">
-                    {o.maeCount} arrivals, last 30 days ·{" "}
+                    median, {o.errCount} past arrivals predicted this far ahead ·{" "}
                     <Link href="/precision" className="text-sky-400 hover:text-sky-300">
                       how we measure
                     </Link>

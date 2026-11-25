@@ -1,7 +1,6 @@
 import { db } from "./db";
 import { getPort } from "./ports";
 import { getVessel } from "./store";
-import { getVoyageAccuracy } from "./voyages";
 
 // « Ce qui vient » pour une fiche navire : voyage ouvert vers un port suivi,
 // heure d'arrivée prédite par notre modèle (ETA v2), heure annoncée par le
@@ -22,8 +21,9 @@ export interface VesselOutlook {
   startTs: number;
   distanceNm: number | null;
   sog: number | null;
-  maeHours: number | null;
-  maeCount: number;
+  /** Erreur absolue médiane du modèle à cet horizon, sur ce port (30 j). */
+  errHours: number | null;
+  errCount: number;
 }
 
 interface Row {
@@ -35,23 +35,43 @@ interface Row {
   broadcast_eta: number | null;
 }
 
-// Erreur typique par port : recalculée au plus une fois par heure.
-const maeCache = new Map<string, { at: number; mae: number | null; n: number }>();
-function portMae(portId: string): { mae: number | null; n: number } {
-  const c = maeCache.get(portId);
-  if (c && Date.now() - c.at < H) return c;
-  let mae: number | null = null;
-  let n = 0;
+// Erreur typique par port ET par horizon : erreur absolue médiane des
+// prédictions faites à un délai comparable avant l'arrivée (voyages clos,
+// 30 derniers jours). Recalculée au plus une fois par heure et par port.
+const HORIZONS = [1, 3, 6, 12, 24, 72]; // bornes hautes, en heures
+const errCache = new Map<string, { at: number; buckets: Array<{ med: number | null; n: number }> }>();
+
+function portErrorBuckets(portId: string) {
+  const c = errCache.get(portId);
+  if (c && Date.now() - c.at < H) return c.buckets;
+  const lists: number[][] = HORIZONS.map(() => []);
   try {
-    const a = getVoyageAccuracy(portId, Date.now() - 30 * 24 * H);
-    mae = a.maeHours;
-    n = a.count;
+    const rows = db()
+      .raw.prepare(
+        `SELECT predicted_eta p, predicted_at pa, arrived_ts a FROM voyages
+         WHERE port = ? AND arrived_ts > ? AND predicted_eta IS NOT NULL AND predicted_at IS NOT NULL`,
+      )
+      .all(portId, Date.now() - 30 * 24 * H) as unknown as Array<{ p: number; pa: number; a: number }>;
+    for (const r of rows) {
+      const hz = (r.a - r.pa) / H;
+      const i = HORIZONS.findIndex((b) => hz < b);
+      if (i >= 0 && hz >= 0) lists[i].push(Math.abs(r.p - r.a) / H);
+    }
   } catch {
-    /* pas de mesure : on n'affiche pas de marge */
+    /* pas de mesure : pas de marge affichée */
   }
-  const v = { at: Date.now(), mae, n };
-  maeCache.set(portId, v);
-  return v;
+  const buckets = lists.map((l) => {
+    l.sort((a, b) => a - b);
+    return { med: l.length ? l[l.length >> 1] : null, n: l.length };
+  });
+  errCache.set(portId, { at: Date.now(), buckets });
+  return buckets;
+}
+
+function typicalError(portId: string, horizonH: number): { med: number | null; n: number } {
+  const i = HORIZONS.findIndex((b) => horizonH < b);
+  if (i < 0) return { med: null, n: 0 };
+  return portErrorBuckets(portId)[i];
 }
 
 export function getVesselOutlook(mmsi: number): VesselOutlook | null {
@@ -93,7 +113,8 @@ export function getVesselOutlook(mmsi: number): VesselOutlook | null {
       state !== "inPort" && r.broadcast_eta != null && r.broadcast_eta > now - 2 * H && r.broadcast_eta < now + 30 * 24 * H
         ? r.broadcast_eta
         : null;
-    const m = state === "inPort" ? { mae: null, n: 0 } : portMae(r.port);
+    const m =
+      predictedEta != null ? typicalError(r.port, Math.max(0, (predictedEta - now) / H)) : { med: null, n: 0 };
     return {
       state,
       portId: r.port,
@@ -105,8 +126,8 @@ export function getVesselOutlook(mmsi: number): VesselOutlook | null {
       startTs: r.start_ts,
       distanceNm: Number.isFinite(distanceNm) ? distanceNm : null,
       sog: live.sog ?? null,
-      maeHours: m.mae,
-      maeCount: m.n,
+      errHours: m.med,
+      errCount: m.n,
     };
   }
   return null;
