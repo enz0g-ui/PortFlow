@@ -179,6 +179,16 @@ function open(): DbHandle {
     raw.exec(`ALTER TABLE positions ADD COLUMN source TEXT`);
   }
 
+  // Évolution in-place : `eta_offset_h` sur voyages = correction ETA v2
+  // appliquée au moment de la prédiction (11/2026). Permet d'apprendre les
+  // corrections sur l'erreur AVANT correction, sans boucle de rétroaction.
+  const voyCols = raw
+    .prepare(`PRAGMA table_info(voyages)`)
+    .all() as Array<{ name: string }>;
+  if (!voyCols.some((c) => c.name === "eta_offset_h")) {
+    raw.exec(`ALTER TABLE voyages ADD COLUMN eta_offset_h REAL`);
+  }
+
   return {
     raw,
     insertKpi: raw.prepare(
@@ -223,7 +233,7 @@ function open(): DbHandle {
       `UPDATE voyages SET departed_ts = ? WHERE voyage_id = ? AND departed_ts IS NULL`,
     ),
     updateVoyagePrediction: raw.prepare(
-      `UPDATE voyages SET predicted_eta = ?, predicted_at = ?
+      `UPDATE voyages SET predicted_eta = ?, predicted_at = ?, eta_offset_h = ?
        WHERE voyage_id = ? AND (predicted_eta IS NULL OR predicted_at < ?)`,
     ),
     updateVoyageBroadcastEta: raw.prepare(
@@ -276,6 +286,7 @@ export interface VoyageRow {
   broadcast_eta?: number;
   arrival_zone?: string;
   draught_arrived?: number;
+  eta_offset_h?: number | null;
 }
 
 export function persistKpi(s: KpiSnapshot, port: string) {
@@ -503,10 +514,12 @@ export function setVoyagePrediction(
   voyageId: string,
   predictedEta: number,
   predictedAt: number,
+  etaOffsetH: number | null = null,
 ) {
   db().updateVoyagePrediction.run(
     predictedEta,
     predictedAt,
+    etaOffsetH,
     voyageId,
     predictedAt,
   );

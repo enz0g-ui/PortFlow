@@ -1,4 +1,4 @@
-import { recentClosedVoyages } from "./db";
+import { db, recentClosedVoyages } from "./db";
 import { getVessels } from "./store";
 import type { Vessel } from "./types";
 
@@ -30,8 +30,17 @@ const REFRESH_MS = 30 * 60_000;
 const LOOKBACK_MS = 90 * 24 * 60 * 60 * 1000;
 const MIN_BUCKET_SAMPLES = 5;
 
+// Congestion : jusqu'au 25/11/2026, seuil fixe de 25 navires au mouillage
+// (calibré sur Rotterdam). Les très grands mouillages (Singapour : 170-320
+// navires en permanence) saturaient la pénalité à +8 h sur chaque prédiction.
+// Désormais : seuil = mouillage habituel du port (75e centile sur 7 jours,
+// plancher 25), et coût par navire en excès ramené à l'échelle du port.
 const ANCHORED_BASE_THRESHOLD = 25;
 const ANCHORED_HOURS_PER_VESSEL = 0.05;
+const BASELINE_REFRESH_MS = 6 * 60 * 60_000;
+// Nombre minimal de voyages clos portant la correction appliquée
+// (eta_offset_h) pour apprendre sur l'erreur avant correction.
+const MIN_PORT_SAMPLES_NEW = 30;
 
 function median(values: number[]): number {
   if (values.length === 0) return 0;
@@ -63,8 +72,18 @@ function recompute(portId: string): PortCorrectionV2 {
     else buckets.set(k, [err]);
   };
 
-  for (const v of voyages) {
-    const errH = ((v.predicted_eta ?? 0) - (v.arrived_ts ?? 0)) / 3_600_000;
+  // Les corrections s'apprennent sur l'erreur AVANT correction : erreur
+  // observée + correction appliquée à ce moment-là. Apprendre sur l'erreur
+  // résiduelle (comme avant le 25/11/2026) créait une boucle qui ne
+  // compensait qu'environ la moitié d'un biais persistant. Tant qu'un port
+  // n'a pas assez de voyages portant la correction appliquée, pas de
+  // correction (0) plutôt qu'une correction apprise sur l'ancien régime.
+  const tagged = voyages.filter((v) => v.eta_offset_h != null);
+  const usable = tagged.length >= MIN_PORT_SAMPLES_NEW ? tagged : [];
+
+  for (const v of usable) {
+    const errH =
+      ((v.predicted_eta ?? 0) - (v.arrived_ts ?? 0)) / 3_600_000 + (v.eta_offset_h ?? 0);
     if (Math.abs(errH) > 72) continue;
     const arrivalDate = new Date(v.arrived_ts ?? 0);
     const dow = arrivalDate.getUTCDay();
@@ -127,12 +146,37 @@ function findOffset(
   return { median: 0, count: 0, bucket: "n/a" };
 }
 
+const baselineCache = new Map<string, { at: number; threshold: number }>();
+
+/** Mouillage habituel du port : 75e centile des 7 derniers jours, plancher 25. */
+function anchoredThreshold(portId: string): number {
+  const c = baselineCache.get(portId);
+  if (c && Date.now() - c.at < BASELINE_REFRESH_MS) return c.threshold;
+  let threshold = ANCHORED_BASE_THRESHOLD;
+  try {
+    const rows = db()
+      .raw.prepare(`SELECT anchored FROM kpi_snapshots WHERE port = ? AND ts > ?`)
+      .all(portId, Date.now() - 7 * 24 * 3_600_000) as unknown as Array<{ anchored: number }>;
+    if (rows.length >= 100) {
+      const a = rows.map((r) => r.anchored).sort((x, y) => x - y);
+      threshold = Math.max(ANCHORED_BASE_THRESHOLD, a[Math.floor(a.length * 0.75)]);
+    }
+  } catch {
+    /* garder le seuil par défaut */
+  }
+  baselineCache.set(portId, { at: Date.now(), threshold });
+  return threshold;
+}
+
 function congestionPenaltyHours(portId: string): number {
   try {
     const vessels = getVessels(portId);
     const anchored = vessels.filter((v) => v.state === "anchored").length;
-    const excess = Math.max(0, anchored - ANCHORED_BASE_THRESHOLD);
-    return Math.min(8, excess * ANCHORED_HOURS_PER_VESSEL);
+    const threshold = anchoredThreshold(portId);
+    const excess = Math.max(0, anchored - threshold);
+    // Le coût d'un navire de plus au mouillage diminue avec la taille du port.
+    const perVessel = (ANCHORED_HOURS_PER_VESSEL * ANCHORED_BASE_THRESHOLD) / threshold;
+    return Math.min(8, excess * perVessel);
   } catch {
     return 0;
   }
