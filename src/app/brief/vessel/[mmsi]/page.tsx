@@ -18,6 +18,8 @@ import { BriefBar } from "../../BriefBar";
 import { Network } from "../../Network";
 import { TrackMap } from "../../TrackMap";
 import { WatchButton } from "../../WatchButton";
+import { NextSteps, type NextStep } from "../../NextSteps";
+import { SinceLastVisit, type SinceEvent } from "../../SinceLastVisit";
 import {
   cargoLabel,
   fmtAgo,
@@ -228,6 +230,24 @@ export default async function VesselRecordPage({
   const verdict = VERDICT[v.exposure];
   const ls = v.lastSeen;
 
+  const steps = buildNextSteps({
+    v,
+    twoStepListed: net.twoStepListed,
+    idWarn: idChecks.some((c) => c.warn),
+    days,
+    trail,
+  });
+  const sinceEvents: SinceEvent[] = v.timeline.slice(0, 60).map((t) => ({
+    key: t.key,
+    ts: t.ts,
+    label: eventLabel(t),
+    hot: (t.kind === "sts" && t.tier !== "port" && (!!t.other?.sanctioned || t.tier === "transfer")) || t.kind === "dark",
+    href:
+      t.kind === "sts" && t.other && t.encounterId
+        ? `/brief/contact/${mmsi}/${t.other.mmsi}?e=${t.encounterId}`
+        : undefined,
+  }));
+
   return (
     <main className="min-h-screen bg-[#070b12] px-4 pb-24 pt-5 text-slate-200 sm:px-6 lg:px-10">
       <div className="mx-auto max-w-[1400px]">
@@ -291,6 +311,9 @@ export default async function VesselRecordPage({
           </div>
         </section>
 
+        <SinceLastVisit mmsi={mmsi} events={sinceEvents} />
+        <NextSteps mmsi={mmsi} steps={steps} />
+
         <div className="pfg mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
           <div className="min-w-0 space-y-6">
             {/* Chiffres : seulement ce qui existe ; chacun filtre la chronologie */}
@@ -319,7 +342,7 @@ export default async function VesselRecordPage({
             )}
 
             {/* Toile */}
-            <section>
+            <section id="connections" className="scroll-mt-4">
               <h2 className="text-lg font-semibold text-slate-50">Connections</h2>
               <p className="mt-0.5 text-xs text-slate-500">
                 Ships met side by side at sea, and ports called, last {days} days. Hover a ship to find it in the
@@ -351,7 +374,7 @@ export default async function VesselRecordPage({
 
             {/* Identité et sociétés liées */}
             {idChecks.length > 0 || companies.length > 0 ? (
-              <section>
+              <section id="identity" className="scroll-mt-4">
                 <h2 className="text-lg font-semibold text-slate-50">Identity &amp; links</h2>
                 <p className="mt-0.5 text-xs text-slate-500">
                   What the transponder broadcasts compared with the sanctions lists, and companies the lists link
@@ -650,4 +673,155 @@ function TimelineRow({ t, self }: { t: TimelineItem; self: number }) {
       </span>
     </div>
   );
+}
+
+function eventLabel(t: TimelineItem): string {
+  const place = t.place.label.split(" · ")[0];
+  const dur = t.durationH ? ` · ${fmtHours(t.durationH)}` : "";
+  switch (t.kind) {
+    case "sts": {
+      const who = t.other?.name ?? "an unidentified ship";
+      const what = t.tier === "transfer" ? "Probable transfer" : t.tier === "port" ? "Same-port contact" : "Contact at sea";
+      return `${what} with ${who}${t.other?.sanctioned ? " (listed)" : ""} · ${place}`;
+    }
+    case "dark":
+      return `AIS gap · ${place}${dur}`;
+    case "loiter":
+      return `Loitering · ${place}${dur}`;
+    case "transit":
+      return `Strait transit · ${place}`;
+    case "port":
+      return `Port call · ${place}`;
+  }
+}
+
+// Choisit 2-3 actions selon ce que la fiche montre. Ordre : surveillance
+// (toujours), puis la piste la plus parlante, puis le livrable (PDF) ou le
+// criblage de flotte.
+function buildNextSteps({
+  v,
+  twoStepListed,
+  idWarn,
+  days,
+  trail,
+}: {
+  v: VesselSheet;
+  twoStepListed: number;
+  idWarn: boolean;
+  days: number;
+  trail: number[];
+}): NextStep[] {
+  const steps: NextStep[] = [];
+  const t = [...trail, v.mmsi].join(",");
+  const dq = days !== 90 ? `d=${days}&` : "";
+
+  const watch: Record<Exposure, Pick<NextStep, "title" | "body" | "cta">> = {
+    listed: {
+      title: "Know the moment it moves",
+      body: "Get an alert on its next contact at sea or AIS gap, without coming back to check.",
+      cta: "◉ Watch this ship",
+    },
+    exposed: {
+      title: "Alert me if it happens again",
+      body: "Get an alert the next time it meets a listed ship or stops broadcasting.",
+      cta: "◉ Watch this ship",
+    },
+    clear: {
+      title: "Stay ahead of a change",
+      body: "Clean today. Get an alert if it goes dark, changes identity or meets a listed ship.",
+      cta: "◉ Watch this ship",
+    },
+    service: {
+      title: "Keep an eye on it",
+      body: "Get an alert on new contacts at sea or AIS gaps.",
+      cta: "◉ Watch this ship",
+    },
+    unassessed: {
+      title: "Keep an eye on it",
+      body: "Identity is incomplete today. Get an alert on new contacts at sea or AIS gaps.",
+      cta: "◉ Watch this ship",
+    },
+  };
+  steps.push({ id: "watch", tone: "sky", kicker: "Monitor", watch: true, ...watch[v.exposure] });
+
+  // Piste la plus parlante
+  const lc = v.listedContacts[0];
+  const atSea = v.counterparts.filter((c) => c.best !== "port");
+  let lead: NextStep | null = null;
+  if (v.exposure === "exposed" && lc) {
+    lead = {
+      id: "counterparty",
+      tone: "amber",
+      kicker: "Counterparty",
+      title: `Check ${lc.name ?? `MMSI ${lc.mmsi}`}`,
+      body: `Listed${lc.lists.length ? ` (${lc.lists.join(", ")})` : ""}. Met ${lc.meetings}× · ${fmtHours(lc.totalHours)} together, last on ${fmtDate(lc.lastTs)}.`,
+      href: lc.lastEncounterId ? `/brief/contact/${v.mmsi}/${lc.mmsi}?e=${lc.lastEncounterId}` : `/brief/vessel/${lc.mmsi}?t=${t}`,
+      cta: lc.lastEncounterId ? "Open the evidence" : "Open its record",
+    };
+  } else if (v.exposure === "listed" && atSea.length > 0) {
+    const c = atSea[0];
+    lead = {
+      id: "dealt_with",
+      tone: "red",
+      kicker: "Who it dealt with",
+      title: `${atSea.length} ship${atSea.length > 1 ? "s" : ""} met at sea`,
+      body: `Most recent: ${c.name ?? `MMSI ${c.mmsi}`}${c.sanctioned ? " (listed)" : ""}, on ${fmtDate(c.lastTs)}. Any of them could be in your supply chain.`,
+      href: "#connections",
+      cta: "See connections",
+    };
+  } else if (v.counts.dark > 0) {
+    lead = {
+      id: "dark",
+      tone: "amber",
+      kicker: "Worth a look",
+      title: `${v.counts.dark} AIS gap${v.counts.dark > 1 ? "s" : ""}`,
+      body: `Periods where it stopped broadcasting in the last ${days} days. See where and for how long.`,
+      href: `/brief/vessel/${v.mmsi}?${dq}k=dark#timeline`,
+      cta: "Show the gaps",
+    };
+  } else if (idWarn) {
+    lead = {
+      id: "identity",
+      tone: "amber",
+      kicker: "Worth a look",
+      title: "Identity doesn't fully add up",
+      body: "Its broadcast name, flag or MMSI differs from the lists or from its own history.",
+      href: "#identity",
+      cta: "See the checks",
+    };
+  } else if (v.exposure === "clear" && twoStepListed > 0) {
+    lead = {
+      id: "two_steps",
+      tone: "slate",
+      kicker: "Two steps away",
+      title: `${twoStepListed} listed ship${twoStepListed > 1 ? "s" : ""} nearby in the network`,
+      body: "Not met directly, but met by ships this one met. See who.",
+      href: "#connections",
+      cta: "See connections",
+    };
+  }
+  if (lead) steps.push(lead);
+
+  const report: NextStep = {
+    id: "report",
+    tone: "slate",
+    kicker: "For your file",
+    title: "Dated PDF of this record",
+    body: "Verdict, sources, evidence and timeline in one document for a compliance or KYC file.",
+    href: `/brief/vessel/${v.mmsi}/report${days !== 90 ? `?d=${days}` : ""}`,
+    cta: "Get the report",
+  };
+  const screen: NextStep = {
+    id: "screen",
+    tone: "slate",
+    kicker: "Your fleet",
+    title: "Screen all your ships at once",
+    body: "Paste your IMO or MMSI list and see each ship's exposure in one pass.",
+    href: "/brief/screen",
+    cta: "Screen my fleet",
+  };
+  if (v.exposure === "listed" || v.exposure === "exposed") steps.push(report);
+  else steps.push(screen);
+  if (steps.length < 3) steps.push(v.exposure === "listed" || v.exposure === "exposed" ? screen : report);
+  return steps.slice(0, 3);
 }
