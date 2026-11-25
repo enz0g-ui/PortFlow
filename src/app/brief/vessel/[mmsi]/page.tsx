@@ -20,6 +20,8 @@ import { TrackMap } from "../../TrackMap";
 import { WatchButton } from "../../WatchButton";
 import { NextSteps, type NextStep } from "../../NextSteps";
 import { UnlockCard } from "../../UnlockCard";
+import { Outlook } from "../../Outlook";
+import { getVesselOutlook } from "@/lib/vessel-outlook";
 import { getCurrentUser } from "@/lib/auth/session";
 import { briefAccess, BRIEF_VERDICT_DAYS } from "@/lib/brief-access";
 import { SinceLastVisit, type SinceEvent, type SinceRoutine } from "../../SinceLastVisit";
@@ -184,6 +186,15 @@ export default async function VesselRecordPage({
     ? `${hidden.events} older event${hidden.events > 1 ? "s" : ""} on this ship are hidden`
     : "See 90 and 180 days of history";
   const net = getNetwork(mmsi, days);
+  const outlook = getVesselOutlook(mmsi);
+  // Escale en cours : durée médiane de ses escales précédentes dans ce port.
+  const pastStays = outlook?.state === "inPort"
+    ? (ref ?? v).timeline
+        .filter((t) => t.kind === "port" && t.place.portId === outlook.portId && t.durationH != null && t.ts !== outlook.arrivedTs)
+        .map((t) => t.durationH as number)
+        .sort((a, b) => a - b)
+    : [];
+  const typicalStayH = pastStays.length >= 2 ? pastStays[Math.floor(pastStays.length / 2)] : null;
   const summary = summarize(v, net.twoStepListed);
   const idChecks = identityChecks({ mmsi, imo: v.imo, aisName: v.name });
   const companies = linkedCompanies(mmsi, v.imo);
@@ -367,6 +378,9 @@ export default async function VesselRecordPage({
           </div>
         </section>
 
+        {outlook ? (
+          <Outlook mmsi={mmsi} o={outlook} typicalStayH={typicalStayH} stayCalls={pastStays.length} />
+        ) : null}
         {hidden && unlockStrong ? (
           <UnlockCard id="history" mmsi={mmsi} title={unlockTitle} lines={unlockLines} strong />
         ) : null}
