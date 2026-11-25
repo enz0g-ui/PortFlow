@@ -91,14 +91,36 @@ async function fetchPage(
     resultOffset: String(offset),
     resultRecordCount: String(pageSize),
   });
-  const res = await fetch(`${url}?${params.toString()}`, {
-    cache: "no-store",
-    signal: AbortSignal.timeout(60_000),
-  });
-  if (!res.ok) {
-    throw new Error(`PortWatch HTTP ${res.status} on ${url}`);
+  // ArcGIS hiccups (timeouts, 429, transient 499 "Token Required", 5xx)
+  // used to kill the whole daily run on a single page — retry each page.
+  const attempts = 4;
+  let lastErr: unknown = null;
+  for (let i = 0; i < attempts; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, 15_000 * i));
+    try {
+      const res = await fetch(`${url}?${params.toString()}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(90_000),
+      });
+      if (!res.ok) {
+        lastErr = new Error(`PortWatch HTTP ${res.status} on ${url}`);
+        if (res.status === 429 || res.status >= 500) continue;
+        throw lastErr;
+      }
+      const body = (await res.json()) as ArcGisQueryResponse;
+      const code = body.error?.code;
+      if (code === 499 || code === 429 || (code !== undefined && code >= 500)) {
+        lastErr = new Error(`PortWatch ArcGIS error ${code}: ${body.error?.message}`);
+        continue;
+      }
+      return body;
+    } catch (err) {
+      lastErr = err;
+      const name = (err as { name?: string })?.name;
+      if (name !== "TimeoutError" && name !== "AbortError" && name !== "TypeError") throw err;
+    }
   }
-  return (await res.json()) as ArcGisQueryResponse;
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
 async function* iterFeatures(
