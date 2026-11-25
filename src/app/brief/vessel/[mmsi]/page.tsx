@@ -286,7 +286,7 @@ export default async function VesselRecordPage({
               </span>
             </div>
             <div className="flex flex-wrap gap-2 print:hidden">
-              <WatchButton mmsi={v.mmsi} />
+              <WatchButton mmsi={v.mmsi} label="◉ Watch" />
               <Link
                 href={`/brief/vessel/${v.mmsi}/report${days !== 90 ? `?d=${days}` : ""}`}
                 className="rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-200 hover:border-slate-500"
@@ -780,6 +780,17 @@ function buildNextSteps({
       body: `Most recent: ${c.name ?? `MMSI ${c.mmsi}`}${c.sanctioned ? " (listed)" : ""}, on ${fmtDate(c.lastTs)}. Any of them could be in your supply chain.`,
       href: "#connections",
       cta: "See connections",
+    };
+  } else if (v.counts.transfers > 0 && atSea.some((c) => c.best === "transfer")) {
+    const c = atSea.find((x) => x.best === "transfer")!;
+    lead = {
+      id: "transfer",
+      tone: "amber",
+      kicker: "Worth a look",
+      title: `Probable transfer with ${c.name ?? (c.identified ? `MMSI ${c.mmsi}` : "an unidentified ship")}`,
+      body: `${fmtHours(c.totalHours)} side by side at sea, last on ${fmtDate(c.lastTs)}. See the tracks and the evidence.`,
+      href: c.lastEncounterId ? `/brief/contact/${v.mmsi}/${c.mmsi}?e=${c.lastEncounterId}` : `/brief/vessel/${c.mmsi}?t=${t}`,
+      cta: c.lastEncounterId ? "Open the evidence" : "Open its record",
     };
   } else if (v.counts.dark > 0) {
     lead = {
