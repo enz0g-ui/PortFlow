@@ -5,6 +5,8 @@ import { getVesselSheet, summarize, TIER_LABEL, WINDOW_DAYS, type Exposure } fro
 import { identityChecks, linkedCompanies } from "@/lib/identity";
 import { getNetwork } from "@/lib/screen";
 import { PrintButton } from "../../../PrintButton";
+import { getCurrentUser } from "@/lib/auth/session";
+import { briefAccess } from "@/lib/brief-access";
 import { cargoLabel, fmtDate, fmtHours, fmtUtc } from "../../../ui";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +45,43 @@ export default async function VesselReportPage({
   const mmsi = Number(raw);
   if (!Number.isInteger(mmsi) || mmsi < 100_000_000 || mmsi > 999_999_999) notFound();
   const days = (WINDOW_DAYS as readonly number[]).includes(Number(sp.d)) ? Number(sp.d) : 90;
+
+  // Rapport PDF daté : formules payantes seulement (décision 25/11/2026).
+  const user = await getCurrentUser();
+  if (!briefAccess(user?.tier).report) {
+    const back = `/brief/vessel/${mmsi}`;
+    return (
+      <main className="min-h-screen bg-[#070b12] px-4 pt-16 text-slate-200">
+        <div className="mx-auto max-w-lg rounded-md border border-slate-700 bg-slate-900/70 p-6">
+          <div className="text-[11px] font-medium uppercase tracking-wider text-slate-400">🔒 Paid plans</div>
+          <h1 className="mt-1 text-xl font-semibold text-slate-50">Dated PDF screening report</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-300">
+            Verdict, sanctions listings, evidence of contacts at sea, identity checks and a 180-day timeline in
+            one dated document, ready for a compliance or KYC file. Included from the Starter plan.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link
+              href="/pricing"
+              className="rounded-md bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-sky-400"
+            >
+              See plans →
+            </Link>
+            {user ? null : (
+              <Link
+                href={`/sign-in?redirect_url=${encodeURIComponent(`${back}/report`)}`}
+                className="rounded-md border border-slate-600 px-4 py-2 text-sm font-medium text-slate-100 hover:border-slate-400"
+              >
+                I already have a plan
+              </Link>
+            )}
+            <Link href={back} className="px-2 py-2 text-sm text-slate-400 hover:text-slate-200">
+              ← Back to the record
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   const v = getVesselSheet(mmsi, days);
   if (!v) notFound();

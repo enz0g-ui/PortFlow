@@ -100,7 +100,7 @@ const fr: PageMessages = {
   "pricing.tier.free.price": "0 €",
   "pricing.tier.free.period": "",
   "pricing.tier.free.features":
-    "Les 51 ports accessibles dès l'inscription|Dashboard live · ETA prédit · RMSE public · sanctions visuelles|13 chokepoints monitored|7 j d'historique voyages|Visualisation seule — pas de watchlist · pas d'alertes · pas d'API",
+    "Les 51 ports accessibles dès l'inscription|Dashboard live · ETA prédit · RMSE public · sanctions visuelles|13 chokepoints monitored|7 j d'historique voyages|Visualisation seule — pas de watchlist · pas d'alertes · pas d'API|Fiches navire : 30 derniers jours",
   "pricing.tier.free.cta": "Démarrer",
   "pricing.cycle.monthly": "Mensuel",
   "pricing.cycle.yearly": "Annuel",
@@ -117,7 +117,7 @@ const fr: PageMessages = {
   "pricing.tier.starter.priceYearlyTotal": "Facturé 1 161 €/an",
   "pricing.tier.starter.yearlySavings": "Économisez 387 €",
   "pricing.tier.starter.features":
-    "Tout le périmètre Free + workflow|Watchlist 25 navires|Alertes Slack · Telegram · Email · Discord · Webhook|API publique 5 k req/j|Export CSV|30 j d'historique",
+    "Tout le périmètre Free + workflow|Watchlist 25 navires|Alertes Slack · Telegram · Email · Discord · Webhook|API publique 5 k req/j|Export CSV|30 j d'historique|Fiches navire : 180 j d'historique + rapport PDF daté",
   "pricing.tier.starter.cta": "Choisir Starter",
   "pricing.tier.professional.name": "Professional",
   "pricing.tier.professional.price": "199 €",
@@ -823,7 +823,7 @@ const en: PageMessages = {
   "pricing.tier.free.price": "€0",
   "pricing.tier.free.period": "",
   "pricing.tier.free.features":
-    "All 51 ports accessible from day one|Live dashboard · predicted ETA · public RMSE · visual sanctions|13 chokepoints monitored|7-day voyage history|Read-only — no watchlist · no alerts · no API",
+    "All 51 ports accessible from day one|Live dashboard · predicted ETA · public RMSE · visual sanctions|13 chokepoints monitored|7-day voyage history|Read-only — no watchlist · no alerts · no API|Vessel records: last 30 days",
   "pricing.tier.free.cta": "Get started",
   "pricing.cycle.monthly": "Monthly",
   "pricing.cycle.yearly": "Yearly",
@@ -840,7 +840,7 @@ const en: PageMessages = {
   "pricing.tier.starter.priceYearlyTotal": "Billed €1,161/year",
   "pricing.tier.starter.yearlySavings": "Save €387",
   "pricing.tier.starter.features":
-    "Everything in Free + workflow|25-vessel watchlist|Slack · Telegram · Email · Discord · Webhook alerts|Public API, 5k req/day|CSV export|30-day history",
+    "Everything in Free + workflow|25-vessel watchlist|Slack · Telegram · Email · Discord · Webhook alerts|Public API, 5k req/day|CSV export|30-day history|Vessel records: 180-day history + dated PDF report",
   "pricing.tier.starter.cta": "Choose Starter",
   "pricing.tier.professional.name": "Professional",
   "pricing.tier.professional.price": "€199",
@@ -1472,13 +1472,13 @@ const nl: PageMessages = {
   "pricing.tier.free.price": "€0",
   "pricing.tier.free.period": "",
   "pricing.tier.free.features":
-    "3 strategische havens|Live dashboard, 7 dagen historie|Geen openbare API",
+    "3 strategische havens|Live dashboard, 7 dagen historie|Geen openbare API|Scheepsdossiers: laatste 30 dagen",
   "pricing.tier.free.cta": "Beginnen",
   "pricing.tier.starter.name": "Starter",
   "pricing.tier.starter.price": "€129",
   "pricing.tier.starter.period": "/ maand",
   "pricing.tier.starter.features":
-    "15 havens|Openbare API, 5k req/dag|Slack/Telegram/Email/Discord-meldingen|CSV-export|30 dagen historie|25 schepen in watchlist",
+    "15 havens|Openbare API, 5k req/dag|Slack/Telegram/Email/Discord-meldingen|CSV-export|30 dagen historie|25 schepen in watchlist|Scheepsdossiers: 180 dagen historie + gedateerd PDF-rapport",
   "pricing.tier.starter.cta": "Kies Starter",
   "pricing.tier.professional.name": "Professional",
   "pricing.tier.professional.price": "€199",
@@ -1913,13 +1913,13 @@ const de: PageMessages = {
   "pricing.tier.free.price": "0 €",
   "pricing.tier.free.period": "",
   "pricing.tier.free.features":
-    "3 strategische Häfen|Live-Dashboard, 7 Tage Historie|Keine öffentliche API",
+    "3 strategische Häfen|Live-Dashboard, 7 Tage Historie|Keine öffentliche API|Schiffsakten: letzte 30 Tage",
   "pricing.tier.free.cta": "Loslegen",
   "pricing.tier.starter.name": "Starter",
   "pricing.tier.starter.price": "129 €",
   "pricing.tier.starter.period": "/ Monat",
   "pricing.tier.starter.features":
-    "15 Häfen|Öffentliche API, 5k Req/Tag|Slack/Telegram/E-Mail/Discord-Benachrichtigungen|CSV-Export|30 Tage Historie|25 Schiffe in der Watchlist",
+    "15 Häfen|Öffentliche API, 5k Req/Tag|Slack/Telegram/E-Mail/Discord-Benachrichtigungen|CSV-Export|30 Tage Historie|25 Schiffe in der Watchlist|Schiffsakten: 180 Tage Verlauf + datierter PDF-Bericht",
   "pricing.tier.starter.cta": "Starter wählen",
   "pricing.tier.professional.name": "Professional",
   "pricing.tier.professional.price": "199 €",
@@ -2354,13 +2354,13 @@ const es: PageMessages = {
   "pricing.tier.free.price": "0 €",
   "pricing.tier.free.period": "",
   "pricing.tier.free.features":
-    "3 puertos estratégicos|Panel en vivo, 7 días de historial|Sin API pública",
+    "3 puertos estratégicos|Panel en vivo, 7 días de historial|Sin API pública|Fichas de buque: últimos 30 días",
   "pricing.tier.free.cta": "Empezar",
   "pricing.tier.starter.name": "Starter",
   "pricing.tier.starter.price": "129 €",
   "pricing.tier.starter.period": "/ mes",
   "pricing.tier.starter.features":
-    "15 puertos|API pública 5k req/día|Alertas Slack/Telegram/Email/Discord|Exportación CSV|30 días de historial|25 buques en watchlist",
+    "15 puertos|API pública 5k req/día|Alertas Slack/Telegram/Email/Discord|Exportación CSV|30 días de historial|25 buques en watchlist|Fichas de buque: 180 días de historial + informe PDF fechado",
   "pricing.tier.starter.cta": "Elegir Starter",
   "pricing.tier.professional.name": "Professional",
   "pricing.tier.professional.price": "199 €",
@@ -2795,13 +2795,13 @@ const ar: PageMessages = {
   "pricing.tier.free.price": "0 €",
   "pricing.tier.free.period": "",
   "pricing.tier.free.features":
-    "3 موانئ استراتيجية|لوحة تحكم مباشرة، تاريخ 7 أيام|لا توجد API عامة",
+    "3 موانئ استراتيجية|لوحة تحكم مباشرة، تاريخ 7 أيام|لا توجد API عامة|سجلات السفن: آخر 30 يومًا",
   "pricing.tier.free.cta": "ابدأ",
   "pricing.tier.starter.name": "Starter",
   "pricing.tier.starter.price": "129 €",
   "pricing.tier.starter.period": "/ شهر",
   "pricing.tier.starter.features":
-    "15 ميناء|API عامة 5 آلاف طلب/يوم|تنبيهات Slack/Telegram/البريد/Discord|تصدير CSV|تاريخ 30 يوماً|25 سفينة في قائمة المراقبة",
+    "15 ميناء|API عامة 5 آلاف طلب/يوم|تنبيهات Slack/Telegram/البريد/Discord|تصدير CSV|تاريخ 30 يوماً|25 سفينة في قائمة المراقبة|سجلات السفن: سجل 180 يومًا + تقرير PDF مؤرخ",
   "pricing.tier.starter.cta": "اختر Starter",
   "pricing.tier.professional.name": "Professional",
   "pricing.tier.professional.price": "199 €",
@@ -3029,13 +3029,13 @@ const zh: PageMessages = {
   "pricing.tier.free.price": "€0",
   "pricing.tier.free.period": "",
   "pricing.tier.free.features":
-    "3 个战略港口|实时仪表板,7 天历史|无公共 API",
+    "3 个战略港口|实时仪表板,7 天历史|无公共 API|船舶档案：最近 30 天",
   "pricing.tier.free.cta": "开始",
   "pricing.tier.starter.name": "Starter",
   "pricing.tier.starter.price": "€129",
   "pricing.tier.starter.period": "/ 月",
   "pricing.tier.starter.features":
-    "15 个港口|公共 API 5k 次/天|Slack/Telegram/邮件/Discord 警报|CSV 导出|30 天历史|25 艘船监视列表",
+    "15 个港口|公共 API 5k 次/天|Slack/Telegram/邮件/Discord 警报|CSV 导出|30 天历史|25 艘船监视列表|船舶档案：180 天历史 + 带日期的 PDF 报告",
   "pricing.tier.starter.cta": "选择 Starter",
   "pricing.tier.professional.name": "Professional",
   "pricing.tier.professional.price": "€199",
@@ -3262,13 +3262,13 @@ const ja: PageMessages = {
   "pricing.tier.free.price": "€0",
   "pricing.tier.free.period": "",
   "pricing.tier.free.features":
-    "3 つの戦略港|ライブダッシュボード、7 日履歴|公開 API なし",
+    "3 つの戦略港|ライブダッシュボード、7 日履歴|公開 API なし|船舶記録：直近30日",
   "pricing.tier.free.cta": "始める",
   "pricing.tier.starter.name": "Starter",
   "pricing.tier.starter.price": "€129",
   "pricing.tier.starter.period": "/ 月",
   "pricing.tier.starter.features":
-    "15 港|公開 API 5k リクエスト/日|Slack/Telegram/メール/Discord アラート|CSV エクスポート|30 日履歴|ウォッチリストに 25 隻",
+    "15 港|公開 API 5k リクエスト/日|Slack/Telegram/メール/Discord アラート|CSV エクスポート|30 日履歴|ウォッチリストに 25 隻|船舶記録：180日間の履歴＋日付入りPDFレポート",
   "pricing.tier.starter.cta": "Starter を選択",
   "pricing.tier.professional.name": "Professional",
   "pricing.tier.professional.price": "€199",

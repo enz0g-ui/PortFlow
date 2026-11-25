@@ -19,6 +19,9 @@ import { Network } from "../../Network";
 import { TrackMap } from "../../TrackMap";
 import { WatchButton } from "../../WatchButton";
 import { NextSteps, type NextStep } from "../../NextSteps";
+import { UnlockCard } from "../../UnlockCard";
+import { getCurrentUser } from "@/lib/auth/session";
+import { briefAccess, BRIEF_VERDICT_DAYS } from "@/lib/brief-access";
 import { SinceLastVisit, type SinceEvent, type SinceRoutine } from "../../SinceLastVisit";
 import {
   cargoLabel,
@@ -142,7 +145,10 @@ export default async function VesselRecordPage({
   const mmsi = Number(raw);
   if (!Number.isInteger(mmsi) || mmsi < 100_000_000 || mmsi > 999_999_999) notFound();
 
-  const days = (WINDOW_DAYS as readonly number[]).includes(Number(sp.d)) ? Number(sp.d) : 90;
+  const user = await getCurrentUser();
+  const access = briefAccess(user?.tier);
+  const askedDays = (WINDOW_DAYS as readonly number[]).includes(Number(sp.d)) ? Number(sp.d) : access.defaultDays;
+  const days = Math.min(askedDays, access.maxDays);
   const filter: Filter = FILTERS.includes(sp.k as Filter) ? (sp.k as Filter) : "all";
   const trail = (typeof sp.t === "string" ? sp.t.split(",") : [])
     .map(Number)
@@ -151,6 +157,32 @@ export default async function VesselRecordPage({
 
   const v = getVesselSheet(mmsi, days);
   if (!v) notFound();
+  // Compte gratuit : le verdict reste calculé sur la fenêtre de référence,
+  // et on dit précisément ce que la fenêtre de 30 j cache.
+  const ref = access.paid ? null : getVesselSheet(mmsi, BRIEF_VERDICT_DAYS);
+  const vv = ref ?? v;
+  const hidden = ref
+    ? {
+        events: Math.max(0, ref.timeline.length - v.timeline.length),
+        contacts: Math.max(0, ref.counts.contacts - v.counts.contacts),
+        transfers: Math.max(0, ref.counts.transfers - v.counts.transfers),
+        dark: Math.max(0, ref.counts.dark - v.counts.dark),
+        verdictOlder: ref.exposure !== v.exposure && (ref.exposure === "exposed" || ref.exposure === "listed"),
+      }
+    : null;
+  const unlockStrong = !!hidden && (hidden.verdictOlder || hidden.contacts > 0 || hidden.dark > 0);
+  const unlockLines: string[] = [];
+  if (hidden) {
+    if (hidden.verdictOlder) unlockLines.push(`The contact behind the "${VERDICT[ref!.exposure].title}" verdict is older than 30 days.`);
+    const parts: string[] = [];
+    if (hidden.contacts) parts.push(`${hidden.contacts} contact${hidden.contacts > 1 ? "s" : ""} at sea${hidden.transfers ? ` (${hidden.transfers} probable transfer${hidden.transfers > 1 ? "s" : ""})` : ""}`);
+    if (hidden.dark) parts.push(`${hidden.dark} AIS gap${hidden.dark > 1 ? "s" : ""}`);
+    if (parts.length) unlockLines.push(`Hidden between 30 and 90 days ago: ${parts.join(", ")}.`);
+    unlockLines.push("Paid plans (Starter and up) open 90 and 180 days, the dated PDF report and alerts.");
+  }
+  const unlockTitle = hidden && hidden.events > 0
+    ? `${hidden.events} older event${hidden.events > 1 ? "s" : ""} on this ship are hidden`
+    : "See 90 and 180 days of history";
   const net = getNetwork(mmsi, days);
   const summary = summarize(v, net.twoStepListed);
   const idChecks = identityChecks({ mmsi, imo: v.imo, aisName: v.name });
@@ -227,13 +259,14 @@ export default async function VesselRecordPage({
     ["Call sign", v.callsign ?? "—"],
     ["AIS destination", v.destination ?? "—"],
   ];
-  const verdict = VERDICT[v.exposure];
+  const verdict = VERDICT[vv.exposure];
   const ls = v.lastSeen;
 
   const steps = buildNextSteps({
     v,
     twoStepListed: net.twoStepListed,
     idWarn: idChecks.some((c) => c.warn),
+    paid: access.paid,
     days,
     trail,
   });
@@ -282,7 +315,7 @@ export default async function VesselRecordPage({
             <div className={`rounded-md border px-4 py-2 text-sm ${verdict.cls}`}>
               <span className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold">{verdict.title}</span>
-                {verdictDetail(v)}
+                {verdictDetail(vv)}
               </span>
             </div>
             <div className="flex flex-wrap gap-2 print:hidden">
@@ -307,7 +340,17 @@ export default async function VesselRecordPage({
           <p className="flex-1 text-[15px] leading-relaxed text-slate-100">{summary}</p>
           <div className="flex shrink-0 items-center gap-2">
             <nav className="flex rounded-md border border-slate-700 p-0.5 font-mono text-[11px]" aria-label="Period">
-              {WINDOW_DAYS.map((d) => (
+              {WINDOW_DAYS.map((d) =>
+                d > access.maxDays ? (
+                  <a
+                    key={d}
+                    href="#unlock"
+                    title="Paid plans: 90 and 180 days"
+                    className="rounded px-2 py-1 text-slate-600 hover:text-slate-300"
+                  >
+                    🔒{d}d
+                  </a>
+                ) : (
                 <Link
                   key={d}
                   href={`/brief/vessel/${mmsi}${qs({ d: d === 90 ? null : d })}`}
@@ -317,14 +360,21 @@ export default async function VesselRecordPage({
                 >
                   {d}d
                 </Link>
-              ))}
+                ),
+              )}
             </nav>
             <CopyButton text={summary} label="Copy" />
           </div>
         </section>
 
+        {hidden && unlockStrong ? (
+          <UnlockCard id="history" mmsi={mmsi} title={unlockTitle} lines={unlockLines} strong />
+        ) : null}
         <SinceLastVisit mmsi={mmsi} events={sinceEvents} routine={sinceRoutine} />
         <NextSteps mmsi={mmsi} steps={steps} />
+        {hidden && !unlockStrong ? (
+          <UnlockCard id="history" mmsi={mmsi} title={unlockTitle} lines={unlockLines} />
+        ) : null}
 
         <div className="pfg mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
           <div className="min-w-0 space-y-6">
@@ -714,12 +764,14 @@ function buildNextSteps({
   v,
   twoStepListed,
   idWarn,
+  paid,
   days,
   trail,
 }: {
   v: VesselSheet;
   twoStepListed: number;
   idWarn: boolean;
+  paid: boolean;
   days: number;
   trail: number[];
 }): NextStep[] {
@@ -825,15 +877,25 @@ function buildNextSteps({
   }
   if (lead) steps.push(lead);
 
-  const report: NextStep = {
-    id: "report",
-    tone: "slate",
-    kicker: "For your file",
-    title: "Dated PDF of this record",
-    body: "Verdict, sources, evidence and timeline in one document for a compliance or KYC file.",
-    href: `/brief/vessel/${v.mmsi}/report${days !== 90 ? `?d=${days}` : ""}`,
-    cta: "Get the report",
-  };
+  const report: NextStep = paid
+    ? {
+        id: "report",
+        tone: "slate",
+        kicker: "For your file",
+        title: "Dated PDF of this record",
+        body: "Verdict, sources, evidence and timeline in one document for a compliance or KYC file.",
+        href: `/brief/vessel/${v.mmsi}/report${days !== 90 ? `?d=${days}` : ""}`,
+        cta: "Get the report",
+      }
+    : {
+        id: "report_locked",
+        tone: "slate",
+        kicker: "For your file · paid plans",
+        title: "Dated PDF of this record",
+        body: "Verdict, sources, evidence and 180-day timeline in one document for a compliance or KYC file.",
+        href: "/pricing",
+        cta: "Unlock the report",
+      };
   const screen: NextStep = {
     id: "screen",
     tone: "slate",

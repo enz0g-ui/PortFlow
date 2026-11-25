@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 // visit »…) pour mesurer ce qui mène à l'inscription. Pas d'IP, pas de
 // cookie : nom d'événement en liste blanche + MMSI + horodatage.
 
-const ALLOWED = /^(next|since|watch)\.[a-z0-9_]{1,40}$/;
+const ALLOWED = /^(next|since|watch|gate)\.[a-z0-9_]{1,40}$/;
 let ready = false;
 
 export async function POST(req: Request) {
