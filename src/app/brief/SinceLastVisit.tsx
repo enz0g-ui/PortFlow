@@ -18,13 +18,34 @@ export interface SinceEvent {
   hot?: boolean;
 }
 
+/** Événements de routine : seulement comptés (attente, transit, escale, contact au port). */
+export interface SinceRoutine {
+  ts: number;
+  kind: "loiter" | "transit" | "port" | "portContact";
+}
+
+const ROUTINE_LABEL: Record<SinceRoutine["kind"], [string, string]> = {
+  loiter: ["loitering period", "loitering periods"],
+  transit: ["strait transit", "strait transits"],
+  port: ["port call", "port calls"],
+  portContact: ["same-port contact", "same-port contacts"],
+};
+
 const SESSION_MS = 30 * 60_000;
 
 function fmt(ts: number): string {
   return new Date(ts).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-export function SinceLastVisit({ mmsi, events }: { mmsi: number; events: SinceEvent[] }) {
+export function SinceLastVisit({
+  mmsi,
+  events,
+  routine,
+}: {
+  mmsi: number;
+  events: SinceEvent[];
+  routine: SinceRoutine[];
+}) {
   const [prev, setPrev] = useState<number | null>(null);
 
   useEffect(() => {
@@ -48,6 +69,12 @@ export function SinceLastVisit({ mmsi, events }: { mmsi: number; events: SinceEv
   if (!prev) return null;
   const fresh = events.filter((e) => e.ts > prev);
   const hot = fresh.filter((e) => e.hot).length;
+  const rc = new Map<SinceRoutine["kind"], number>();
+  for (const r of routine) if (r.ts > prev) rc.set(r.kind, (rc.get(r.kind) ?? 0) + 1);
+  const routineLine = [...rc.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, n]) => `${n} ${ROUTINE_LABEL[k][n > 1 ? 1 : 0]}`)
+    .join(" · ");
 
   return (
     <section
@@ -62,9 +89,11 @@ export function SinceLastVisit({ mmsi, events }: { mmsi: number; events: SinceEv
             Since your last visit · {fmt(prev)}
           </div>
           <div className="mt-1 text-[15px] font-semibold text-slate-50">
-            {fresh.length === 0
+            {fresh.length === 0 && !routineLine
               ? "Nothing new on this ship."
-              : `${fresh.length} new event${fresh.length > 1 ? "s" : ""}${hot ? ` · ${hot} worth a look` : ""}`}
+              : fresh.length === 0
+                ? "Routine activity only."
+                : `${fresh.length} notable event${fresh.length > 1 ? "s" : ""}${hot ? ` · ${hot} worth a look` : ""}`}
           </div>
         </div>
         <div onClickCapture={() => track("since.watch", mmsi)}>
@@ -75,6 +104,7 @@ export function SinceLastVisit({ mmsi, events }: { mmsi: number; events: SinceEv
           />
         </div>
       </div>
+      {routineLine ? <p className="mt-1 text-xs text-slate-400">Routine: {routineLine}.</p> : null}
       {fresh.length > 0 ? (
         <ul className="mt-3 divide-y divide-slate-800/80 text-sm">
           {fresh.slice(0, 6).map((e) => (

@@ -19,7 +19,7 @@ import { Network } from "../../Network";
 import { TrackMap } from "../../TrackMap";
 import { WatchButton } from "../../WatchButton";
 import { NextSteps, type NextStep } from "../../NextSteps";
-import { SinceLastVisit, type SinceEvent } from "../../SinceLastVisit";
+import { SinceLastVisit, type SinceEvent, type SinceRoutine } from "../../SinceLastVisit";
 import {
   cargoLabel,
   fmtAgo,
@@ -237,16 +237,28 @@ export default async function VesselRecordPage({
     days,
     trail,
   });
-  const sinceEvents: SinceEvent[] = v.timeline.slice(0, 60).map((t) => ({
-    key: t.key,
-    ts: t.ts,
-    label: eventLabel(t),
-    hot: (t.kind === "sts" && t.tier !== "port" && (!!t.other?.sanctioned || t.tier === "transfer")) || t.kind === "dark",
-    href:
-      t.kind === "sts" && t.other && t.encounterId
-        ? `/brief/contact/${mmsi}/${t.other.mmsi}?e=${t.encounterId}`
-        : undefined,
-  }));
+  // « Depuis votre dernière visite » : événements notables listés (contacts en
+  // mer, coupures AIS), la routine seulement comptée.
+  const notable = (t: TimelineItem) => (t.kind === "sts" && t.tier !== "port") || t.kind === "dark";
+  const sinceEvents: SinceEvent[] = v.timeline
+    .filter(notable)
+    .slice(0, 40)
+    .map((t) => ({
+      key: t.key,
+      ts: t.ts,
+      label: eventLabel(t),
+      hot: (t.kind === "sts" && (!!t.other?.sanctioned || t.tier === "transfer")) || t.kind === "dark",
+      href:
+        t.kind === "sts" && t.other && t.encounterId
+          ? `/brief/contact/${mmsi}/${t.other.mmsi}?e=${t.encounterId}`
+          : undefined,
+    }))
+    .sort((a, b) => Number(!!b.hot) - Number(!!a.hot) || b.ts - a.ts);
+  const sinceRoutine: SinceRoutine[] = v.timeline
+    .filter((t) => !notable(t))
+    .slice(0, 600)
+    .map((t) => ({ ts: t.ts, kind: t.kind === "sts" ? "portContact" : (t.kind as SinceRoutine["kind"]) }));
+
 
   return (
     <main className="min-h-screen bg-[#070b12] px-4 pb-24 pt-5 text-slate-200 sm:px-6 lg:px-10">
@@ -311,7 +323,7 @@ export default async function VesselRecordPage({
           </div>
         </section>
 
-        <SinceLastVisit mmsi={mmsi} events={sinceEvents} />
+        <SinceLastVisit mmsi={mmsi} events={sinceEvents} routine={sinceRoutine} />
         <NextSteps mmsi={mmsi} steps={steps} />
 
         <div className="pfg mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
